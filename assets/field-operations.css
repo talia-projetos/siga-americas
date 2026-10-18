@@ -1,0 +1,107 @@
+/* SIGA Américas · Rotina de campo e inventário — mobile-first */
+.field-header{display:flex;align-items:flex-start;justify-content:space-between;gap:17px;margin:0 0 19px}
+.field-header h2,.inventory-intro h2{font-size:20px;font-weight:780;letter-spacing:-.5px;margin:6px 0 6px;color:#154032}
+.field-header p,.inventory-intro p{font-size:12px;color:#687f73;line-height:1.65;margin:0;max-width:780px}
+.field-secure{display:flex;align-items:center;justify-content:center;padding:8px 12px;white-space:nowrap;border:1px solid #cde8d8;border-radius:100px;background:#e8f8ee;color:#217155;font-weight:700;font-size:11px}
+.field-view-tabs,.inventory-tabs{display:flex;align-items:center;gap:5px;overflow-x:auto;scrollbar-width:thin;padding:5px;background:#edf4ef;border-radius:12px;margin:0 0 20px;width:max-content;max-width:100%}
+.field-view-tabs button,.inventory-tab{flex:0 0 auto;border:0;background:transparent;border-radius:8px;color:#658173;padding:10px 14px;font-size:12px;font-weight:700;white-space:nowrap}
+.field-view-tabs button:hover,.inventory-tab:hover{background:#e2ede6}
+.field-view-tabs button.active,.inventory-tab.active{background:#fff;color:#0d6950;box-shadow:0 2px 9px #1e493117}
+.field-view-tabs small,.inventory-tab small{padding:3px 6px;background:#d9ebe1;color:#4e7e65;font-weight:700;border-radius:7px;margin-left:7px;font-size:10px}
+.field-main-form{display:flex;flex-direction:column;gap:16px;max-width:1100px}
+.field-section{background:#fff;border:1px solid #dae8df;border-radius:15px;box-shadow:var(--shadow);padding:23px 24px}
+.field-section-head{display:flex;gap:13px;align-items:center;margin-bottom:21px}
+.field-step{display:grid;place-items:center;flex:none;width:32px;height:32px;background:#e6f5eb;border:1px solid #c9e8d8;border-radius:9px;color:#147353;font-size:12px;font-weight:800}
+.field-section h3{font-size:15px;letter-spacing:-.3px;margin:0 0 3px;color:#1c4837}
+.field-section-head p{color:#87988d;font-size:10.5px;margin:0}
+.field-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.field-input{display:flex;flex-direction:column;gap:7px;min-width:0}
+.field-input span{color:#4b6b5a;font-weight:700;font-size:11px}
+.field-input input,.field-input textarea,.field-input select{width:100%;min-width:0;display:block;padding:12px 12px;border-radius:9px;border:1px solid #d5e4da;background:#fff;color:#214736;font-size:12px;outline:0;box-sizing:border-box}
+.field-input textarea{min-height:82px;resize:vertical;line-height:1.5}
+.field-input select:disabled{background:#f2f6f3;color:#70847a}
+.field-input input:focus,.field-input textarea:focus,.field-input select:focus{border-color:#6bb599;box-shadow:0 0 0 3px rgba(96,188,146,.14)}
+.field-input.wide{grid-column:1/-1}
+.field-muted{color:#809488;font-size:11px;line-height:1.65;margin:0 0 15px}
+.field-attendance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.field-attendance-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #e4eee7;background:#fcfefc;border-radius:9px;padding:9px 11px}
+.field-attendance-row>span{flex:1;min-width:0;font-size:11.3px;font-weight:620;color:#315644}
+.field-attendance-row select{min-width:113px;max-width:140px;width:40%;background:#fff;border:1px solid #dbe9df;border-radius:7px;padding:8px;font-size:10.5px;color:#416951}
+.field-activities{display:grid;gap:15px;margin:0 0 17px}
+.field-activity-card{border:1px solid #dce9e0;border-radius:11px;background:#fcfefc;padding:18px 18px 12px}
+.field-card-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.field-card-heading strong{color:#24513c;font-size:12px}
+.field-remove{display:grid;place-items:center;width:27px;height:27px;border:0;border-radius:7px;background:#fbf0ee;color:#9c584c;font-size:17px}
+.field-remove:disabled{opacity:.3}
+.field-worker-details{margin-top:13px;border:1px solid #e3eee6;border-radius:9px;background:#f6faf7}
+.field-worker-details>summary{padding:13px 14px;font-size:11px;font-weight:720;color:#3a7255;cursor:pointer}
+.field-worker-details summary small{font-weight:500;color:#859e8c;margin-left:5px}
+.field-worker-picks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:10px 14px 15px;max-height:270px;overflow:auto}
+.field-worker-check{display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;background:#fff;border:1px solid #e4ece7;font-size:10.5px;color:#476750;cursor:pointer}
+.field-worker-check input{accent-color:#168265}
+.field-form-actions{display:flex;justify-content:flex-end;align-items:center;gap:11px;background:#fff;border:1px solid #dce9df;border-radius:12px;box-shadow:var(--shadow);padding:18px}
+.field-form-actions .btn{min-width:166px}
+.field-help{font-size:11px;color:#8a9a8d;line-height:1.55;margin:0 3px 12px}
+.field-history{display:grid;gap:11px}
+.field-history-head{margin:0 0 8px}.field-history-head h3{font-size:16px;margin:0 0 6px}.field-history-head p{margin:0;font-size:12px;color:#769081}
+.field-history-item{display:flex;align-items:center;gap:15px;padding:16px 18px;background:#fff;border:1px solid #dce9e1;border-radius:11px;box-shadow:var(--shadow)}
+.field-history-item>div:first-child{min-width:0;flex:1}
+.field-history-item strong{font-size:12px;color:#21523d}
+.field-history-item p{font-size:11px;color:#81958a;margin:5px 0 0}
+.field-history-buttons{display:flex;gap:4px}
+.field-status{display:inline-flex;padding:6px 10px;border-radius:7px;font-size:10px;font-weight:730;white-space:nowrap;background:#f3f4f4;color:#526b5e}
+.field-status.validado{background:#e5f6ea;color:#19805e}
+.field-status.enviado{background:#fff4df;color:#926824}
+.field-status.devolvido{background:#fff0e8;color:#ac5c46}
+.field-history-detail{background:#fff;border:1px solid #dce9e1;border-radius:13px;padding:24px}
+.field-history-detail h2{color:#214636;margin:19px 0;font-size:21px}
+.field-history-detail h3{color:#356448;font-size:13px;margin:22px 0 8px}
+.field-history-detail p,.field-history-detail li{font-size:12px;color:#5d7666;line-height:1.75}
+.inventory-intro{margin:0 0 18px}
+.inventory-tabs{width:max-content;margin-bottom:18px}
+.inventory-kpis{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:14px}
+.inventory-progress{height:7px;width:100%;background:#e0eee3;overflow:hidden;border-radius:20px;margin:0 0 17px}
+.inventory-progress-bar{height:100%;background:#21926c;border-radius:20px;transition:width .24s}
+.inventory-note{font-size:11.5px;margin-bottom:16px}
+.inventory-controls{display:flex;align-items:center;gap:13px;margin:0 0 12px;flex-wrap:wrap}
+.inventory-controls>.searchbox{flex:1 1 260px}
+.inventory-controls>label{display:flex;align-items:center;gap:9px;color:#668174;font-size:11px;font-weight:700}
+.inventory-controls select{padding:10px 12px;border:1px solid #dbe9df;border-radius:8px;background:#fff;color:#285442;font-size:11px}
+.inventory-table-wrap{margin-bottom:8px}
+.inventory-table{min-width:1020px}
+.inventory-table th{white-space:nowrap}
+.inventory-table td{min-width:95px}
+.inventory-table td:nth-child(2){min-width:230px}
+.inventory-table td:nth-child(6){min-width:175px}
+.inventory-table td>small{display:block;margin-top:4px;color:#83998a}
+.inventory-resource-name{font-size:11.5px;font-weight:650;line-height:1.4;color:#2d513e}
+.inventory-source{font-size:10px;color:#81998c}
+.inventory-qty{width:86px!important;padding:10px;border:1px solid #d2e5d8;border-radius:8px;color:#124c38;background:#f8fcf8;font-size:12px;font-weight:760}
+.inventory-row-note{max-width:250px;min-width:160px;width:100%;padding:9px 11px;border:1px solid #dbe9dd;border-radius:8px;color:#3e664f;background:#fff;font-size:11px}
+.inventory-status{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:10px;padding:6px 8px;border-radius:7px;background:#eef3f0;color:#688072}
+.inventory-status.match{background:#e5f7eb;color:#168063}
+.inventory-status.missing{background:#fff0e5;color:#9e4f31}
+.inventory-status.extra{background:#ecf3ff;color:#446f96}
+.inventory-save{font-size:10.5px!important;padding:9px 11px!important}
+.inventory-footer{font-size:11px;color:#85988d;line-height:1.55;margin:12px 0 20px}
+.monitor-controls{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:17px}
+.monitor-controls label{display:flex;flex-direction:column;gap:7px;flex:1 1 180px;color:#5b7966;font-size:11px;font-weight:730}
+.monitor-controls input,.monitor-controls select{padding:10px 12px;border-radius:9px;border:1px solid #d4e5da;background:#fff;color:#2e5c42}
+.monitor-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.monitor-panels{margin:0 0 17px}
+.monitor-bars{margin-top:19px;display:grid;gap:12px}
+.monitor-bar-row{display:grid;grid-template-columns:45px minmax(0,1fr) 30px;gap:10px;align-items:center;font-size:11px;color:#567967}
+.monitor-bar-row strong{color:#275944;font-weight:760}
+.monitor-detail{margin:20px 0 35px;background:#fff;border:1px solid #dce9df;border-radius:15px;box-shadow:0 14px 38px #224d2815}
+.monitor-detail-body{padding:5px 27px 24px}
+.monitor-detail-body h3{font-size:13px;color:#285b41;margin:24px 0 11px}
+.monitor-detail-body p,.monitor-detail-body small{font-size:11.7px;line-height:1.7;color:#667e6b}
+.monitor-entry{padding:13px 15px;border:1px solid #e4eee7;border-radius:9px;margin:8px 0;background:#fcfefc}
+.monitor-entry strong{font-size:12px;color:#21563c}
+.monitor-roster{display:flex;flex-wrap:wrap;gap:7px}
+.monitor-worker{display:inline-flex;align-items:center;padding:7px 9px;background:#edf7f0;border:1px solid #d5e9da;color:#3c7757;border-radius:8px;font-size:10.8px}
+.monitor-review-actions{display:flex;justify-content:flex-end;gap:11px;flex-wrap:wrap;margin-top:20px}
+@media(max-width:1100px){.inventory-kpis,.monitor-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.field-form-grid,.field-attendance-grid,.field-worker-picks{grid-template-columns:1fr}.field-history-item{flex-wrap:wrap}.field-form-actions{position:sticky;bottom:0;z-index:5;border-radius:11px;box-shadow:0 -8px 25px #12371f18}.field-form-actions .btn{flex:1;min-width:0}.field-section{padding:18px 16px}.field-header{flex-direction:column}.field-secure{align-self:flex-start}.monitor-detail-body{padding:5px 18px 22px}}
+@media(max-width:480px){.inventory-kpis,.monitor-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.inventory-kpis .catalog-stat,.monitor-stats .catalog-stat{padding:13px}.inventory-kpis .catalog-stat strong,.monitor-stats .catalog-stat strong{font-size:22px}.field-form-actions{gap:6px;padding:12px 9px}.field-form-actions .btn{padding:11px 8px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){.inventory-progress-bar{transition:none}}
