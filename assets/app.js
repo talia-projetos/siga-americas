@@ -140,13 +140,28 @@ function fieldValue(key,value){
  return '<span class="truncate" title="'+escapeHTML(value)+'">'+escapeHTML(value)+'</span>';
 }
 function filteredRows(){
- const text=app.search.toLocaleLowerCase("pt-BR");
- return app.rows.filter(row=>!text||Object.values(row).some(v=>String(v??"").toLocaleLowerCase("pt-BR").includes(text))||modules[app.page].fields.some(f=>f.type==="ref"&&optionLabel(f.table,row[f.key],f.display).toLocaleLowerCase("pt-BR").includes(text)));
+ const term=norm(app.search);
+ return app.rows.filter(row=>{
+  const matches=!term||Object.values(row).some(v=>norm(v).includes(term))||modules[app.page].fields.some(f=>f.type==="ref"&&norm(optionLabel(f.table,row[f.key],f.display)).includes(term));
+  const selections=Object.entries(app.filters||{}).every(([key,value])=>!value||String(row[key]??"")===String(value));
+  return matches&&selections;
+ });
 }
 function renderRows(){
- const table=el("table-body");if(!table)return;const m=modules[app.page],rows=filteredRows();
- if(!rows.length){table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'"><div class="empty-state"><div class="empty-symbol">◌</div><strong>'+ (app.search?"Nenhum resultado encontrado":"Nenhum registro cadastrado")+'</strong>'+(app.search?"Altere os termos da pesquisa.":"Use o botão Novo registro para começar.")+'</div></td></tr>';return;}
- table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>'<td>'+fieldValue(key,row[key])+'</td>').join("")+'<td>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">Editar</button>':'<span class="muted">Leitura</span>')+'</td></tr>').join("");
+ const table=el("table-body");if(!table)return;
+ const m=modules[app.page],rows=filteredRows(),financial=app.page==="contract_items";
+ const count=el("records-shown");
+ if(count)count.textContent=rows.length+" de "+app.rows.length+" registros";
+ if(!rows.length){
+  table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'"><div class="empty-state"><div class="empty-symbol">◌</div><strong>Nenhum registro encontrado</strong>Revise a pesquisa ou os filtros.</div></td></tr>';
+  return;
+ }
+ table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>{
+  if(financial&&key==="code")return '<td><span class="catalog-code">'+escapeHTML(row.code)+'</span></td>';
+  if(financial&&key==="name")return '<td><span class="catalog-name" title="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</span></td>';
+  const klass=financial&&["estimated_quantity","unit_price","estimated_total"].includes(key)?' class="numeric-cell"':"";
+  return '<td'+klass+'>'+fieldValue(key,row[key])+'</td>';
+ }).join("")+'<td>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">Conferir / editar</button>':'<span class="muted">Consulta</span>')+'</td></tr>').join("");
 }
 async function coveragePage(){
  app.page="coverage";app.search="";nav();header("coverage");
@@ -192,17 +207,29 @@ async function coveragePage(){
  }catch(e){el("main").innerHTML=title("coverage","Matriz de cobertura")+errorBanner(friendlyError(e))}
 }
 async function modulePage(key){
- app.page=key;app.search="";nav();header(key);const m=modules[key];
+ app.page=key;app.search="";app.filters={};nav();header(key);
+ const m=modules[key];
  el("main").innerHTML=title(key,m.description)+'<div class="loading-page"><div class="loader"></div><p>Consultando registros...</p></div>';
  try{
   await ensureRefs(key);
-  const {data,error}=await app.db.from(m.table).select("*").order("created_at",{ascending:false}).limit(200);if(error)throw error;
+  let query=app.db.from(m.table).select("*").order("created_at",{ascending:false});
+  if(key==="contract_items")query=query.eq("source_type","precos");
+  const {data,error}=await query.limit(500);
+  if(error)throw error;
   app.rows=data||[];
-  const buttons=(privileged()?'<button class="btn btn-primary" data-action="create">+ Novo registro</button>':'')+'<button class="btn btn-ghost" data-action="export">Exportar CSV</button>';
-  el("main").innerHTML=title(key,m.description,buttons)+
-  '<section class="table-panel"><div class="table-head"><div><h2>Registros cadastrados</h2><span>'+app.rows.length+' registro(s) carregado(s)</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Buscar registros" placeholder="Buscar nesta lista..." autocomplete="off"></div></div>'+
-  '<div class="table-scroll"><table class="data-table"><thead><tr>'+m.columns.map(col=>'<th>'+escapeHTML(m.fields.find(f=>f.key===col)?.label||col)+'</th>').join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div><div class="filter-note">Exibição limitada aos 200 registros mais recentes. Os dados são consultados diretamente no Supabase. O CSV exporta somente os registros carregados.</div></section>';
-  el("list-search").addEventListener("input",event=>{app.search=event.target.value;renderRows()});renderRows();
+  if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
+  const buttons=(privileged()?'<button class="btn btn-primary" data-action="create">'+iconMarkup("plus")+' Novo registro</button>':"")+
+   '<button class="btn btn-ghost" data-action="export">'+iconMarkup("download")+' Exportar CSV</button>';
+  const special=isCatalogPage(key);
+  const overview=special?catalogOverview(key,app.rows):"";
+  const filters=special?catalogFilters(key,app.rows):"";
+  el("main").innerHTML=title(key,m.description,buttons)+overview+
+  '<section class="table-panel catalog-table"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros carregados</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="Pesquisar nesta tabela..." autocomplete="off"></div></div>'+
+  (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
+  '<div class="table-scroll"><table class="data-table"><thead><tr>'+m.columns.map(col=>'<th'+(["unit_price","estimated_quantity","estimated_total"].includes(col)?' class="numeric-cell"':"")+'>'+escapeHTML(m.fields.find(f=>f.key===col)?.label||col)+'</th>').join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div><div class="filter-note">Consulta do Supabase. O CSV exporta apenas os registros carregados'+(special?" e filtrados":"")+'.</div></section>';
+  el("list-search").addEventListener("input",event=>{app.search=event.target.value;renderRows()});
+  el("main").querySelectorAll("[data-list-filter]").forEach(filter=>filter.addEventListener("change",event=>{app.filters[event.target.dataset.listFilter]=event.target.value;renderRows()}));
+  renderRows();
  }catch(e){el("main").innerHTML=title(key,m.description)+errorBanner(friendlyError(e))}
 }
 async function navigate(key){
