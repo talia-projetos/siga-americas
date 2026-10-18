@@ -4,10 +4,13 @@ import {groups,modules} from "./modules.js";
 import {iconMarkup} from "./icons.js";
 import {renderDashboardAnalytics} from "./analytics.js";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js";
+import {mountInventoryCheck} from "./resource-check.js";
+import {mountFieldReport} from "./field-forms.js";
+import {mountFieldMonitor} from "./field-monitor.js";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const app={db:null,user:null,role:null,page:"inicio",rows:[],refs:{},editing:null,search:"",filters:{},busy:false,pendingPage:null,prefillActivity:null};
+const app={db:null,user:null,role:null,teamId:null,page:"inicio",rows:[],refs:{},editing:null,search:"",filters:{},busy:false,pendingPage:null,prefillActivity:null};
 const privileged=()=>["admin","gestao","supervisao"].includes(app.role);
 const currency=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n||0));
 const dateBR=s=>s?new Date(String(s).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
@@ -15,7 +18,11 @@ const nameFor=key=>modules[key]?.title||key;
 const allModules=Object.keys(modules);
 const tableOf=key=>modules[key]?.table||key;
 function notify(message,error=false){const root=el("toast");root.innerHTML='<div class="toast-item'+(error?' error':'')+'">'+escapeHTML(message)+'</div>';clearTimeout(notify.timer);notify.timer=setTimeout(()=>root.innerHTML="",4800)}
-function canView(key){return Boolean(app.role && modules[key] && (!modules[key].private||privileged()))}
+function canView(key){
+ if(!app.role||!modules[key])return false;
+ if(app.role==="tecnico")return ["inicio","field_report"].includes(key);
+ return !modules[key].private||privileged();
+}
 function groupFor(key){return groups.find(group=>group.items.includes(key))||null}
 const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR");
 function nav(){
@@ -68,25 +75,27 @@ async function establishSession(){
   return;
  }
  app.user=user;
- const {data,error:membershipError}=await app.db.from("app_memberships").select("role,enabled").eq("user_id",user.id).maybeSingle();
+ const {data,error:membershipError}=await app.db.from("app_memberships").select("role,enabled,team_id").eq("user_id",user.id).maybeSingle();
  if(membershipError){el("main").innerHTML=errorBanner(friendlyError(membershipError));return;}
  app.role=data?.enabled?data.role:null;
+ app.teamId=data?.enabled?data.team_id:null;
  if(!app.role){pending();return;}
  document.body.classList.remove("auth-locked");
  const hash=decodeURIComponent(location.hash.replace("#",""));
  const target=app.pendingPage||hash;
  app.pendingPage=null;
- await navigate(canView(target)?target:"inicio");
+ await navigate(canView(target)?target:(app.role==="tecnico"?"field_report":"inicio"));
 }
 async function logout(){
  app.pendingPage=null;
  if(app.db)await app.db.auth.signOut();
- app.user=null;app.role=null;app.rows=[];app.refs={};
+ app.user=null;app.role=null;app.teamId=null;app.rows=[];app.refs={};
  login();
 }
 async function getCount(table,filter){let query=app.db.from(table).select("id",{count:"exact",head:true});if(filter)for(const [key,val] of Object.entries(filter))query=query.eq(key,val);const {count,error}=await query;if(error)throw error;return count??0;}
 async function dashboard(){
  if(!app.role){login();return;}
+ if(app.role==="tecnico"){await navigate("field_report");return;}
  app.page="inicio";nav();header("inicio");el("main").innerHTML='<div class="loading-page"><div class="loader"></div><p>Consultando os indicadores do contrato...</p></div>';
  try{
   const defs=[["Ordens em aberto","work_orders",{status:"aberta"},"work_orders"],["Obrigações pendentes","contract_obligations",{status:"pendente"},"obligations"],["Veículos cadastrados","vehicles",null,"vehicles"],["Equipamentos inventariados","equipment",null,"equipment"]];
@@ -95,7 +104,7 @@ async function dashboard(){
   const metrics=defs.map((d,i)=>'<div class="metric"><div class="metric-header">'+escapeHTML(d[0])+'<span class="metric-icon">'+iconMarkup(d[3])+'</span></div><strong>'+escapeHTML(numbers[i])+'</strong><small>Dados reais do banco de dados</small></div>').join("");
   const recentItems=(recent||[]).length?'<ul class="info-list">'+recent.map(r=>'<li><strong>'+escapeHTML(r.reference)+'</strong> · '+escapeHTML(r.description.slice(0,110))+' <span class="tag">'+escapeHTML(r.status)+'</span></li>').join("")+'</ul>':'<p style="margin-top:18px">Ainda não há ordens de serviço registradas.</p>';
   el("main").innerHTML=title("inicio","Um único ambiente para os serviços contratados, os recursos da operação e as evidências de conformidade.")+
-    '<div class="metric-grid">'+metrics+'</div><div class="panel-grid"><section class="panel"><div class="panel-inner"><span class="eyebrow">ACESSO RÁPIDO</span><h2>Gestão das frentes operacionais</h2><p>Comece pelo cadastro do contrato, registre os recursos e acompanhe a execução. Os indicadores serão gerados apenas a partir dos registros efetivos.</p><div class="quick-grid">'+["obligations","work_orders","vehicles","equipment","ppe_items","stock_items"].filter(canView).map(key=>'<button data-nav="'+key+'" class="quick-link"><span class="quick-link-label">'+iconMarkup(key)+escapeHTML(nameFor(key))+'</span><span class="quick-link-arrow" aria-hidden="true">'+iconMarkup('arrow')+'</span></button>').join("")+'</div></div></section><section class="panel"><div class="panel-inner"><span class="eyebrow">MOVIMENTAÇÃO RECENTE</span><h2>Ordens de serviço</h2>'+recentItems+'</div></section></div>'+
+    '<div class="metric-grid">'+metrics+'</div><div class="panel-grid"><section class="panel"><div class="panel-inner"><span class="eyebrow">ACESSO RÁPIDO</span><h2>Gestão das frentes operacionais</h2><p>Comece pelo cadastro do contrato, registre os recursos e acompanhe a execução. Os indicadores serão gerados apenas a partir dos registros efetivos.</p><div class="quick-grid">'+["field_monitor","field_report","resource_check","obligations","work_orders","vehicles","equipment","ppe_items","stock_items"].filter(canView).map(key=>'<button data-nav="'+key+'" class="quick-link"><span class="quick-link-label">'+iconMarkup(key)+escapeHTML(nameFor(key))+'</span><span class="quick-link-arrow" aria-hidden="true">'+iconMarkup('arrow')+'</span></button>').join("")+'</div></div></section><section class="panel"><div class="panel-inner"><span class="eyebrow">MOVIMENTAÇÃO RECENTE</span><h2>Ordens de serviço</h2>'+recentItems+'</div></section></div>'+
     '<section id="dashboard-analytics" class="dashboard-analytics" aria-label="Indicadores por área"></section><div class="notice" style="margin-top:22px"><strong>Base documental carregada:</strong> matriz com 73 atividades, catálogo de preços separado, seis postos e rotinas periódicas. <button data-nav="coverage" class="table-action">Analisar cobertura ↗</button> <button data-nav="field_programs" class="table-action">Abrir planejamento de campo ↗</button><div style="margin-top:7px">As seis equipes e as oito frentes operacionais são entidades diferentes. A numeração da especificação técnica também é separada da planilha de preços.</div>';
   const root=el("dashboard-analytics");
   if(root)renderDashboardAnalytics(root,app.db,{privileged:privileged()}).catch(error=>{root.innerHTML=errorBanner("Indicadores indisponíveis: "+friendlyError(error));});
@@ -247,7 +256,18 @@ async function navigate(key){
  app.page=next;app.refs={};app.rows=[];app.search="";location.hash=next;
  if(el("nav-search"))el("nav-search").value="";
  closeSidebar();
- if(next==="inicio")await dashboard();else if(next==="coverage")await coveragePage();else await modulePage(next);
+ if(next==="inicio")await dashboard();
+ else if(next==="coverage")await coveragePage();
+ else if(["field_report","field_monitor","resource_check"].includes(next)){
+   const slot=next==="field_report"?"daily-field-slot":next==="field_monitor"?"monitor-field-slot":"inventory-slot";
+   el("main").innerHTML=title(next,modules[next].description)+'<div id="'+slot+'"></div>';
+   try{
+     if(next==="field_report")await mountFieldReport(el(slot),app.db,{user:app.user,role:app.role,teamId:app.teamId,notify});
+     else if(next==="field_monitor")await mountFieldMonitor(el(slot),app.db,{user:app.user,notify});
+     else await mountInventoryCheck(el(slot),app.db,{notify});
+   }catch(error){el("main").innerHTML=title(next,modules[next].description)+errorBanner(friendlyError(error));}
+ }
+ else await modulePage(next);
 }
 function fieldInput(f,row){
  const value=row?.[f.key]??(f.key==="activity_id"?app.prefillActivity:null)??f.default??"";
@@ -359,7 +379,7 @@ async function init(){
  if(!SUPABASE_URL||!SUPABASE_PUBLISHABLE_KEY){setup();return;}
  try{app.db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false}});
  await establishSession();
- app.db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT"){app.user=null;app.role=null;app.pendingPage=null;login();}});
+ app.db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT"){app.user=null;app.role=null;app.teamId=null;app.pendingPage=null;login();}});
  }catch(e){el("main").innerHTML=errorBanner("Erro ao iniciar o sistema: "+friendlyError(e))}
 }
 init();
