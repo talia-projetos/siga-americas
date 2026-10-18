@@ -3,13 +3,19 @@
 
 Nova fundação de um ERP contratual: gestão de obrigações, equipes, serviços, frota, combustível, ferramentas, manutenção, fardamentos, EPIs, suprimentos e aquisições.
 
-> **Estado: fundação funcional (MVP)**. Interface, cadastros, consultas e edição de registros foram implementados. A utilização depende de configurar o Supabase, executar a migração e autorizar os usuários. Não equivale a um ERP/SAP completo, não inclui medições financeiras homologadas nem integrações com RH.
+> **Estado: implantação orientada à conferência (MVP)**. Interface, autenticação e integração Supabase estão configuradas; cadastros documentais foram importados e precisam de revisão operacional. Não equivale a um ERP/SAP completo e não substitui medição fiscalizada, contabilidade ou RH.
 
 ## Arquitetura
 - **GitHub Pages**: interface estática em HTML, CSS e JavaScript nativos, sem bundler.
 - **Supabase/PostgreSQL**: banco relacional, autenticação e segurança RLS.
-- **Modelo de dados**: 18 tabelas operacionais, tabela de usuários autorizados e auditoria.
-- **Sem dados fictícios**: banco inicial com somente oito frentes operacionais identificadas, distintas das seis equipes reais.
+- **Modelo relacional**: contratos, 73 atividades de matriz interna, 53 itens de preços, obrigações, recursos exigidos, rotinas, colaboradores, frota e indicadores, com auditoria.
+- **Dados iniciais**: 110 colaboradores a conferir, 6 equipes cadastradas, 8 frentes, 6 postos, 21 obrigações, 109 requisitos, 32 programações, 73 oportunidades candidatas e 36 modelos de rotinas. Cadastro não comprova disponibilidade nem execução.
+
+## Acesso e identidade visual
+- Site: https://talia-projetos.github.io/siga-americas/
+- **A tela inicial exige login.** Visitantes não devem acessar menus nem dados operacionais.
+- Identidade visual aprovada publicada em `assets/siga-logo-horizontal.png`, `assets/siga-logo-monochrome.png`, `assets/siga-app-icon.png` e `assets/favicon.png`.
+- A sessão é autenticada com Supabase Auth; perfis e RLS limitam consultas e alterações.
 
 ## Configuração inicial
 1. Abra [Supabase Dashboard](https://supabase.com/dashboard) e crie ou selecione o projeto destinado ao SIGA.
@@ -40,6 +46,18 @@ Nova fundação de um ERP contratual: gestão de obrigações, equipes, serviço
 
 Os perfis são geridos em `app_memberships`. Os módulos de pessoas, custos, EPIs individuais, fardamentos, manutenção, termos e compras são restritos a usuários autorizados. A autenticação não dispensa avaliação da LGPD, do tratamento dos documentos e de acesso institucional.
 
+## Planejamento de campo
+A lógica adotada é `Matriz 73 → Cobertura → Planejamento mensal → Ações programadas → OS → Registros e evidências`. Os 73 itens foram mantidos com códigos próprios, responsáveis PROERG e interlocutores Itaipu a validar. Os 53 itens de preços constituem **catálogo diferente**, sem ligação automática por número.
+
+- `Matriz técnica · 73 atividades`: consulta e conferência do catálogo completo.
+- `Cobertura dos 73 itens`: triagem do que é aplicável, candidato, programado ou executado. *Candidata* não conta para 100% de cobertura validada.
+- `Planejamento mensal de campo`: 8 frentes × 4 competências (out/2026–jan/2027), a validar.
+- `Ações programadas`: 73 oportunidades iniciais a quantificar e qualificar; nenhuma foi marcada como realizada.
+- `Rotinas periódicas dos postos`: 36 templates nos seis postos (diárias, semanais e mensais), sem gerar execução fictícia.
+- `Registro das rotinas de campo`: registros reais, por dia e situação, que devem ser vinculados a evidências quando disponíveis.
+
+Método completo: [`docs/PLANEJAMENTO_CAMPO.md`](docs/PLANEJAMENTO_CAMPO.md).
+
 ## Módulos
 | Grupo | Cadastros e registros |
 | --- | --- |
@@ -66,6 +84,14 @@ Os perfis são geridos em `app_memberships`. Os módulos de pessoas, custos, EPI
 4. Configurar backup periódico fora do plano Free, que não é uma solução de backup empresarial.
 5. Não usar o repositório GitHub público como arquivo de fichas individuais, notas fiscais ou termos assinados.
 6. O repositório foi reconstruído em novo commit **sem excluir o histórico Git**. Arquivos retirados da versão ativa podem permanecer acessíveis em commits anteriores; dados confidenciais exigem saneamento próprio.
+
+## Pendências documentais e de verificação
+- Conferir fonte das 12 funções que vieram repetidas como nomes de empregados.
+- Validar o vínculo entre matriz interna de 73 atividades e catálogo de preços de 53 itens.
+- Validar quantidades reais e condições dos veículos, máquinas e EPIs. **Requisito contratado não significa bem recebido.**
+- Conferir cada uma das 73 oportunidades e registrar somente serviços necessários e autorizados.
+- A relação de 21 obrigações inclui os pontos inicialmente transcritos da especificação; ainda exige revisão sistemática de **todas** as cláusulas do instrumento completo e anexos.
+- Manter em rotina de campo as 36 frequências propostas, verificando aplicabilidade local.
 
 ## Próximas entregas
 Conferência do cadastro contratual contra o instrumento assinado; controle de saldos e mínimos do almoxarifado; fluxo de solicitações e aprovações; geração/assinatura de termos; alertas de manutenção e EPIs; anexos protegidos; relatórios com filtros e exportação paginada; governança das métricas e validação com a direção.
