@@ -14,7 +14,7 @@ Nova fundação de um ERP contratual: gestão de obrigações, equipes, serviço
 ## Acesso e identidade visual
 - Site: https://talia-projetos.github.io/siga-americas/
 - **A tela inicial exige login.** Visitantes não devem acessar menus nem dados operacionais.
-- Identidade visual aprovada publicada em `assets/siga-logo-horizontal.png`, `assets/siga-logo-monochrome.png`, `assets/siga-app-icon.png` e `assets/favicon.png`.
+- Os SVGs originais enviados foram restaurados em `assets/siga-logo-original-1.svg`, `assets/siga-marca-original-2.svg` e `assets/siga-logo-original-3.svg` (marca do login, símbolo e favicon).
 - A sessão é autenticada com Supabase Auth; perfis e RLS limitam consultas e alterações.
 
 ## Configuração inicial
@@ -112,6 +112,13 @@ O status `pendente` indica **verificação em aberto** e não comprova descumpri
 - Conferir cada uma das 73 oportunidades e registrar somente serviços necessários e autorizados.
 - A relação de 21 obrigações inclui os pontos inicialmente transcritos da especificação; ainda exige revisão sistemática de **todas** as cláusulas do instrumento completo e anexos.
 - Manter em rotina de campo as 36 frequências propostas, verificando aplicabilidade local.
+
+## Rotina diária e conferência de quantitativos
+- Em **Campo e execução → Registro diário de campo**, o técnico registra presença, atividades da matriz 73, horas, quantidades e evidências; a supervisão aceita ou devolve para ajuste.
+- Em **Campo e execução → Acompanhamento das equipes**, a gestão acompanha relatórios por data, equipe, frente, participantes e impedimentos.
+- Em **Patrimônio e materiais → Conferência de quantitativos**, existem listas pré-cadastradas de ferramentas (Tabela 05), veículos (item 6.1) e equipamentos (item 6.2). Os quantitativos contratuais permanecem bloqueados para edição; informe apenas a quantidade encontrada.
+- O perfil `tecnico` deve ser atribuído pelo administrador a cada usuário, **com a equipe correspondente**. Perfis, autenticação e RLS restringem o acesso às informações de trabalho da própria equipe.
+- Guia de implantação: [Rotina de campo e inventário](docs/ROTINA_CAMPO_E_INVENTARIO.md).
 
 ## Próximas entregas
 Conferência do cadastro contratual contra o instrumento assinado; controle de saldos e mínimos do almoxarifado; fluxo de solicitações e aprovações; geração/assinatura de termos; alertas de manutenção e EPIs; anexos protegidos; relatórios com filtros e exportação paginada; governança das métricas e validação com a direção.
