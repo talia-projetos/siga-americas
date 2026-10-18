@@ -5,14 +5,17 @@ const options=(...values)=>values.map(x=>({value:x,label:x.replaceAll("_"," ")})
 // Organização apenas da navegação. Os nomes e IDs dos módulos permanecem idênticos.
 export const groups=[
   {label:"PLANEJAMENTO",icon:"calendar",items:["coverage","field_programs","field_plan_items"]},
-  {label:"CAMPO E EXECUÇÃO",icon:"field",items:["work_orders","field_routine_templates","field_routine_records"]},
+  {label:"CAMPO E EXECUÇÃO",icon:"field",items:["field_report","field_monitor","work_orders","field_routine_templates","field_routine_records"]},
   {label:"CONTRATO E OBRIGAÇÕES",icon:"contract",items:["contracts","obligations","activity_catalog","service_posts","areas","teams"]},
   {label:"FINANCEIRO",icon:"assets",items:["contract_items","fuel_logs","maintenance","purchases"]},
-  {label:"PATRIMÔNIO E MATERIAIS",icon:"supplies",items:["contract_resource_requirements","vehicles","equipment","responsibility_terms","stock_items","stock_movements"]},
+  {label:"PATRIMÔNIO E MATERIAIS",icon:"supplies",items:["resource_check","contract_resource_requirements","vehicles","equipment","responsibility_terms","stock_items","stock_movements"]},
   {label:"PESSOAS E SEGURANÇA",icon:"people",items:["employees","ppe_items","ppe_deliveries","uniform_deliveries"]}
 ];
 export const modules={
   inicio:{title:"Visão geral",icon:"◫"},
+  field_report:{title:"Registro diário de campo",icon:"▤",virtual:true,description:"Formulário dos técnicos: equipe, frente, presença dos trabalhadores e execução das atividades."},
+  field_monitor:{title:"Acompanhamento das equipes",icon:"◫",virtual:true,description:"Painel da supervisão para acompanhar, validar e devolver relatórios de campo."},
+  resource_check:{title:"Conferência de quantitativos",icon:"▧",virtual:true,description:"Tabela 05, veículos e equipamentos previstos: informe apenas a quantidade efetivamente encontrada."},
   coverage:{title:"Cobertura",icon:"◉",virtual:true,description:"Exploração técnica de 73 atividades: identificar oportunidades e distinguir programação, execução e inviabilidade."},
   field_programs:{title:"Planejamento mensal de campo",icon:"▦",table:"field_programs",description:"Programação por mês e frente operacional, com alternativas climáticas. Não representa autorização automática de execução.",columns:["period_month","area_id","main_activity","climate_context","status"],fields:[
    ref("area_id","Frente operacional","operational_areas","code_name",{required:true}),ref("team_id","Equipe real","teams","name"),f("period_month","Competência","date",{required:true}),f("main_activity","Atividade principal","textarea",{required:true,wide:true}),f("safe_alternative","Alternativa de campo diante de impedimento","textarea",{wide:true}),f("climate_context","Condição climática e risco","textarea",{wide:true}),f("status","Situação","select",{options:options("a_validar","aprovado","em_execucao","concluido","suspenso"),default:"a_validar"}),f("notes","Observações e prioridades","textarea",{wide:true})]},
