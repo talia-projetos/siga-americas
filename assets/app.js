@@ -74,12 +74,12 @@ async function dashboard(){
   const recentItems=(recent||[]).length?'<ul class="info-list">'+recent.map(r=>'<li><strong>'+escapeHTML(r.reference)+'</strong> · '+escapeHTML(r.description.slice(0,110))+' <span class="tag">'+escapeHTML(r.status)+'</span></li>').join("")+'</ul>':'<p style="margin-top:18px">Ainda não há ordens de serviço registradas.</p>';
   el("main").innerHTML=title("inicio","Um único ambiente para os serviços contratados, os recursos da operação e as evidências de conformidade.")+
     '<div class="metric-grid">'+metrics+'</div><div class="panel-grid"><section class="panel"><div class="panel-inner"><span class="eyebrow">ACESSO RÁPIDO</span><h2>Gestão das frentes operacionais</h2><p>Comece pelo cadastro do contrato, registre os recursos e acompanhe a execução. Os indicadores serão gerados apenas a partir dos registros efetivos.</p><div class="quick-grid">'+["obligations","work_orders","vehicles","equipment","ppe_items","stock_items"].filter(canView).map(key=>'<button data-nav="'+key+'" class="quick-link">'+escapeHTML(nameFor(key))+' <span aria-hidden="true">↗</span></button>').join("")+'</div></div></section><section class="panel"><div class="panel-inner"><span class="eyebrow">MOVIMENTAÇÃO RECENTE</span><h2>Ordens de serviço</h2>'+recentItems+'</div></section></div>'+
-    '<div class="notice" style="margin-top:22px">As seis equipes e as oito frentes operacionais são entidades diferentes. A numeração da especificação técnica também é separada da planilha de preços.</div>';
+    '<div class="notice" style="margin-top:22px"><strong>Base documental carregada:</strong> matriz com 73 atividades, catálogo de preços separado, seis postos e rotinas periódicas. <button data-nav="coverage" class="table-action">Analisar cobertura ↗</button> <button data-nav="field_programs" class="table-action">Abrir planejamento de campo ↗</button><div style="margin-top:7px">As seis equipes e as oito frentes operacionais são entidades diferentes. A numeração da especificação técnica também é separada da planilha de preços.</div>';
  }catch(e){el("main").innerHTML=title("inicio","Visão geral") + errorBanner(friendlyError(e))}
 }
 async function ensureRefs(key){
  const mod=modules[key];if(!mod?.fields)return;
- const tables=[...new Set([...mod.fields.filter(f=>f.type==="ref").map(f=>f.table),...(key==="field_plan_items"?["operational_areas"]:[])])];
+ const tables=[...new Set([...mod.fields.filter(f=>f.type==="ref").map(f=>f.table),...(key==="field_plan_items"?["operational_areas"]:[]),...(key==="field_routine_records"?["service_posts"]:[])])];
  const fetches=tables.filter(table=>!app.refs[table]).map(async table=>{
   const {data,error}=await app.db.from(table).select("*").order("created_at",{ascending:false}).limit(500);
   if(error)throw error;app.refs[table]=data||[];
@@ -91,6 +91,7 @@ function optionLabel(table,id,display){
  const x=(app.refs[table]||[]).find(v=>v.id===id);
  if(!x)return "Registro vinculado";
  if(display==="code_name")return [x.code,x.name].filter(Boolean).join(" · ");
+ if(display==="routine_label"){const p=(app.refs.service_posts||[]).find(v=>v.id===x.service_post_id);return [p?.code,p?.name,x.title].filter(Boolean).join(" · ");}
  if(display==="program_label"){
   const a=(app.refs.operational_areas||[]).find(o=>o.id===x.area_id);
   const label=a?[a.code,a.name].filter(Boolean).join(" · "):"Frente a consultar";
@@ -135,21 +136,22 @@ async function coveragePage(){
    const status=prio.find(s=>list.some(x=>x.action_status===s))||"sem_programacao";
    return {...activity,status,entries:list.length};
   });
-  const covered=records.filter(x=>x.entries>0).length;
+  const covered=records.filter(x=>["programada","em_execucao","executada","inviavel","nao_aplicavel"].includes(x.status)).length;
+  const candidates=records.filter(x=>x.status==="candidata"||x.status==="a_validar").length;
   const scheduled=records.filter(x=>["programada","em_execucao","executada"].includes(x.status)).length;
   const completed=records.filter(x=>x.status==="executada").length;
   const label=x=>({sem_programacao:"Sem avaliação",candidata:"Oportunidade",a_validar:"A validar",programada:"Programada",em_execucao:"Em execução",executada:"Executada",inviavel:"Inviável",nao_aplicavel:"Não aplicável"})[x]||x;
   const pct=records.length?Math.round(covered/records.length*100):0;
   const cards=[
-   ["Atividades no catálogo",records.length,"Matriz de 73 itens"],
-   ["Com avaliação registrada",covered,pct+"% da matriz triada"],
-   ["Programadas ou executadas",scheduled,"Atividades distintas"],
+   ["Atividades no catálogo",records.length,candidates+" oportunidades aguardam análise"],
+   ["Com decisão registrada",covered,pct+"% da matriz triada"],
+   ["Em programação / execução",scheduled,"Atividades distintas"],
    ["Com execução registrada",completed,"Depende de evidência validada"]
   ].map(d=>'<div class="metric"><div class="metric-header">'+d[0]+'<span class="metric-icon">◉</span></div><strong>'+d[1]+'</strong><small>'+d[2]+'</small></div>').join("");
-  el("main").innerHTML=title("coverage","O objetivo é avaliar o aproveitamento tecnicamente aplicável de cada atividade, não executar indiscriminadamente todos os itens.",
+  el("main").innerHTML=title("coverage","O objetivo é analisar o aproveitamento tecnicamente aplicável de cada atividade, sem forçar execução de serviços desnecessários.",
     '<button class="btn btn-secondary" data-nav="field_programs">Planejamento mensal ↗</button><button class="btn btn-primary" data-nav="field_plan_items">Ações programadas ↗</button>')+
     '<div class="metric-grid">'+cards+'</div>'+
-    '<div class="notice"><strong>Critério de 100% de cobertura:</strong> todos os 73 itens avaliados quanto à aplicabilidade, oportunidade, segurança, recursos e programação. A execução depende de necessidade real, autorização, medição contratual e condições técnicas. “Não aplicável” exige justificativa e não conta como execução.</div>'+
+    '<div class="notice"><strong>Critério de 100% de cobertura:</strong> todos os 73 itens analisados e classificados quanto à aplicabilidade, oportunidade, segurança, recursos e programação. Oportunidades candidatas não contam como itens validados. A execução depende de necessidade real, autorização, medição contratual e condições técnicas. “Não aplicável” exige justificativa e não conta como execução.</div>'+
     '<section class="table-panel"><div class="table-head"><div><h2>Diagnóstico das 73 atividades</h2><span>Códigos da matriz técnica interna, distintos da planilha de preços</span></div><div class="table-toolbar"><input type="search" id="coverage-search" class="searchbox" placeholder="Buscar atividade ou responsável..." aria-label="Pesquisar catálogo"></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Item</th><th>Atividade</th><th>PROERG</th><th>Itaipu</th><th>Planejamento</th><th>Ação</th></tr></thead><tbody id="coverage-body"></tbody></table></div></section>';
   const tbody=el("coverage-body");
   const draw=(term="")=>{
