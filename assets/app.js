@@ -2,6 +2,7 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
 import {groups,modules} from "./modules.js";
 import {iconMarkup} from "./icons.js";
+import {renderDashboardAnalytics} from "./analytics.js";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -94,7 +95,9 @@ async function dashboard(){
   const recentItems=(recent||[]).length?'<ul class="info-list">'+recent.map(r=>'<li><strong>'+escapeHTML(r.reference)+'</strong> · '+escapeHTML(r.description.slice(0,110))+' <span class="tag">'+escapeHTML(r.status)+'</span></li>').join("")+'</ul>':'<p style="margin-top:18px">Ainda não há ordens de serviço registradas.</p>';
   el("main").innerHTML=title("inicio","Um único ambiente para os serviços contratados, os recursos da operação e as evidências de conformidade.")+
     '<div class="metric-grid">'+metrics+'</div><div class="panel-grid"><section class="panel"><div class="panel-inner"><span class="eyebrow">ACESSO RÁPIDO</span><h2>Gestão das frentes operacionais</h2><p>Comece pelo cadastro do contrato, registre os recursos e acompanhe a execução. Os indicadores serão gerados apenas a partir dos registros efetivos.</p><div class="quick-grid">'+["obligations","work_orders","vehicles","equipment","ppe_items","stock_items"].filter(canView).map(key=>'<button data-nav="'+key+'" class="quick-link"><span class="quick-link-label">'+iconMarkup(key)+escapeHTML(nameFor(key))+'</span><span class="quick-link-arrow" aria-hidden="true">'+iconMarkup('arrow')+'</span></button>').join("")+'</div></div></section><section class="panel"><div class="panel-inner"><span class="eyebrow">MOVIMENTAÇÃO RECENTE</span><h2>Ordens de serviço</h2>'+recentItems+'</div></section></div>'+
-    '<div class="notice" style="margin-top:22px"><strong>Base documental carregada:</strong> matriz com 73 atividades, catálogo de preços separado, seis postos e rotinas periódicas. <button data-nav="coverage" class="table-action">Analisar cobertura ↗</button> <button data-nav="field_programs" class="table-action">Abrir planejamento de campo ↗</button><div style="margin-top:7px">As seis equipes e as oito frentes operacionais são entidades diferentes. A numeração da especificação técnica também é separada da planilha de preços.</div>';
+    '<section id="dashboard-analytics" class="dashboard-analytics" aria-label="Indicadores por área"></section><div class="notice" style="margin-top:22px"><strong>Base documental carregada:</strong> matriz com 73 atividades, catálogo de preços separado, seis postos e rotinas periódicas. <button data-nav="coverage" class="table-action">Analisar cobertura ↗</button> <button data-nav="field_programs" class="table-action">Abrir planejamento de campo ↗</button><div style="margin-top:7px">As seis equipes e as oito frentes operacionais são entidades diferentes. A numeração da especificação técnica também é separada da planilha de preços.</div>';
+  const root=el("dashboard-analytics");
+  if(root)renderDashboardAnalytics(root,app.db,{privileged:privileged()}).catch(error=>{root.innerHTML=errorBanner("Indicadores indisponíveis: "+friendlyError(error));});
  }catch(e){el("main").innerHTML=title("inicio","Visão geral") + errorBanner(friendlyError(e))}
 }
 async function ensureRefs(key){
