@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T05:08:10.707Z",
+  "generated_at": "2026-10-18T05:09:18.638Z",
   "source": "PROERG",
   "script_url": "https://script.google.com/macros/s/AKfycby2TiQTR4Ripo2w8RIC9tjniCv2LJc14OHoUyQMLbAN91_XydoxUg4zl4kt6xh9IVpS/exec",
   "teams": [
@@ -34346,8 +34346,8 @@
         "data": "2026-10-21",
         "chuva_mm": 4.1,
         "prob_chuva": 75,
-        "tmax": 25.2,
-        "tmin": 17.4,
+        "tmax": 25.1,
+        "tmin": 17.5,
         "codigo": 53,
         "condicao": "Chuvisco"
       }
