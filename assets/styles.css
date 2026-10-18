@@ -123,3 +123,10 @@
 @media(prefers-reduced-motion:reduce){
  .nav-chevron,.nav-home,.nav-section-toggle,.nav-link,.sidebar,.sidebar-overlay,.metric,.btn{transition:none!important}
 }
+
+/* Utilização das marcas vetoriais originais enviadas pela gestão */
+.brand-mark{background:#f2faf3;padding:3px;box-shadow:0 4px 17px rgba(0,0,0,.16)}
+.brand-mark img{object-fit:contain}
+.auth-brand{height:154px;overflow:hidden;position:relative;margin-bottom:23px;padding-bottom:0;justify-content:center}
+.auth-logo{height:310px!important;max-height:none!important;width:370px!important;max-width:none!important;object-fit:contain;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.07)}
+@media(max-width:510px){.auth-logo{width:330px!important;height:292px!important}.auth-brand{height:138px}}
