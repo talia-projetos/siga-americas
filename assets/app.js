@@ -3,10 +3,11 @@ import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
 import {groups,modules} from "./modules.js";
 import {iconMarkup} from "./icons.js";
 import {renderDashboardAnalytics} from "./analytics.js";
+import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const app={db:null,user:null,role:null,page:"inicio",rows:[],refs:{},editing:null,search:"",busy:false,pendingPage:null,prefillActivity:null};
+const app={db:null,user:null,role:null,page:"inicio",rows:[],refs:{},editing:null,search:"",filters:{},busy:false,pendingPage:null,prefillActivity:null};
 const privileged=()=>["admin","gestao","supervisao"].includes(app.role);
 const currency=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n||0));
 const dateBR=s=>s?new Date(String(s).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
@@ -104,7 +105,9 @@ async function ensureRefs(key){
  const mod=modules[key];if(!mod?.fields)return;
  const tables=[...new Set([...mod.fields.filter(f=>f.type==="ref").map(f=>f.table),...(key==="field_plan_items"?["operational_areas"]:[]),...(key==="field_routine_records"?["service_posts"]:[])])];
  const fetches=tables.filter(table=>!app.refs[table]).map(async table=>{
-  const {data,error}=await app.db.from(table).select("*").order("created_at",{ascending:false}).limit(500);
+  let lookup=app.db.from(table).select("*").order("created_at",{ascending:false});
+  if(table==="contract_items")lookup=lookup.eq("source_type","precos");
+  const {data,error}=await lookup.limit(500);
   if(error)throw error;app.refs[table]=data||[];
  });
  await Promise.all(fetches);
@@ -128,8 +131,12 @@ function fieldValue(key,value){
  if(f?.type==="ref")return escapeHTML(optionLabel(f.table,value,f.display));
  if(f?.type==="boolean")return value?'<span class="tag">Sim</span>':'<span class="tag gray">Não</span>';
  if(f?.type==="date")return escapeHTML(dateBR(value));
- if(["cost","total_cost","estimated_cost"].includes(key))return escapeHTML(currency(value));
- if(["status","priority","condition"].includes(key)){const v=String(value),style=/imped|pendente|critica|indisponivel/.test(v)?"warn":/cancelada|inutilizavel/.test(v)?"red":"gray";return '<span class="tag '+style+'">'+escapeHTML(v.replaceAll("_"," "))+'</span>'}
+ if(["cost","total_cost","estimated_cost","unit_price","estimated_total"].includes(key))return escapeHTML(currency(value));
+ if(["estimated_quantity","required_quantity","observed_quantity"].includes(key))return escapeHTML(new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(value)));
+ if(["party_responsible","provider_party"].includes(key))return '<span class="tag">'+escapeHTML(partyLabels[value]||value)+'</span>';
+ if(key==="domain")return escapeHTML(domainLabels[value]||value);
+ if(key==="category")return escapeHTML(categoryLabels[value]||String(value).replaceAll("_"," "));
+ if(["status","priority","condition","validation_status","review_status","action_status"].includes(key)){const v=String(value),style=/imped|pendente|critica|indisponivel/.test(v)?"warn":/cancelada|inutilizavel/.test(v)?"red":"gray";return '<span class="tag '+style+'">'+escapeHTML(v.replaceAll("_"," "))+'</span>'}
  return '<span class="truncate" title="'+escapeHTML(value)+'">'+escapeHTML(value)+'</span>';
 }
 function filteredRows(){
@@ -256,6 +263,7 @@ async function saveRecord(e){
   payload[f.key]=f.type==="number"?Number(value):value;
   if(f.type==="number"&&!Number.isFinite(payload[f.key])){notify("Valor numérico inválido: "+f.label,true);return;}
  }
+ if(app.page==="contract_items"&&payload.source_type!=="precos"){notify("Use exclusivamente a planilha de preços neste módulo.",true);return;}
  if(["responsibility_terms","maintenance"].includes(app.page)){
   const a=Boolean(payload.vehicle_id),b=Boolean(payload.equipment_id);
   if(a===b){notify("Selecione somente um: veículo OU equipamento.",true);return;}
