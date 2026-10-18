@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T02:04:10.545Z",
+  "generated_at": "2026-10-18T02:04:44.811Z",
   "source": "PROERG",
   "script_url": "https://script.google.com/macros/s/AKfycby2TiQTR4Ripo2w8RIC9tjniCv2LJc14OHoUyQMLbAN91_XydoxUg4zl4kt6xh9IVpS/exec",
   "teams": [
@@ -34320,7 +34320,7 @@
         "chuva_mm": 0,
         "prob_chuva": 10,
         "tmax": 21.5,
-        "tmin": 15.5,
+        "tmin": 15.6,
         "codigo": 3,
         "condicao": "Nublado"
       },
