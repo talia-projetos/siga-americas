@@ -17,15 +17,17 @@ function optList(items,kind,chosen="",empty="Selecione…"){
 export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Preparando formulário de campo…</p></div>';
  const isTech=role==="tecnico";
- let teams,areas,activities,workers,orders,reports;
+ let teams,areas,activities,workers,orders,reports,programs,planItems;
  try{
-  [teams,areas,activities,workers,orders,reports]=await Promise.all([
+  [teams,areas,activities,workers,orders,reports,programs,planItems]=await Promise.all([
    list(db,"teams","id,code,name,active"),
    list(db,"operational_areas","id,code,name,active"),
    list(db,"activity_catalog","id,code,name"),
    list(db,"employees","id,name,team_id,active"),
    list(db,"work_orders","id,reference,team_id,area_id,status",400),
-   list(db,"field_daily_reports","id,team_id,area_id,report_date,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",200)
+   list(db,"field_daily_reports","id,team_id,area_id,report_date,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",200),
+   list(db,"field_programs","id,area_id,period_month,status",150),
+   list(db,"field_plan_items","id,program_id,activity_id",500)
   ]);
  }catch(e){root.innerHTML='<div class="notice danger">Falha ao consultar dados do formulário: '+esc(e.message)+'</div>';return;}
  activities.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
@@ -205,8 +207,10 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
     if(created.error)throw created.error;
     draftId=created.data.id;
    }
+   const program=programs.find(p=>p.area_id===f.area_id&&String(p.period_month).slice(0,7)===f.report_date.slice(0,7));
    const payload=items.map(x=>({
      id:crypto.randomUUID(),report_id:draftId,activity_id:x.activity_id,work_order_id:x.work_order_id||null,
+     field_plan_item_id:program?(planItems.find(p=>p.program_id===program.id&&p.activity_id===x.activity_id)?.id||null):null,
      result:x.result,location:x.location||null,quantity:x.quantity===""?null:Number(x.quantity),
      unit:x.unit||null,hours_worked:x.hours_worked===""?null:Number(x.hours_worked),
      notes:x.notes||null,evidence_ref:x.evidence_ref||null
