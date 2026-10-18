@@ -259,6 +259,7 @@ async function navigate(key){
  if(next==="inicio")await dashboard();
  else if(next==="coverage")await coveragePage();
  else if(["field_report","field_monitor","resource_check"].includes(next)){
+   nav();header(next);
    const slot=next==="field_report"?"daily-field-slot":next==="field_monitor"?"monitor-field-slot":"inventory-slot";
    el("main").innerHTML=title(next,modules[next].description)+'<div id="'+slot+'"></div>';
    try{
