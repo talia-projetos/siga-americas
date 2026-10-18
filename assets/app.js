@@ -4,7 +4,7 @@ import {groups,modules} from "./modules.js";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const app={db:null,user:null,role:null,page:"inicio",rows:[],refs:{},editing:null,search:"",busy:false,pendingPage:null};
+const app={db:null,user:null,role:null,page:"inicio",rows:[],refs:{},editing:null,search:"",busy:false,pendingPage:null,prefillActivity:null};
 const privileged=()=>["admin","gestao","supervisao"].includes(app.role);
 const currency=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n||0));
 const dateBR=s=>s?new Date(String(s).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
@@ -79,14 +79,25 @@ async function dashboard(){
 }
 async function ensureRefs(key){
  const mod=modules[key];if(!mod?.fields)return;
- const tables=[...new Set(mod.fields.filter(f=>f.type==="ref").map(f=>f.table))];
+ const tables=[...new Set([...mod.fields.filter(f=>f.type==="ref").map(f=>f.table),...(key==="field_plan_items"?["operational_areas"]:[])])];
  const fetches=tables.filter(table=>!app.refs[table]).map(async table=>{
   const {data,error}=await app.db.from(table).select("*").order("created_at",{ascending:false}).limit(500);
   if(error)throw error;app.refs[table]=data||[];
  });
  await Promise.all(fetches);
 }
-function optionLabel(table,id,display){if(!id)return "—";const x=(app.refs[table]||[]).find(v=>v.id===id);if(!x)return "Registro vinculado";if(display==="code_name")return [x.code,x.name].filter(Boolean).join(" · ");return String(x[display]??x.name??x.code??x.description??"Registro");}
+function optionLabel(table,id,display){
+ if(!id)return "—";
+ const x=(app.refs[table]||[]).find(v=>v.id===id);
+ if(!x)return "Registro vinculado";
+ if(display==="code_name")return [x.code,x.name].filter(Boolean).join(" · ");
+ if(display==="program_label"){
+  const a=(app.refs.operational_areas||[]).find(o=>o.id===x.area_id);
+  const label=a?[a.code,a.name].filter(Boolean).join(" · "):"Frente a consultar";
+  return String(x.period_month||"").slice(0,7)+" · "+label;
+ }
+ return String(x[display]??x.name??x.code??x.description??"Registro");
+}
 function fieldValue(key,value){
  if(value===null||value===undefined||value==="")return '<span class="muted">—</span>';
  const f=modules[app.page]?.fields?.find(x=>x.key===key);
@@ -105,6 +116,48 @@ function renderRows(){
  const table=el("table-body");if(!table)return;const m=modules[app.page],rows=filteredRows();
  if(!rows.length){table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'"><div class="empty-state"><div class="empty-symbol">◌</div><strong>'+ (app.search?"Nenhum resultado encontrado":"Nenhum registro cadastrado")+'</strong>'+(app.search?"Altere os termos da pesquisa.":"Use o botão Novo registro para começar.")+'</div></td></tr>';return;}
  table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>'<td>'+fieldValue(key,row[key])+'</td>').join("")+'<td>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">Editar</button>':'<span class="muted">Leitura</span>')+'</td></tr>').join("");
+}
+async function coveragePage(){
+ app.page="coverage";app.search="";nav();header("coverage");
+ el("main").innerHTML=title("coverage",modules.coverage.description)+'<div class="loading-page"><div class="loader"></div><p>Calculando cobertura das 73 atividades...</p></div>';
+ try{
+  const [a,b]=await Promise.all([
+   app.db.from("activity_catalog").select("id,code,name,technical_lead,itaipu_technical_contact,contact_validation").order("code"),
+   app.db.from("field_plan_items").select("activity_id,action_status,planned_quantity,executed_quantity").limit(1000)
+  ]);
+  if(a.error)throw a.error;if(b.error)throw b.error;
+  const sorted=(a.data||[]).sort((x,y)=>Number(x.code.split(".")[1])-Number(y.code.split(".")[1]));
+  const mapped=new Map();
+  for(const item of b.data||[]){if(!item.activity_id)continue;const group=mapped.get(item.activity_id)||[];group.push(item);mapped.set(item.activity_id,group);}
+  const prio=["executada","em_execucao","programada","a_validar","candidata","inviavel","nao_aplicavel"];
+  const records=sorted.map(activity=>{
+   const list=mapped.get(activity.id)||[];
+   const status=prio.find(s=>list.some(x=>x.action_status===s))||"sem_programacao";
+   return {...activity,status,entries:list.length};
+  });
+  const covered=records.filter(x=>x.entries>0).length;
+  const scheduled=records.filter(x=>["programada","em_execucao","executada"].includes(x.status)).length;
+  const completed=records.filter(x=>x.status==="executada").length;
+  const label=x=>({sem_programacao:"Sem avaliação",candidata:"Oportunidade",a_validar:"A validar",programada:"Programada",em_execucao:"Em execução",executada:"Executada",inviavel:"Inviável",nao_aplicavel:"Não aplicável"})[x]||x;
+  const pct=records.length?Math.round(covered/records.length*100):0;
+  const cards=[
+   ["Atividades no catálogo",records.length,"Matriz de 73 itens"],
+   ["Com avaliação registrada",covered,pct+"% da matriz triada"],
+   ["Programadas ou executadas",scheduled,"Atividades distintas"],
+   ["Com execução registrada",completed,"Depende de evidência validada"]
+  ].map(d=>'<div class="metric"><div class="metric-header">'+d[0]+'<span class="metric-icon">◉</span></div><strong>'+d[1]+'</strong><small>'+d[2]+'</small></div>').join("");
+  el("main").innerHTML=title("coverage","O objetivo é avaliar o aproveitamento tecnicamente aplicável de cada atividade, não executar indiscriminadamente todos os itens.",
+    '<button class="btn btn-secondary" data-nav="field_programs">Planejamento mensal ↗</button><button class="btn btn-primary" data-nav="field_plan_items">Ações programadas ↗</button>')+
+    '<div class="metric-grid">'+cards+'</div>'+
+    '<div class="notice"><strong>Critério de 100% de cobertura:</strong> todos os 73 itens avaliados quanto à aplicabilidade, oportunidade, segurança, recursos e programação. A execução depende de necessidade real, autorização, medição contratual e condições técnicas. “Não aplicável” exige justificativa e não conta como execução.</div>'+
+    '<section class="table-panel"><div class="table-head"><div><h2>Diagnóstico das 73 atividades</h2><span>Códigos da matriz técnica interna, distintos da planilha de preços</span></div><div class="table-toolbar"><input type="search" id="coverage-search" class="searchbox" placeholder="Buscar atividade ou responsável..." aria-label="Pesquisar catálogo"></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Item</th><th>Atividade</th><th>PROERG</th><th>Itaipu</th><th>Planejamento</th><th>Ação</th></tr></thead><tbody id="coverage-body"></tbody></table></div></section>';
+  const tbody=el("coverage-body");
+  const draw=(term="")=>{
+   const found=records.filter(x=>[x.code,x.name,x.technical_lead,x.itaipu_technical_contact].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(term.toLocaleLowerCase("pt-BR"))));
+   tbody.innerHTML=found.length?found.map(r=>'<tr><td><strong>'+escapeHTML(r.code)+'</strong></td><td><span class="truncate" title="'+escapeHTML(r.name)+'">'+escapeHTML(r.name)+'</span></td><td>'+escapeHTML(r.technical_lead||"A confirmar")+'</td><td>'+escapeHTML(r.itaipu_technical_contact||"A confirmar")+'</td><td><span class="tag '+(r.status==="sem_programacao"?"warn":"")+'">'+label(r.status)+'</span></td><td><button class="table-action" data-action="planActivity" data-activity-id="'+escapeHTML(r.id)+'">Programar ↗</button></td></tr>').join(""):'<tr><td colspan="6"><div class="empty-state">Nenhuma atividade localizada.</div></td></tr>';
+  };
+  draw();el("coverage-search").addEventListener("input",e=>draw(e.target.value));
+ }catch(e){el("main").innerHTML=title("coverage","Matriz de cobertura")+errorBanner(friendlyError(e))}
 }
 async function modulePage(key){
  app.page=key;app.search="";nav();header(key);const m=modules[key];
@@ -134,10 +187,10 @@ async function navigate(key){
  const next=canView(requested)?requested:"inicio";
  app.page=next;app.refs={};app.rows=[];app.search="";location.hash=next;
  el("sidebar").classList.remove("open");
- if(next==="inicio")await dashboard();else await modulePage(next);
+ if(next==="inicio")await dashboard();else if(next==="coverage")await coveragePage();else await modulePage(next);
 }
 function fieldInput(f,row){
- const value=row?.[f.key]??f.default??"";
+ const value=row?.[f.key]??(f.key==="activity_id"?app.prefillActivity:null)??f.default??"";
  const required=f.required?" required":"";
  const htmlId="fld-"+f.key;
  const attr=' id="'+htmlId+'" name="'+escapeHTML(f.key)+'"'+required;
@@ -185,7 +238,7 @@ async function saveRecord(e){
  try{
   const query=app.editing?app.db.from(m.table).update(payload).eq("id",app.editing):app.db.from(m.table).insert(payload);
   const {error}=await query.select("id").single();if(error)throw error;
-  closeForm();notify("Registro salvo com sucesso.");app.refs={};await modulePage(app.page);
+  closeForm();app.prefillActivity=null;notify("Registro salvo com sucesso.");app.refs={};await modulePage(app.page);
  }catch(e){notify(friendlyError(e),true)}finally{app.busy=false;btn.disabled=false;btn.textContent="Salvar registro";}
 }
 function exportCSV(){
@@ -201,6 +254,7 @@ document.addEventListener("click",async e=>{
  const action=e.target.closest("[data-action]")?.dataset.action;
  if(action==="create")await openForm();
  if(action==="export")exportCSV();
+ if(action==="planActivity"){const id=e.target.closest("[data-activity-id]")?.dataset.activityId;if(id){app.prefillActivity=id;await navigate("field_plan_items");await openForm();}}
  if(action==="logout")await logout();
  if(action==="login"){app.pendingPage=null;login()}
  
