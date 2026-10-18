@@ -21,6 +21,7 @@ function notify(message,error=false){const root=el("toast");root.innerHTML='<div
 function canView(key){
  if(!app.role||!modules[key])return false;
  if(app.role==="tecnico")return ["inicio","field_report"].includes(key);
+ if(["field_report","field_monitor","resource_check"].includes(key))return privileged();
  return !modules[key].private||privileged();
 }
 function groupFor(key){return groups.find(group=>group.items.includes(key))||null}
