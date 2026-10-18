@@ -2,11 +2,14 @@
 const f=(key,label,type="text",extra={})=>({key,label,type,...extra});
 const ref=(key,label,table,display="name",extra={})=>f(key,label,"ref",{table,display,...extra});
 const options=(...values)=>values.map(x=>({value:x,label:x.replaceAll("_"," ")}));
+// Organização apenas da navegação. Os nomes e IDs dos módulos permanecem idênticos.
 export const groups=[
-  {label:"PLANEJAMENTO",items:["inicio","coverage","field_programs","field_plan_items","field_routine_templates","field_routine_records","activity_catalog","work_orders","service_posts","contracts","contract_items","obligations","contract_resource_requirements","areas","teams"]},
-  {label:"PESSOAS E SEGURANÇA",items:["employees","ppe_items","ppe_deliveries","uniform_deliveries"]},
-  {label:"RECURSOS E CUSTOS",items:["vehicles","fuel_logs","equipment","responsibility_terms","maintenance"]},
-  {label:"SUPRIMENTOS",items:["stock_items","stock_movements","purchases"]}
+  {label:"PLANEJAMENTO",icon:"calendar",items:["coverage","field_programs","field_plan_items"]},
+  {label:"CAMPO E EXECUÇÃO",icon:"field",items:["work_orders","field_routine_templates","field_routine_records"]},
+  {label:"GESTÃO CONTRATUAL",icon:"contract",items:["contracts","contract_items","activity_catalog","obligations","contract_resource_requirements","service_posts","areas","teams"]},
+  {label:"PESSOAS E SEGURANÇA",icon:"people",items:["employees","ppe_items","ppe_deliveries","uniform_deliveries"]},
+  {label:"RECURSOS E CUSTOS",icon:"assets",items:["vehicles","fuel_logs","equipment","responsibility_terms","maintenance"]},
+  {label:"SUPRIMENTOS",icon:"supplies",items:["stock_items","stock_movements","purchases"]}
 ];
 export const modules={
   inicio:{title:"Visão geral",icon:"◫"},
