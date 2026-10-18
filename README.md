@@ -58,6 +58,26 @@ A lógica adotada é `Matriz 73 → Cobertura → Planejamento mensal → Açõe
 
 Método completo: [`docs/PLANEJAMENTO_CAMPO.md`](docs/PLANEJAMENTO_CAMPO.md).
 
+## Navegação gerencial (outubro/2026)
+A navegação foi reorganizada em seis áreas recolhíveis, mantendo todos os cadastros:
+- **Planejamento:** Cobertura, planejamento mensal e ações programadas.
+- **Campo e execução:** ordens de serviço e rotinas periódicas.
+- **Contrato e obrigações:** obrigações por parte responsável, matriz de atividades técnicas e postos.
+- **Financeiro:** **Tabela de preços**, abastecimentos, manutenções e solicitações de compras.
+- **Patrimônio e materiais:** exigências de recursos, bens, movimentações e estoque.
+- **Pessoas e segurança:** colaboradores, EPIs e uniformes.
+
+**Dois catálogos diferentes:** `Matriz técnica · 73 atividades` contém as atividades para programação de campo; `Tabela de preços` contém **apenas 53 itens remunerados**, suas quantidades previstas, unidades, preços unitários e valores estimados. A simples coincidência de numeração entre os catálogos não configura correspondência contratual.
+
+Na página inicial, seis gráficos mostram o estado atual de cada área, sem misturar metas, execução e despesas. Os gráficos consultam os dados do Supabase com controle de acesso; quantidades de recursos exigidos não significam estoque disponível.
+
+### Responsabilidades contratuais
+O cadastro `contract_obligations` inclui **parte responsável** (`PROERG`, `Itaipu`, `Compartilhada`, `A confirmar`) e **assunto** (campo, pessoal, segurança, frota, máquinas, materiais, ambiental ou documentação).
+
+O cadastro `contract_resource_requirements` inclui **parte fornecedora**, categoria e quantidades previstas/observadas, com validação documental. A referência específica do item 3.9 (trilhas RBV) foi registrada como fornecimento Itaipu **a confirmar documentalmente**; as demais exigências inicialmente atribuídas à PROERG devem ser conferidas contra a íntegra do contrato e suas exceções.
+
+O status `pendente` indica **verificação em aberto** e não comprova descumprimento. Valores de itens de preços são **estimativas contratuais**, não desembolsos, medições aprovadas ou custos realizados.
+
 ## Módulos
 | Grupo | Cadastros e registros |
 | --- | --- |
