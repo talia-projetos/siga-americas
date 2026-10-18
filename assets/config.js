@@ -1,4 +1,3 @@
-// Configuração pública do navegador. Não colocar senhas ou chaves secretas aqui.
-// A publishable key é pública por definição; a proteção depende de autenticação e RLS.
-export const SUPABASE_URL = "";
-export const SUPABASE_PUBLISHABLE_KEY = "";
+// Chave pública de acesso: toda a proteção de dados depende de autenticação e RLS.
+export const SUPABASE_URL = "https://zuryorojunozgiottefs.supabase.co";
+export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_CV6vShuZrrsCn9fKZxJNaw_Rjx1wdc-";
