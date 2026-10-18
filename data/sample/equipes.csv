@@ -1,7 +1,0 @@
-equipe_id,equipe,lider_tecnico,frente_atuacao,qtd_colaboradores,status,origem_dado
-EQ01,Equipe Fauna,Ana Paula Ferreira,Monitoramento de Fauna,18,ATIVA,PROERG
-EQ02,Equipe Flora,Ricardo Mendes,Monitoramento de Flora e Vegetação,20,ATIVA,PROERG
-EQ03,Equipe Hídricos,Camila Torres,Recursos Hídricos e Limnologia,17,ATIVA,PROERG
-EQ04,Equipe Recuperação,Fábio Leal,Recuperação de Áreas Degradadas,22,ATIVA,PROERG
-EQ05,Equipe Erosão,Juliana Costa,Controle de Erosão e Engenharia Natural,19,ATIVA,PROERG
-EQ06,Equipe Educação,Marcos Ribeiro,Educação Ambiental e Comunicação,19,ATIVA,PROERG
