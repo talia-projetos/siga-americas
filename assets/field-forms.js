@@ -36,7 +36,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   return;
  }
  let tab="novo",draftId=null,currentReport=null,detailId=null;
- let selectedTeam=isTech?teamId:(teams[0]?.id||"");
+ let selectedTeam=isTech?teamId:"";
  let formState={report_date:BRtoday(),team_id:selectedTeam,area_id:"",shift:"integral",team_leader:"",
     weather:"nao_informado",field_conditions:"",equipment_used:"",general_notes:"",impediments:""};
  let attendance={};let items=[newItem()];
@@ -206,7 +206,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
     draftId=created.data.id;
    }
    const payload=items.map(x=>({
-     report_id:draftId,activity_id:x.activity_id,work_order_id:x.work_order_id||null,
+     id:crypto.randomUUID(),report_id:draftId,activity_id:x.activity_id,work_order_id:x.work_order_id||null,
      result:x.result,location:x.location||null,quantity:x.quantity===""?null:Number(x.quantity),
      unit:x.unit||null,hours_worked:x.hours_worked===""?null:Number(x.hours_worked),
      notes:x.notes||null,evidence_ref:x.evidence_ref||null
@@ -216,7 +216,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    for(let ix=0;ix<items.length;ix++){
     const people=items[ix].workers.filter(id=>workersForTeam().some(w=>w.id===id));
     if(!people.length)continue;
-    const inserted=await db.from("field_daily_item_workers").insert(people.map(employee_id=>({report_item_id:createdItems.data[ix].id,employee_id})));
+    const inserted=await db.from("field_daily_item_workers").insert(people.map(employee_id=>({report_item_id:payload[ix].id,employee_id})));
     if(inserted.error)throw inserted.error;
    }
    if(pres.length){
