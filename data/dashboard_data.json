@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-18T00:18:11.807Z",
+  "generated_at": "2026-10-18T00:19:13.822Z",
   "source": "PROERG",
   "script_url": "https://script.google.com/macros/s/AKfycby2TiQTR4Ripo2w8RIC9tjniCv2LJc14OHoUyQMLbAN91_XydoxUg4zl4kt6xh9IVpS/exec",
   "teams": [
@@ -34330,8 +34330,8 @@
         "prob_chuva": 0,
         "tmax": 22.2,
         "tmin": 12.3,
-        "codigo": 1,
-        "condicao": "Parcialmente nublado"
+        "codigo": 0,
+        "condicao": "Céu limpo"
       },
       {
         "data": "2026-10-19",
