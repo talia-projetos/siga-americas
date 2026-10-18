@@ -6,11 +6,18 @@ create schema if not exists siga_private;
 revoke all on schema siga_private from public, anon;
 grant usage on schema siga_private to authenticated;
 
-alter function public.is_active_member() set schema siga_private;
-alter function public.can_write() set schema siga_private;
-alter function public.can_read_sensitive() set schema siga_private;
-alter function public.is_app_admin() set schema siga_private;
-alter function public.audit_row_change() set schema siga_private;
+do $
+declare fname text;
+begin
+  foreach fname in array array[
+    'is_active_member','can_write','can_read_sensitive',
+    'is_app_admin','audit_row_change'
+  ] loop
+    if to_regprocedure(format('public.%I()',fname)) is not null then
+      execute format('alter function public.%I() set schema siga_private',fname);
+    end if;
+  end loop;
+end $;
 
 revoke execute on function siga_private.is_active_member() from public, anon;
 revoke execute on function siga_private.can_write() from public, anon;
