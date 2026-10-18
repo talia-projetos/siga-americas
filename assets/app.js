@@ -1,6 +1,7 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
 import {groups,modules} from "./modules.js";
+import {iconMarkup} from "./icons.js";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -13,22 +14,41 @@ const allModules=Object.keys(modules);
 const tableOf=key=>modules[key]?.table||key;
 function notify(message,error=false){const root=el("toast");root.innerHTML='<div class="toast-item'+(error?' error':'')+'">'+escapeHTML(message)+'</div>';clearTimeout(notify.timer);notify.timer=setTimeout(()=>root.innerHTML="",4800)}
 function canView(key){return Boolean(app.role && modules[key] && (!modules[key].private||privileged()))}
+function groupFor(key){return groups.find(group=>group.items.includes(key))||null}
+const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR");
 function nav(){
- el("navigation").innerHTML=groups.map(group=>{
-  const items=group.items.filter(key=>canView(key));
-  return items.length?'<div class="nav-group">'+escapeHTML(group.label)+'</div>'+items.map(key=>{
-   const locked=!app.role&&key!=="inicio";
-   return '<button class="nav-link '+(key===app.page?'active ':'')+(locked?'nav-locked':'')+'" data-nav="'+key+'"'+(locked?' aria-label="Entrar para acessar '+escapeHTML(nameFor(key))+'"':'')+'><span class="nav-icon" aria-hidden="true">'+escapeHTML(modules[key].icon)+'</span>'+escapeHTML(nameFor(key))+(locked?'<span class="nav-lock" aria-hidden="true">🔒</span>':'')+'</button>';
-  }).join(""):"";
+ const root=el("navigation");
+ if(!app.role){root.innerHTML="";return;}
+ const query=norm(el("nav-search")?.value?.trim());
+ const homeVisible=!query||norm(nameFor("inicio")).includes(query);
+ const home=homeVisible?'<button type="button" class="nav-home '+(app.page==="inicio"?'active':'')+'" data-nav="inicio" '+(app.page==="inicio"?'aria-current="page"':'')+'><span class="nav-home-icon">'+iconMarkup("inicio")+'</span><span>'+escapeHTML(nameFor("inicio"))+'</span></button>':"";
+ const sections=groups.map((group,i)=>{
+  const all=group.items.filter(canView);
+  const groupMatch=norm(group.label).includes(query);
+  const items=all.filter(key=>!query||groupMatch||norm(nameFor(key)).includes(query));
+  if(!items.length)return "";
+  const active=items.includes(app.page);
+  const open=Boolean(query)||active;
+  const entries=items.map(key=>'<button type="button" class="nav-link '+(app.page===key?'active':'')+'" data-nav="'+key+'" '+(app.page===key?'aria-current="page"':'')+' title="'+escapeHTML(nameFor(key))+'"><span class="nav-icon">'+iconMarkup(key)+'</span><span class="nav-link-text">'+escapeHTML(nameFor(key))+'</span></button>').join("");
+  return '<details class="nav-section '+(active?'contains-active':'')+'" data-nav-group="'+i+'" '+(open?'open':'')+'><summary class="nav-section-toggle"><span class="nav-section-icon">'+iconMarkup(group.icon)+'</span><span class="nav-section-title">'+escapeHTML(group.label)+'</span><span class="nav-chevron">'+iconMarkup("chevron")+'</span></summary><div class="nav-section-items">'+entries+'</div></details>';
  }).join("");
+ root.innerHTML=home+sections||'<p class="nav-no-results">Nenhum módulo encontrado.</p>';
+}
+function closeSidebar(){
+ el("sidebar").classList.remove("open");
+ el("menu-toggle").setAttribute("aria-expanded","false");
+ document.body.classList.remove("sidebar-visible");
 }
 function header(key){
  el("breadcrumb-current").textContent=nameFor(key);
+ const context=el("breadcrumb-context"),group=groupFor(key);
+ context.hidden=!group;
+ context.textContent=group?" / "+group.label.charAt(0)+group.label.slice(1).toLocaleLowerCase("pt-BR"):"";
  el("current-user").textContent=app.user?.email||"";
  el("logout").hidden=!app.user;
  el("login").hidden=!!app.user;
 }
-function title(key,subtitle,actions=""){return '<div class="page-heading"><div><span class="eyebrow">GESTÃO CONTRATUAL · PROERG / ITAIPU</span><h1>'+escapeHTML(nameFor(key))+'</h1><p>'+escapeHTML(subtitle)+'</p></div><div class="heading-actions">'+actions+'</div></div>'}
+function title(key,subtitle,actions=""){return '<div class="page-heading"><div><span class="eyebrow">'+escapeHTML(groupFor(key)?.label||"GESTÃO INTEGRADA")+' · PROERG / ITAIPU</span><h1>'+escapeHTML(nameFor(key))+'</h1><p>'+escapeHTML(subtitle)+'</p></div><div class="heading-actions">'+actions+'</div></div>'}
 function errorBanner(message){return '<div class="notice danger">'+escapeHTML(message)+'</div>'}
 function friendlyError(e){const msg=String(e?.message||e||"Erro inesperado.");if(/permission denied|row-level security|policy/i.test(msg))return "Acesso não autorizado. Confira o perfil e as políticas RLS do Supabase.";return msg}
 function setup(){nav();header("inicio");el("main").innerHTML='<section class="auth-wrap"><div class="auth-card"><span class="eyebrow">CONFIGURAÇÃO INICIAL</span><h1>Conecte seu projeto Supabase</h1><p>A interface foi reconstruída e ainda não possui credenciais públicas de conexão. Execute a migração SQL e configure <code>assets/config.js</code> com o <strong>Project URL</strong> e a <strong>publishable key</strong> do seu projeto.</p><div class="notice warning">Não publique senhas, service_role, secret keys ou dados de trabalhadores no repositório. O acesso aos dados exige autenticação e políticas RLS.</div><p>Leia o <a href="https://github.com/talia-projetos/siga-americas#configuracao-inicial" target="_blank" rel="noopener noreferrer"><strong>README de implantação ↗</strong></a>.</p></div></section>'}
@@ -67,13 +87,13 @@ async function dashboard(){
  if(!app.role){login();return;}
  app.page="inicio";nav();header("inicio");el("main").innerHTML='<div class="loading-page"><div class="loader"></div><p>Consultando os indicadores do contrato...</p></div>';
  try{
-  const defs=[["Ordens em aberto","work_orders",{status:"aberta"},"▤"],["Obrigações pendentes","contract_obligations",{status:"pendente"},"✓"],["Veículos cadastrados","vehicles",null,"▣"],["Equipamentos inventariados","equipment",null,"⚒"]];
+  const defs=[["Ordens em aberto","work_orders",{status:"aberta"},"work_orders"],["Obrigações pendentes","contract_obligations",{status:"pendente"},"obligations"],["Veículos cadastrados","vehicles",null,"vehicles"],["Equipamentos inventariados","equipment",null,"equipment"]];
   const numbers=await Promise.all(defs.map(async d=>{try{return await getCount(d[1],d[2])}catch{return "—"}}));
   const {data:recent,error}=await app.db.from("work_orders").select("reference,description,status,created_at").order("created_at",{ascending:false}).limit(5);if(error)throw error;
-  const metrics=defs.map((d,i)=>'<div class="metric"><div class="metric-header">'+escapeHTML(d[0])+'<span class="metric-icon">'+d[3]+'</span></div><strong>'+escapeHTML(numbers[i])+'</strong><small>Dados reais do banco de dados</small></div>').join("");
+  const metrics=defs.map((d,i)=>'<div class="metric"><div class="metric-header">'+escapeHTML(d[0])+'<span class="metric-icon">'+iconMarkup(d[3])+'</span></div><strong>'+escapeHTML(numbers[i])+'</strong><small>Dados reais do banco de dados</small></div>').join("");
   const recentItems=(recent||[]).length?'<ul class="info-list">'+recent.map(r=>'<li><strong>'+escapeHTML(r.reference)+'</strong> · '+escapeHTML(r.description.slice(0,110))+' <span class="tag">'+escapeHTML(r.status)+'</span></li>').join("")+'</ul>':'<p style="margin-top:18px">Ainda não há ordens de serviço registradas.</p>';
   el("main").innerHTML=title("inicio","Um único ambiente para os serviços contratados, os recursos da operação e as evidências de conformidade.")+
-    '<div class="metric-grid">'+metrics+'</div><div class="panel-grid"><section class="panel"><div class="panel-inner"><span class="eyebrow">ACESSO RÁPIDO</span><h2>Gestão das frentes operacionais</h2><p>Comece pelo cadastro do contrato, registre os recursos e acompanhe a execução. Os indicadores serão gerados apenas a partir dos registros efetivos.</p><div class="quick-grid">'+["obligations","work_orders","vehicles","equipment","ppe_items","stock_items"].filter(canView).map(key=>'<button data-nav="'+key+'" class="quick-link">'+escapeHTML(nameFor(key))+' <span aria-hidden="true">↗</span></button>').join("")+'</div></div></section><section class="panel"><div class="panel-inner"><span class="eyebrow">MOVIMENTAÇÃO RECENTE</span><h2>Ordens de serviço</h2>'+recentItems+'</div></section></div>'+
+    '<div class="metric-grid">'+metrics+'</div><div class="panel-grid"><section class="panel"><div class="panel-inner"><span class="eyebrow">ACESSO RÁPIDO</span><h2>Gestão das frentes operacionais</h2><p>Comece pelo cadastro do contrato, registre os recursos e acompanhe a execução. Os indicadores serão gerados apenas a partir dos registros efetivos.</p><div class="quick-grid">'+["obligations","work_orders","vehicles","equipment","ppe_items","stock_items"].filter(canView).map(key=>'<button data-nav="'+key+'" class="quick-link"><span class="quick-link-label">'+iconMarkup(key)+escapeHTML(nameFor(key))+'</span><span class="quick-link-arrow" aria-hidden="true">'+iconMarkup('arrow')+'</span></button>').join("")+'</div></div></section><section class="panel"><div class="panel-inner"><span class="eyebrow">MOVIMENTAÇÃO RECENTE</span><h2>Ordens de serviço</h2>'+recentItems+'</div></section></div>'+
     '<div class="notice" style="margin-top:22px"><strong>Base documental carregada:</strong> matriz com 73 atividades, catálogo de preços separado, seis postos e rotinas periódicas. <button data-nav="coverage" class="table-action">Analisar cobertura ↗</button> <button data-nav="field_programs" class="table-action">Abrir planejamento de campo ↗</button><div style="margin-top:7px">As seis equipes e as oito frentes operacionais são entidades diferentes. A numeração da especificação técnica também é separada da planilha de preços.</div>';
  }catch(e){el("main").innerHTML=title("inicio","Visão geral") + errorBanner(friendlyError(e))}
 }
@@ -181,14 +201,15 @@ async function navigate(key){
   app.pendingPage=requested!=="inicio"?requested:null;
   app.page="inicio";app.refs={};app.rows=[];app.search="";
   if(location.hash!=="#inicio")location.hash="inicio";
-  el("sidebar").classList.remove("open");
+  closeSidebar();
   login();
   return;
  }
  document.body.classList.remove("auth-locked");
  const next=canView(requested)?requested:"inicio";
  app.page=next;app.refs={};app.rows=[];app.search="";location.hash=next;
- el("sidebar").classList.remove("open");
+ if(el("nav-search"))el("nav-search").value="";
+ closeSidebar();
  if(next==="inicio")await dashboard();else if(next==="coverage")await coveragePage();else await modulePage(next);
 }
 function fieldInput(f,row){
@@ -261,13 +282,39 @@ document.addEventListener("click",async e=>{
  if(action==="login"){app.pendingPage=null;login()}
  
 });
-el("menu-toggle").addEventListener("click",()=>el("sidebar").classList.toggle("open"));
+el("menu-toggle").addEventListener("click",()=>{
+ const sidebar=el("sidebar");
+ const expanded=sidebar.classList.toggle("open");
+ el("menu-toggle").setAttribute("aria-expanded",String(expanded));
+ document.body.classList.toggle("sidebar-visible",expanded);
+});
+el("sidebar-overlay").addEventListener("click",closeSidebar);
+el("nav-search").addEventListener("input",nav);
+el("navigation").addEventListener("click",event=>{
+ const summary=event.target.closest("summary");
+ const details=summary?.parentElement;
+ if(details?.matches("details.nav-section")&&!details.open){
+  el("navigation").querySelectorAll("details.nav-section[open]").forEach(other=>{if(other!==details)other.open=false});
+ }
+});
+
 el("logout").addEventListener("click",logout);
 el("login").addEventListener("click",()=>{app.pendingPage=null;login()});
 el("modal-close").addEventListener("click",closeForm);
 el("modal-cancel").addEventListener("click",closeForm);
 el("modal-root").addEventListener("click",event=>{if(event.target===el("modal-root"))closeForm()});
-document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!el("modal-root").hidden)closeForm()});
+document.addEventListener("keydown",event=>{
+ if(event.key==="Escape"){
+  if(!el("modal-root").hidden)closeForm();
+  else closeSidebar();
+ }
+ if(event.key==="/"&&!event.ctrlKey&&!event.altKey&&!event.metaKey&&!event.shiftKey){
+  const tag=document.activeElement?.tagName;
+  if(!["INPUT","TEXTAREA","SELECT"].includes(tag)&&app.role){
+   event.preventDefault();el("nav-search").focus();
+  }
+ }
+});
 el("record-form").addEventListener("submit",saveRecord);
 window.addEventListener("hashchange",()=>{const key=decodeURIComponent(location.hash.replace("#",""));if(app.role&&modules[key]&&key!==app.page)navigate(key)});
 async function init(){
