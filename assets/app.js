@@ -4,7 +4,7 @@ import {groups,modules} from "./modules.js";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const app={db:null,user:null,role:null,page:"inicio",rows:[],refs:{},editing:null,search:"",busy:false};
+const app={db:null,user:null,role:null,page:"inicio",rows:[],refs:{},editing:null,search:"",busy:false,pendingPage:null};
 const privileged=()=>["admin","gestao","supervisao"].includes(app.role);
 const currency=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n||0));
 const dateBR=s=>s?new Date(String(s).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
@@ -12,31 +12,76 @@ const nameFor=key=>modules[key]?.title||key;
 const allModules=Object.keys(modules);
 const tableOf=key=>modules[key]?.table||key;
 function notify(message,error=false){const root=el("toast");root.innerHTML='<div class="toast-item'+(error?' error':'')+'">'+escapeHTML(message)+'</div>';clearTimeout(notify.timer);notify.timer=setTimeout(()=>root.innerHTML="",4800)}
-function canView(key){return modules[key]&&(!modules[key].private||privileged())}
-function nav(){el("navigation").innerHTML=groups.map(group=>{
- const items=group.items.filter(canView);
- return items.length?'<div class="nav-group">'+escapeHTML(group.label)+'</div>'+items.map(key=>'<button class="nav-link '+(key===app.page?'active':'')+'" data-nav="'+key+'"><span class="nav-icon" aria-hidden="true">'+escapeHTML(modules[key].icon)+'</span>'+escapeHTML(nameFor(key))+'</button>').join(""):"";
-}).join("")}
-function header(key){el("breadcrumb-current").textContent=nameFor(key);el("current-user").textContent=app.user?.email||"";el("logout").hidden=!app.user}
+function canView(key){return Boolean(app.role && modules[key] && (!modules[key].private||privileged()))}
+function nav(){
+ el("navigation").innerHTML=groups.map(group=>{
+  const items=group.items.filter(key=>!app.role||canView(key));
+  return items.length?'<div class="nav-group">'+escapeHTML(group.label)+'</div>'+items.map(key=>{
+   const locked=!app.role&&key!=="inicio";
+   return '<button class="nav-link '+(key===app.page?'active ':'')+(locked?'nav-locked':'')+'" data-nav="'+key+'"'+(locked?' aria-label="Entrar para acessar '+escapeHTML(nameFor(key))+'"':'')+'><span class="nav-icon" aria-hidden="true">'+escapeHTML(modules[key].icon)+'</span>'+escapeHTML(nameFor(key))+(locked?'<span class="nav-lock" aria-hidden="true">🔒</span>':'')+'</button>';
+  }).join(""):"";
+ }).join("");
+}
+function header(key){
+ el("breadcrumb-current").textContent=nameFor(key);
+ el("current-user").textContent=app.user?.email||"";
+ el("logout").hidden=!app.user;
+ el("login").hidden=!!app.user;
+}
 function title(key,subtitle,actions=""){return '<div class="page-heading"><div><span class="eyebrow">GESTÃO CONTRATUAL · PROERG / ITAIPU</span><h1>'+escapeHTML(nameFor(key))+'</h1><p>'+escapeHTML(subtitle)+'</p></div><div class="heading-actions">'+actions+'</div></div>'}
 function errorBanner(message){return '<div class="notice danger">'+escapeHTML(message)+'</div>'}
 function friendlyError(e){const msg=String(e?.message||e||"Erro inesperado.");if(/permission denied|row-level security|policy/i.test(msg))return "Acesso não autorizado. Confira o perfil e as políticas RLS do Supabase.";return msg}
 function setup(){nav();header("inicio");el("main").innerHTML='<section class="auth-wrap"><div class="auth-card"><span class="eyebrow">CONFIGURAÇÃO INICIAL</span><h1>Conecte seu projeto Supabase</h1><p>A interface foi reconstruída e ainda não possui credenciais públicas de conexão. Execute a migração SQL e configure <code>assets/config.js</code> com o <strong>Project URL</strong> e a <strong>publishable key</strong> do seu projeto.</p><div class="notice warning">Não publique senhas, service_role, secret keys ou dados de trabalhadores no repositório. O acesso aos dados exige autenticação e políticas RLS.</div><p>Leia o <a href="https://github.com/talia-projetos/siga-americas#configuracao-inicial" target="_blank" rel="noopener noreferrer"><strong>README de implantação ↗</strong></a>.</p></div></section>'}
-function login(){nav();header("inicio");el("main").innerHTML='<section class="auth-wrap"><div class="auth-card"><span class="eyebrow">AMBIENTE RESTRITO</span><h1>Acessar SIGA Américas</h1><p>Plataforma de gestão operacional e conformidade do contrato. Utilize o acesso previamente autorizado pela administração.</p><form id="login-form" class="auth-form"><div class="field"><label for="auth-email">E-mail</label><input id="auth-email" type="email" name="email" autocomplete="username" required></div><div class="field"><label for="auth-password">Senha</label><input id="auth-password" type="password" name="password" autocomplete="current-password" required></div><button type="submit" class="btn btn-primary">Entrar no sistema</button></form><p>Se você ainda não possui acesso, solicite o cadastro ao administrador. O sistema não permite autorregistro.</p></div></section>';
+function login(){nav();header(app.pendingPage||"inicio");el("main").innerHTML='<section class="auth-wrap"><div class="auth-card"><span class="eyebrow">AMBIENTE RESTRITO</span><h1>Entrar no SIGA Américas</h1><p>Para consultar as abas e os registros operacionais, entre com suas credenciais autorizadas. A Visão geral permanece acessível sem login.</p><form id="login-form" class="auth-form"><div class="field"><label for="auth-email">E-mail</label><input id="auth-email" type="email" name="email" autocomplete="username" required></div><div class="field"><label for="auth-password">Senha</label><input id="auth-password" type="password" name="password" autocomplete="current-password" required></div><button type="submit" class="btn btn-primary">Entrar no sistema</button></form><p>Se você ainda não possui acesso, solicite o cadastro ao administrador. O sistema não permite autorregistro.</p><button type="button" class="btn btn-ghost" data-action="publicHome">← Voltar à Visão geral</button></div></section>';
  el("login-form").addEventListener("submit",async event=>{event.preventDefault();const btn=event.target.querySelector("button");btn.disabled=true;try{const fd=new FormData(event.target);const {error}=await app.db.auth.signInWithPassword({email:String(fd.get("email")).trim(),password:String(fd.get("password"))});if(error)throw error;await establishSession()}catch(e){notify(friendlyError(e),true)}finally{btn.disabled=false}});
 }
 function pending(){nav();header("inicio");el("main").innerHTML='<section class="auth-wrap"><div class="auth-card"><span class="eyebrow">ACESSO PENDENTE</span><h1>Seu usuário ainda não foi autorizado</h1><p>O login foi reconhecido, mas não existe um perfil ativo de acesso ao SIGA Américas para este usuário.</p><div class="notice warning">O administrador deve registrar o usuário em <code>public.app_memberships</code> após criar seu cadastro no Supabase Auth.</div><button class="btn btn-secondary" data-action="logout">Sair desta conta</button></div></section>'}
 async function establishSession(){
- const {data:{user},error}=await app.db.auth.getUser();if(error||!user){app.user=null;app.role=null;login();return;}
- app.user=user;const {data,error:membershipError}=await app.db.from("app_memberships").select("role,enabled").eq("user_id",user.id).maybeSingle();
+ const {data:{user},error}=await app.db.auth.getUser();
+ if(error||!user){
+  app.user=null;app.role=null;
+  const hash=decodeURIComponent(location.hash.replace("#",""));
+  if(modules[hash]&&hash!=="inicio"){
+   app.pendingPage=hash;app.page=hash;login();
+  }else{
+   app.pendingPage=null;publicDashboard();
+  }
+  return;
+ }
+ app.user=user;
+ const {data,error:membershipError}=await app.db.from("app_memberships").select("role,enabled").eq("user_id",user.id).maybeSingle();
  if(membershipError){el("main").innerHTML=errorBanner(friendlyError(membershipError));return;}
  app.role=data?.enabled?data.role:null;
  if(!app.role){pending();return;}
- const hash=decodeURIComponent(location.hash.replace("#",""));app.page=canView(hash)?hash:"inicio";await navigate(app.page);
+ const hash=decodeURIComponent(location.hash.replace("#",""));
+ const target=app.pendingPage||hash;
+ app.pendingPage=null;
+ await navigate(canView(target)?target:"inicio");
 }
-async function logout(){if(app.db)await app.db.auth.signOut();app.user=null;app.role=null;app.rows=[];login()}
+async function logout(){
+ app.pendingPage=null;
+ if(app.db)await app.db.auth.signOut();
+ app.user=null;app.role=null;app.rows=[];app.refs={};
+ await navigate("inicio");
+}
 async function getCount(table,filter){let query=app.db.from(table).select("id",{count:"exact",head:true});if(filter)for(const [key,val] of Object.entries(filter))query=query.eq(key,val);const {count,error}=await query;if(error)throw error;return count??0;}
+function publicDashboard(){
+ // Nenhum dado do Supabase é consultado por esta tela pública.
+ app.page="inicio";nav();header("inicio");
+ const defs=[
+  ["Ordens de serviço","▤"],["Obrigações contratuais","✓"],
+  ["Veículos e combustível","▣"],["Máquinas e ferramentas","⚒"]
+ ];
+ const metrics=defs.map(d=>'<div class="metric"><div class="metric-header">'+escapeHTML(d[0])+'<span class="metric-icon">'+d[1]+'</span></div><strong class="guest-placeholder">—</strong><small>Entre para consultar os registros</small></div>').join("");
+ const quick=["obligations","work_orders","vehicles","equipment","ppe_items","stock_items"];
+ const quickLinks=quick.map(key=>'<button data-nav="'+key+'" class="quick-link">'+escapeHTML(nameFor(key))+' <span class="lock-inline" aria-hidden="true">🔒</span></button>').join("");
+ el("main").innerHTML=title("inicio","Gestão integrada dos serviços contratados, dos recursos da operação e das evidências de conformidade.",'<button class="btn btn-primary" data-action="login">Entrar no sistema ↗</button>')+
+  '<div class="notice">Esta é a apresentação do SIGA Américas. Para visualizar dados, cadastrar informações ou acessar qualquer módulo operacional, faça login com uma conta autorizada.</div>'+
+  '<div class="metric-grid">'+metrics+'</div><div class="panel-grid"><section class="panel"><div class="panel-inner"><span class="eyebrow">MÓDULOS DO SISTEMA</span><h2>Gestão das frentes operacionais</h2><p>Planejamento contratual, controle de recursos, segurança das equipes e registros administrativos em um só ambiente. Selecione uma área para autenticar-se.</p><div class="quick-grid">'+quickLinks+'</div></div></section><section class="panel"><div class="panel-inner"><span class="eyebrow">ACESSO CONTROLADO</span><h2>Informações protegidas</h2><p>Os registros de colaboradores, combustível, veículos, equipamentos, manutenção, EPIs, compras e ordens de serviço são disponibilizados somente a usuários autorizados.</p><ul class="info-list"><li>🔒 Login obrigatório para abrir as abas</li><li>✓ Permissões por perfil no Supabase</li><li>↗ Histórico de alterações registrado no banco</li></ul><button class="btn btn-secondary" data-action="login" style="margin-top:16px">Acessar área restrita</button></div></section></div>'+
+  '<div class="notice" style="margin-top:22px">As seis equipes de trabalho e as oito frentes operacionais possuem cadastros distintos. Os itens da especificação técnica e da planilha de preços também são mantidos separadamente.</div>';
+}
 async function dashboard(){
+ if(!app.role){publicDashboard();return;}
  app.page="inicio";nav();header("inicio");el("main").innerHTML='<div class="loading-page"><div class="loader"></div><p>Consultando os indicadores do contrato...</p></div>';
  try{
   const defs=[["Ordens em aberto","work_orders",{status:"aberta"},"▤"],["Obrigações pendentes","contract_obligations",{status:"pendente"},"✓"],["Veículos cadastrados","vehicles",null,"▣"],["Equipamentos inventariados","equipment",null,"⚒"]];
@@ -93,8 +138,26 @@ async function modulePage(key){
  }catch(e){el("main").innerHTML=title(key,m.description)+errorBanner(friendlyError(e))}
 }
 async function navigate(key){
- if(!app.role)return;
- const next=canView(key)?key:"inicio";app.page=next;app.refs={};app.rows=[];app.search="";location.hash=next;
+ const requested=modules[key]?key:"inicio";
+ if(!app.role){
+  app.refs={};app.rows=[];app.search="";
+  if(requested==="inicio"){
+   app.pendingPage=null;
+   app.page="inicio";
+   location.hash="inicio";
+   el("sidebar").classList.remove("open");
+   publicDashboard();
+  }else{
+   app.pendingPage=requested;
+   app.page=requested;
+   location.hash=requested;
+   el("sidebar").classList.remove("open");
+   login();
+  }
+  return;
+ }
+ const next=canView(requested)?requested:"inicio";
+ app.page=next;app.refs={};app.rows=[];app.search="";location.hash=next;
  el("sidebar").classList.remove("open");
  if(next==="inicio")await dashboard();else await modulePage(next);
 }
@@ -164,20 +227,23 @@ document.addEventListener("click",async e=>{
  if(action==="create")await openForm();
  if(action==="export")exportCSV();
  if(action==="logout")await logout();
+ if(action==="login"){app.pendingPage=null;login()}
+ if(action==="publicHome")await navigate("inicio");
 });
 el("menu-toggle").addEventListener("click",()=>el("sidebar").classList.toggle("open"));
 el("logout").addEventListener("click",logout);
+el("login").addEventListener("click",()=>{app.pendingPage=null;login()});
 el("modal-close").addEventListener("click",closeForm);
 el("modal-cancel").addEventListener("click",closeForm);
 el("modal-root").addEventListener("click",event=>{if(event.target===el("modal-root"))closeForm()});
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!el("modal-root").hidden)closeForm()});
 el("record-form").addEventListener("submit",saveRecord);
-window.addEventListener("hashchange",()=>{if(app.role&&location.hash.replace("#","")!==app.page)navigate(location.hash.replace("#",""))});
+window.addEventListener("hashchange",()=>{const key=decodeURIComponent(location.hash.replace("#",""));if(modules[key]&&key!==app.page)navigate(key)});
 async function init(){
  if(!SUPABASE_URL||!SUPABASE_PUBLISHABLE_KEY){setup();return;}
  try{app.db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false}});
  await establishSession();
- app.db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT"){app.user=null;app.role=null;login();}});
+ app.db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT"){app.user=null;app.role=null;app.pendingPage=null;navigate("inicio");}});
  }catch(e){el("main").innerHTML=errorBanner("Erro ao iniciar o sistema: "+friendlyError(e))}
 }
 init();
