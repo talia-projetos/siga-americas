@@ -40,7 +40,7 @@ export async function renderDashboardAnalytics(root,db,{privileged=false}={}){
  root.innerHTML='<div class="analytics-loading">Atualizando indicadores de gestão…</div>';
  const defs=[
   ["plans","field_plan_items","action_status"],["programs","field_programs","status"],
-  ["orders","work_orders","status"],["routines","field_routine_records","status"],
+  ["orders","work_orders","status"],["dailyReports","field_daily_reports","status,team_id,report_date"],["routines","field_routine_records","status"],
   ["templates","field_routine_templates","id"],["obligations","contract_obligations","party_responsible,status,domain"],
   ["resources","contract_resource_requirements","category,provider_party,validation_status"],
   ["prices","contract_items","code,name,source_type,estimated_total",{source_type:"precos"}],
@@ -56,8 +56,10 @@ export async function renderDashboardAnalytics(root,db,{privileged=false}={}){
  const unavailable='<div class="analytics-empty">Não foi possível consultar os registros com este perfil.</div>';
  const plan=fail("plans")?unavailable:figureDonut(sortedValues(cnt(data.plans,"action_status"),statusLabels));
  const planningInfo=fail("programs")?"":'<div class="analytics-footline">'+note("Programações mensais",fmt(data.programs.length))+note("Itens na triagem",fmt(data.plans.length))+'</div>';
- const work=fail("orders")?unavailable:figureBar(sortedValues(cnt(data.orders,"status"),statusLabels));
- const fieldInfo=fail("templates")?"":'<div class="analytics-footline">'+note("Modelos de rotina",fmt(data.templates.length))+note("Execuções registradas",fail("routines")?"—":fmt(data.routines.filter(x=>x.status==="realizada").length))+'</div>';
+ const work=fail("dailyReports")?unavailable:figureBar(sortedValues(cnt(data.dailyReports,"status"),{
+  rascunho:"Rascunhos",enviado:"Aguardam análise",validado:"Validados",devolvido:"Devolvidos"
+ }));
+ const fieldInfo=fail("dailyReports")?"":'<div class="analytics-footline">'+note("Relatórios enviados",fmt(data.dailyReports.filter(x=>x.status!=="rascunho").length))+note("Validados",fmt(data.dailyReports.filter(x=>x.status==="validado").length))+'</div>';
  const obligations=fail("obligations")?unavailable:figureDonut(sortedValues(cnt(data.obligations,"party_responsible"),partyLabels));
  const obligationInfo=fail("obligations")?"":'<div class="analytics-footline">'+note("Itens com verificação pendente",fmt(data.obligations.filter(x=>x.status==="pendente").length))+note("Total cadastrado",fmt(data.obligations.length))+'</div>';
  const monetary=fail("prices")?unavailable:figureBar([...data.prices].sort((a,b)=>Number(b.estimated_total||0)-Number(a.estimated_total||0)).slice(0,5).map(x=>({name:x.code+" · "+x.name,value:Number(x.estimated_total||0)})),{format:money});
@@ -69,7 +71,7 @@ export async function renderDashboardAnalytics(root,db,{privileged=false}={}){
  root.innerHTML='<div class="analytics-intro"><div><span class="eyebrow">GESTÃO EM NÚMEROS</span><h2>Indicadores por área</h2><p>Visão executiva dos registros do contrato. Cada gráfico permite acessar o módulo correspondente.</p></div><span class="analytics-live">● Dados do Supabase</span></div>'+
  '<div class="analytics-grid">'+
  panel("Planejamento","COBERTURA E PROGRAMAÇÃO",plan+planningInfo,"coverage","Candidaturas não representam execução nem aprovação.")+
- panel("Campo e execução","ORDENS DE SERVIÇO",work+fieldInfo,"work_orders","Rotinas-modelo não contam como serviços realizados.")+
+ panel("Campo e execução","RELATÓRIOS DOS TÉCNICOS",work+fieldInfo,"field_monitor","Relatórios não validam automaticamente serviços ou medições.")+
  panel("Contrato e obrigações","PARTE RESPONSÁVEL",obligations+obligationInfo,"obligations","Pendente significa verificação em aberto, não infração comprovada.")+
  panel("Financeiro","MAIORES ITENS PREVISTOS",monetary+moneyInfo,"contract_items","Valores contratuais previstos, não custos efetivamente pagos.")+
  panel("Patrimônio e materiais","EXIGÊNCIAS POR CATEGORIA",resource+resourceInfo,"contract_resource_requirements","Quantidades contratadas não equivalem a estoque comprovado.")+
