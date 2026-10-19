@@ -45,6 +45,7 @@ function nav(){
  root.innerHTML=home+sections||'<p class="nav-no-results">Nenhum módulo encontrado.</p>';
 }
 function closeSidebar(){
+ const menu=el("profile-menu");if(menu)menu.open=false;
  el("sidebar").classList.remove("open");
  el("menu-toggle").setAttribute("aria-expanded","false");
  document.body.classList.remove("sidebar-visible");
@@ -54,9 +55,19 @@ function header(key){
  const context=el("breadcrumb-context"),group=groupFor(key);
  context.hidden=!group;
  context.textContent=group?" / "+group.label.charAt(0)+group.label.slice(1).toLocaleLowerCase("pt-BR"):"";
- el("current-user").textContent=app.user?.email||"";
- el("logout").hidden=!app.user;
- el("login").hidden=!!app.user;
+ const user=app.user;
+ const menu=el("profile-menu");
+ menu.hidden=!user;
+ if(!user)menu.open=false;
+ const email=user?.email||"";
+ el("current-user").textContent=email;
+ el("profile-email-secondary").textContent=email;
+ const initial=email?.charAt(0).toLocaleUpperCase("pt-BR")||"U";
+ el("user-avatar").textContent=initial;
+ const roleNames={admin:"Administração",gestao:"Gestão",supervisao:"Supervisão",consulta:"Consulta",tecnico:"Equipe de campo"};
+ el("profile-role").textContent=roleNames[app.role]||"Usuário autorizado";
+ el("logout").hidden=!user;
+ el("login").hidden=!!user;
 }
 function title(key,subtitle,actions=""){return '<div class="page-heading"><div><span class="eyebrow">'+escapeHTML(groupFor(key)?.label||"GESTÃO INTEGRADA")+' · PROERG / ITAIPU</span><h1>'+escapeHTML(nameFor(key))+'</h1><p>'+escapeHTML(subtitle)+'</p></div><div class="heading-actions">'+actions+'</div></div>'}
 function errorBanner(message){return '<div class="notice danger">'+escapeHTML(message)+'</div>'}
@@ -97,19 +108,68 @@ async function getCount(table,filter){let query=app.db.from(table).select("id",{
 async function dashboard(){
  if(!app.role){login();return;}
  if(app.role==="tecnico"){await navigate("field_report");return;}
- app.page="inicio";nav();header("inicio");el("main").innerHTML='<div class="loading-page"><div class="loader"></div><p>Consultando os indicadores do contrato...</p></div>';
- try{
-  const defs=[["Ordens em aberto","work_orders",{status:"aberta"},"work_orders"],["Obrigações pendentes","contract_obligations",{status:"pendente"},"obligations"],["Veículos cadastrados","vehicles",null,"vehicles"],["Equipamentos inventariados","equipment",null,"equipment"]];
-  const numbers=await Promise.all(defs.map(async d=>{try{return await getCount(d[1],d[2])}catch{return "—"}}));
-  const {data:recent,error}=await app.db.from("work_orders").select("reference,description,status,created_at").order("created_at",{ascending:false}).limit(5);if(error)throw error;
-  const metrics=defs.map((d,i)=>'<div class="metric"><div class="metric-header">'+escapeHTML(d[0])+'<span class="metric-icon">'+iconMarkup(d[3])+'</span></div><strong>'+escapeHTML(numbers[i])+'</strong><small>Dados reais do banco de dados</small></div>').join("");
-  const recentItems=(recent||[]).length?'<ul class="info-list">'+recent.map(r=>'<li><strong>'+escapeHTML(r.reference)+'</strong> · '+escapeHTML(r.description.slice(0,110))+' <span class="tag">'+escapeHTML(r.status)+'</span></li>').join("")+'</ul>':'<p style="margin-top:18px">Ainda não há ordens de serviço registradas.</p>';
-  el("main").innerHTML=title("inicio","Um único ambiente para os serviços contratados, os recursos da operação e as evidências de conformidade.")+
-    '<div class="metric-grid">'+metrics+'</div><div class="panel-grid"><section class="panel"><div class="panel-inner"><span class="eyebrow">ACESSO RÁPIDO</span><h2>Gestão das frentes operacionais</h2><p>Comece pelo cadastro do contrato, registre os recursos e acompanhe a execução. Os indicadores serão gerados apenas a partir dos registros efetivos.</p><div class="quick-grid">'+["field_monitor","field_report","resource_check","obligations","work_orders","vehicles","equipment","ppe_items","stock_items"].filter(canView).map(key=>'<button data-nav="'+key+'" class="quick-link"><span class="quick-link-label">'+iconMarkup(key)+escapeHTML(nameFor(key))+'</span><span class="quick-link-arrow" aria-hidden="true">'+iconMarkup('arrow')+'</span></button>').join("")+'</div></div></section><section class="panel"><div class="panel-inner"><span class="eyebrow">MOVIMENTAÇÃO RECENTE</span><h2>Ordens de serviço</h2>'+recentItems+'</div></section></div>'+
-    '<section id="dashboard-analytics" class="dashboard-analytics" aria-label="Indicadores por área"></section><div class="notice" style="margin-top:22px"><strong>Base documental carregada:</strong> matriz com 73 atividades, catálogo de preços separado, seis postos e rotinas periódicas. <button data-nav="coverage" class="table-action">Analisar cobertura ↗</button> <button data-nav="field_programs" class="table-action">Abrir planejamento de campo ↗</button><div style="margin-top:7px">As seis equipes e as oito frentes operacionais são entidades diferentes. A numeração da especificação técnica também é separada da planilha de preços.</div>';
-  const root=el("dashboard-analytics");
-  if(root)renderDashboardAnalytics(root,app.db,{privileged:privileged()}).catch(error=>{root.innerHTML=errorBanner("Indicadores indisponíveis: "+friendlyError(error));});
- }catch(e){el("main").innerHTML=title("inicio","Visão geral") + errorBanner(friendlyError(e))}
+ app.page="inicio";nav();header("inicio");
+ el("main").innerHTML='<div class="loading-page"><div class="loader"></div><p>Atualizando indicadores...</p></div>';
+ const defs=[
+  {title:"Relatórios para validar",table:"field_daily_reports",filter:{status:"enviado"},icon:"field_monitor",nav:"field_monitor",hint:"Enviados pelas equipes"},
+  {title:"Ordens em aberto",table:"work_orders",filter:{status:"aberta"},icon:"work_orders",nav:"work_orders",hint:"Acompanhar serviços"},
+  {title:"Recursos a conferir",table:"contract_resource_requirements",filter:{validation_status:"a_conferir"},icon:"resource_check",nav:"resource_check",hint:"Verificação dos itens exigidos"},
+  {title:"Obrigações a verificar",table:"contract_obligations",filter:{status:"pendente"},icon:"obligations",nav:"obligations",hint:"Conferência documental"}
+ ];
+ const metricsHTML=values=>defs.map((d,i)=>{
+  const value=values[i];
+  const detail=value==="—"?"Consulta indisponível":value===0?"Nenhum registro neste estado":d.hint;
+  return '<button type="button" data-nav="'+d.nav+'" class="metric dashboard-metric" aria-label="'+escapeHTML(d.title)+': '+escapeHTML(value)+'. Abrir '+escapeHTML(nameFor(d.nav))+'">'+
+    '<div class="metric-header"><span>'+escapeHTML(d.title)+'</span><span class="metric-icon">'+iconMarkup(d.icon)+'</span></div>'+
+    '<strong>'+escapeHTML(value)+'</strong><small>'+escapeHTML(detail)+'</small>'+
+    '<span class="metric-open" aria-hidden="true">'+iconMarkup("arrow")+'</span></button>';
+ }).join("");
+ const shortcuts=["field_monitor","field_programs","resource_check","coverage"].filter(canView);
+ const quick=shortcuts.map(key=>
+  '<button type="button" data-nav="'+key+'" class="quick-link"><span class="quick-link-label">'+iconMarkup(key)+escapeHTML(nameFor(key))+'</span><span class="quick-link-arrow" aria-hidden="true">'+iconMarkup("arrow")+'</span></button>'
+ ).join("");
+ const hero=title("inicio","Acompanhe as equipes, os recursos e as prioridades do contrato, em um só lugar.",
+   '<button type="button" class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento</button>'+
+   '<button type="button" class="btn btn-primary" data-nav="field_monitor">'+iconMarkup("field_monitor")+' Acompanhar equipes</button>');
+ const body=
+  hero+
+  '<section class="dashboard-overview" aria-label="Situação da operação">'+
+   '<div class="dashboard-section-head"><div><span class="eyebrow">PAINEL OPERACIONAL</span><h2>O que precisa de atenção</h2><p>Indicadores atualizados com os registros disponíveis no sistema.</p></div></div>'+
+   '<div class="metric-grid dashboard-metrics">'+metricsHTML(["—","—","—","—"])+'</div>'+
+  '</section>'+
+  '<div class="panel-grid dashboard-utility-grid">'+
+    '<section class="panel dashboard-workspace-panel"><div class="panel-inner"><span class="eyebrow">ROTINA DE GESTÃO</span><h2>Continuar de onde você precisa</h2><p>Acesse rapidamente as funções usadas na supervisão e no planejamento.</p><div class="quick-grid dashboard-quick-grid">'+quick+'</div></div></section>'+
+    '<section class="panel dashboard-activity-panel"><div class="panel-inner"><span class="eyebrow">ACOMPANHAMENTO</span><div class="dashboard-recent-head"><h2>Ordens de serviço recentes</h2><button class="table-action" type="button" data-nav="work_orders">Ver todas '+iconMarkup("arrow")+'</button></div><div id="dashboard-recent-orders" class="dashboard-recent-orders"><p class="dashboard-subtle">Buscando movimentações...</p></div></div></section>'+
+  '</div>'+
+  '<section id="dashboard-analytics" class="dashboard-analytics" aria-label="Indicadores por área"></section>';
+ el("main").innerHTML=body;
+ const metrics=el("main").querySelector(".dashboard-metrics");
+ const orders=el("dashboard-recent-orders"),charts=el("dashboard-analytics");
+ // Atualiza cada bloco sem impedir que os demais funcionem.
+ Promise.all(defs.map(d=>getCount(d.table,d.filter).catch(()=> "—"))).then(values=>{
+  if(app.page==="inicio"&&metrics)metrics.innerHTML=metricsHTML(values);
+ }).catch(()=>{});
+ (async()=>{
+  try{
+   const {data,error}=await app.db.from("work_orders")
+    .select("reference,description,status,created_at").order("created_at",{ascending:false}).limit(4);
+   if(error)throw error;
+   if(app.page!=="inicio"||!orders)return;
+   orders.innerHTML=(data||[]).length?
+    '<ul class="dashboard-recent-list">'+data.map(row=>{
+     const title=String(row.reference||"Ordem de serviço");
+     const description=String(row.description||"Sem descrição cadastrada").slice(0,115);
+     const status=String(row.status||"Não informado").replaceAll("_"," ");
+     return '<li><div><strong>'+escapeHTML(title)+'</strong><p>'+escapeHTML(description)+'</p></div><span class="tag">'+escapeHTML(status)+'</span></li>';
+    }).join("")+'</ul>':
+    '<div class="dashboard-empty-state">'+iconMarkup("clipboard")+'<div><strong>Nenhuma ordem registrada</strong><span>Quando houver movimentações, elas aparecerão aqui.</span></div></div>';
+  }catch(error){
+    if(orders&&app.page==="inicio")orders.innerHTML='<p class="dashboard-subtle">As ordens não puderam ser consultadas agora.</p>';
+  }
+ })();
+ if(charts)renderDashboardAnalytics(charts,app.db,{privileged:privileged()}).catch(error=>{
+  if(app.page==="inicio")charts.innerHTML='<div class="notice">Os gráficos não puderam ser atualizados neste momento. Os demais módulos continuam disponíveis.</div>';
+ });
 }
 async function ensureRefs(key){
  const mod=modules[key];if(!mod?.fields)return;
@@ -332,6 +392,8 @@ function exportCSV(){
  const link=document.createElement("a"),url=URL.createObjectURL(new Blob(["\ufeff"+output],{type:"text/csv;charset=utf-8"}));link.href=url;link.download=m.table+"_"+new Date().toISOString().slice(0,10)+".csv";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 document.addEventListener("click",async e=>{
+ const menu=el("profile-menu");
+ if(menu?.open&&!e.target.closest("#profile-menu"))menu.open=false;
  const navButton=e.target.closest("[data-nav]");if(navButton){await navigate(navButton.dataset.nav);return;}
  const edit=e.target.closest("[data-edit]");if(edit){await openForm(edit.dataset.edit);return;}
  const action=e.target.closest("[data-action]")?.dataset.action;
@@ -365,6 +427,7 @@ el("modal-cancel").addEventListener("click",closeForm);
 el("modal-root").addEventListener("click",event=>{if(event.target===el("modal-root"))closeForm()});
 document.addEventListener("keydown",event=>{
  if(event.key==="Escape"){
+  if(el("profile-menu").open)el("profile-menu").open=false;
   if(!el("modal-root").hidden)closeForm();
   else closeSidebar();
  }
