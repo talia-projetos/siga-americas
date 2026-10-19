@@ -88,7 +88,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    '<div class="field-card-heading"><strong>'+(i===0?'O que foi feito?':'Outra atividade · '+(i+1))+'</strong><button type="button" data-remove-field-item="'+i+'" class="field-remove" '+(items.length===1?'disabled':'')+' aria-label="Remover atividade '+(i+1)+'">×</button></div>'+
    '<label class="field-input wide field-activity-picker"><span>Atividade *</span><select data-field-activity required>'+optList(activities,"activity",item.activity_id,"Escolha a atividade")+'</select></label>'+
    '<div class="field-result-choice"><span class="field-choice-label">Resultado</span><div class="field-result-options">'+[
-     ["executada","Feito"],["parcial","Parcial"],["impedida","Impedido"],["nao_aplicavel","Não realizado"]
+     ["executada","Feito"],["parcial","Parcial"],["impedida","Impedido"],["nao_aplicavel","Não se aplica"]
    ].map(x=>'<label class="field-result-pill"><input type="radio" name="field-result-'+i+'" data-field-result value="'+x[0]+'" '+(item.result===x[0]?"checked":"")+'><span>'+x[1]+'</span></label>').join("")+'</div></div>'+
    '<details class="field-inline-details"><summary>+ Detalhes desta atividade <small>opcional</small></summary><div class="field-inline-details-content">'+
    '<div class="field-form-grid">'+
@@ -184,7 +184,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    ]);
    const parts=i.filter(r=>r.report_id===id);const pres=a.filter(x=>x.report_id===id);
    const reportLine=parts.map(x=>{const activity=activities.find(y=>y.id===x.activity_id);return '<li><strong>'+esc(activity?.code||"—")+' · '+esc(activity?.name||"Atividade")+'</strong> — '+esc(results[x.result]||x.result)+(x.quantity!==null?' · '+esc(x.quantity||"")+' '+esc(x.unit||""):"")+' · '+esc(x.location||"Local não informado")+'</li>'}).join("");
-   root.innerHTML='<div class="field-history-detail"><button class="btn btn-ghost" id="field-back-history">← Histórico</button><h2>Relatório · '+esc(dateBR(report.report_date))+'</h2><p>'+fmtStatus(report.status)+'</p><h3>Atividades</h3><ul>'+reportLine+'</ul><h3>Trabalhadores</h3><p>'+pres.filter(x=>x.presence_status==="presente").length+' presentes; '+pres.filter(x=>x.presence_status==="ausente").length+' ausentes; '+pres.filter(x=>x.presence_status==="folga").length+' em folga.</p><h3>Impedimentos</h3><p>'+esc(report.impediments||"Não informados")+'</p><h3>Observações</h3><p>'+esc(report.general_notes||"Não informadas")+'</p></div>';
+   root.innerHTML='<div class="field-history-detail"><button class="btn btn-ghost" id="field-back-history">← Histórico</button><h2>Relatório · '+esc(dateBR(report.report_date))+'</h2><p>'+fmtStatus(report.status)+'</p><h3>Atividades</h3><ul>'+reportLine+'</ul><h3>Trabalhadores</h3><p>'+(pres.length?pres.filter(x=>x.presence_status==="presente").length+' presentes; '+pres.filter(x=>x.presence_status==="ausente").length+' ausentes; '+pres.filter(x=>x.presence_status==="folga").length+' em folga.':'Presença não informada.')+'</p><h3>Impedimentos</h3><p>'+esc(report.impediments||"Não informados")+'</p><h3>Observações</h3><p>'+esc(report.general_notes||"Não informadas")+'</p></div>';
    root.querySelector("#field-back-history").addEventListener("click",drawHistory);
   }catch(e){notify(e.message,true)}
  }
