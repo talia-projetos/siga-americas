@@ -21,7 +21,7 @@ function figureBar(items,{max=undefined,format=fmt,limit=5}={}){
  if(!arr.length||!arr.some(x=>Number(x.value)>0))return '<div class="analytics-empty">Ainda não há lançamentos suficientes para este gráfico.</div>';
  return '<div class="analytics-bars" role="img" aria-label="'+esc(arr.map(x=>x.name+': '+format(x.value)).join('; '))+'">'+arr.map((item,i)=>{
   const percent=Math.min(100,Math.max(0,100*Number(item.value||0)/top));
-  return '<div class="analytics-bar-row"><div class="analytics-bar-label" title="'+esc(item.name)+'">'+esc(item.name)+'</div><div class="analytics-bar-track"><span class="analytics-bar-fill" style="width:'+percent.toFixed(2)+'%;background:'+palette[i%palette.length]+'"></span></div><strong class="analytics-bar-value">'+esc(format(item.value))+'</strong></div>';
+  return '<div class="analytics-bar-row"><div class="analytics-bar-heading"><span class="analytics-bar-label" title="'+esc(item.name)+'">'+esc(item.name)+'</span><strong class="analytics-bar-value">'+esc(format(item.value))+'</strong></div><div class="analytics-bar-track" aria-hidden="true"><span class="analytics-bar-fill" style="width:'+percent.toFixed(2)+'%;background:'+palette[i%palette.length]+'"></span></div></div>';
  }).join("")+'</div>';
 }
 function figureDonut(items){
