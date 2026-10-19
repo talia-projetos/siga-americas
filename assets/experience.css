@@ -327,3 +327,32 @@ button svg,.ui-icon{pointer-events:none}
  .dashboard-section-head h2{font-size:18px}
  .dashboard-recent-list li{align-items:flex-start;flex-direction:column;gap:6px;padding:13px 0}
 }
+
+
+/* Tabelas: ordenação previsível, estados de status e filtros autoexplicativos */
+.table-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.table-toolbar .searchbox{flex:1 1 195px;min-width:165px}
+.table-toolbar .filter-clear{min-height:40px;padding:8px 11px;font-size:11px}
+.filter-clear .ui-icon{height:15px;width:15px}
+.table-sort{display:inline-flex;align-items:center;gap:8px;max-width:100%;font:inherit;font-size:inherit;font-weight:inherit;text-transform:none;letter-spacing:inherit;color:inherit;border:0;background:transparent;cursor:pointer;padding:4px 0;text-align:left;white-space:nowrap}
+.table-sort:hover,.table-sort.active{color:#157552}
+.table-sort:focus-visible{outline:2px solid #74c49f;outline-offset:4px;border-radius:3px}
+.table-sort .sort-arrow{color:#9ab6a4;font-weight:500;font-size:12px;line-height:1}
+.table-sort.active .sort-arrow{color:#16805d;font-weight:780}
+.numeric-cell .table-sort{justify-content:flex-end}
+.table-action .ui-icon{width:15px;height:15px}
+.table-action[data-edit]{display:inline-flex;gap:6px}
+.filter-note{font-size:10.5px;line-height:1.6;background:#fcfefc;padding:12px 20px;border-top:1px solid #eef3ee;color:#80988a}
+.status-chip{display:inline-flex;align-items:center;justify-content:center;white-space:normal;text-align:center;max-width:150px;line-height:1.45;font-size:10.5px;font-weight:720;padding:6px 9px;border:1px solid transparent}
+.status-chip.positive{color:#116846;background:#e5f5e9;border-color:#cdebd5}
+.status-chip.warning{color:#94641d;background:#fff3df;border-color:#f4e2be}
+.status-chip.negative{color:#9c3d3d;background:#fff0ed;border-color:#f3d6d1}
+.status-chip.info{color:#366d98;background:#edf5fc;border-color:#d2e6f4}
+.status-chip.neutral{color:#647768;background:#f0f4f0;border-color:#e1e9e2}
+.data-table td:last-child{min-width:105px}
+.data-table th:last-child{min-width:98px}
+@media(max-width:800px){
+ .table-toolbar{width:100%;flex-wrap:nowrap}
+ .table-toolbar .searchbox{min-width:0}
+ .table-toolbar .filter-clear{flex:none}
+}
