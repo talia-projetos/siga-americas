@@ -508,6 +508,16 @@ document.addEventListener("click",async e=>{
  if(action==="login"){app.pendingPage=null;login()}
  
 });
+// Identifica cada campo em telas estreitas, sem criar barras de rolagem.
+function labelResponsiveTables(){
+ el("main").querySelectorAll("table.data-table,table.inventory-table").forEach(table=>{
+  const labels=[...table.querySelectorAll("thead th")].map(th=>th.textContent.replace(/[↕↑↓]/g,"").trim());
+  table.querySelectorAll("tbody tr").forEach(tr=>{
+   [...tr.children].forEach((td,i)=>{if(td.tagName==="TD"&&!td.dataset.label)td.dataset.label=labels[i]||"";});
+  });
+ });
+}
+new MutationObserver(labelResponsiveTables).observe(el("main"),{childList:true,subtree:true});
 el("menu-toggle").addEventListener("click",()=>{
  if(mobileSidebar()){
   const expanded=el("sidebar").classList.toggle("open");
