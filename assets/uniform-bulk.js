@@ -226,7 +226,15 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
   const target=event.target;
   if(target.matches("[data-uniform-shirt]")){updateSize(target.dataset.uniformShirt,"shirt_size",target.value);return}
   if(target.matches("[data-uniform-pants]")){updateSize(target.dataset.uniformPants,"pants_size",target.value);return}
-  if(target.id==="uniform-search"){state.search=target.value;return}
+  if(target.id==="uniform-search"){
+   const caret=target.selectionStart;
+   state.search=target.value;
+   draw();
+   const input=root.querySelector("#uniform-search");
+   input?.focus();
+   if(input&&caret!==null)input.setSelectionRange(caret,caret);
+   return;
+  }
   if(target.id==="uniform-receipt")state.receipt=target.value;
   if(target.id==="uniform-notes")state.notes=target.value;
  });
