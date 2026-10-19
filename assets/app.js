@@ -1,11 +1,11 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=5";
+import {groups,modules} from "./modules.js?v=6";
 import {iconMarkup} from "./icons.js?v=2";
 import {renderDashboardAnalytics} from "./analytics.js?v=4";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
 import {mountInventoryCheck} from "./resource-check.js?v=2";
-import {openUniformBatch} from "./uniform-batch.js?v=2";
+import {mountUniformManager} from "./uniform-bulk.js?v=3";
 import {mountFieldReport} from "./field-forms.js?v=2";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 
@@ -199,6 +199,11 @@ function optionLabel(table,id,display){
 function fieldValue(key,value){
  if(value===null||value===undefined||value==="")return '<span class="muted">—</span>';
  const f=modules[app.page]?.fields?.find(x=>x.key===key);
+ if(app.page==="employees"&&key==="name")return '<strong class="employee-name">'+escapeHTML(value)+'</strong>';
+ if(app.page==="employees"&&key==="operational_role"){
+   const label=String(value).toLocaleLowerCase("pt-BR").replace(/(^|\s)\p{L}/gu,s=>s.toLocaleUpperCase("pt-BR"));
+   return '<span class="employee-role">'+escapeHTML(label)+'</span>';
+ }
  if(f?.type==="ref")return escapeHTML(optionLabel(f.table,value,f.display));
  if(f?.type==="boolean")return value?'<span class="tag">Sim</span>':'<span class="tag gray">Não</span>';
  if(f?.type==="date")return escapeHTML(dateBR(value));
@@ -328,7 +333,7 @@ async function modulePage(key){
   const overview=special?catalogOverview(key,app.rows):"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
-  '<section class="table-panel catalog-table"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="Pesquisar..." autocomplete="off">'+
+  '<section class="table-panel catalog-table '+(key==="employees"?'people-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="Pesquisar..." autocomplete="off">'+
    (special?'<button type="button" class="btn btn-ghost filter-clear" id="clear-list-filters">'+iconMarkup("close")+' Limpar</button>':"")+
   '</div></div>'+
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
@@ -355,6 +360,23 @@ async function modulePage(key){
   renderRows();
  }catch(e){el("main").innerHTML=title(key,m.description)+errorBanner(friendlyError(e))}
 }
+async function uniformPage(){
+ app.page="uniform_deliveries";nav();header("uniform_deliveries");
+ el("main").innerHTML=title("uniform_deliveries","Distribua os kits por equipe, confira tamanhos e acompanhe cada entrega.")+
+  '<div id="uniform-bulk-root"></div>';
+ try{
+  await ensureRefs("uniform_deliveries");
+  const root=el("uniform-bulk-root");
+  if(!root)return;
+  await mountUniformManager(root,app.db,{
+   notify,
+   onSingle:()=>openForm()
+  });
+ }catch(error){
+  const root=el("uniform-bulk-root");
+  if(root)root.innerHTML=errorBanner(friendlyError(error));
+ }
+}
 async function navigate(key){
  const requested=modules[key]?key:"inicio";
  if(!app.role){
@@ -372,6 +394,7 @@ async function navigate(key){
  closeSidebar();
  if(next==="inicio")await dashboard();
  else if(next==="coverage")await coveragePage();
+ else if(next==="uniform_deliveries")await uniformPage();
  else if(["field_report","field_monitor","resource_check"].includes(next)){
    nav();header(next);
    const slot=next==="field_report"?"daily-field-slot":next==="field_monitor"?"monitor-field-slot":"inventory-slot";
@@ -434,7 +457,7 @@ async function saveRecord(e){
  try{
   const query=app.editing?app.db.from(m.table).update(payload).eq("id",app.editing):app.db.from(m.table).insert(payload);
   const {error}=await query.select("id").single();if(error)throw error;
-  closeForm();app.prefillActivity=null;notify("Registro salvo com sucesso.");app.refs={};await modulePage(app.page);
+  closeForm();app.prefillActivity=null;notify("Registro salvo com sucesso.");app.refs={};if(app.page==="uniform_deliveries")await uniformPage();else await modulePage(app.page);
  }catch(e){notify(friendlyError(e),true)}finally{app.busy=false;btn.disabled=false;btn.textContent="Salvar registro";}
 }
 function exportCSV(){
@@ -451,7 +474,7 @@ document.addEventListener("click",async e=>{
  const edit=e.target.closest("[data-edit]");if(edit){await openForm(edit.dataset.edit);return;}
  const action=e.target.closest("[data-action]")?.dataset.action;
  if(action==="create")await openForm();
- if(action==="uniformBatch"&&app.page==="uniform_deliveries"&&privileged())await openUniformBatch({db:app.db,notify,afterSave:()=>modulePage("uniform_deliveries")});
+ if(action==="uniformBatch"&&app.page==="uniform_deliveries"&&privileged())await uniformPage();
  if(action==="export")exportCSV();
  if(action==="planActivity"){const id=e.target.closest("[data-activity-id]")?.dataset.activityId;if(id){app.prefillActivity=id;await navigate("field_plan_items");await openForm();}}
  if(action==="logout")await logout();
