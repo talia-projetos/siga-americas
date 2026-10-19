@@ -290,12 +290,12 @@ async function coveragePage(){
    ["Com decisão registrada",covered,pct+"% da matriz triada"],
    ["Em programação / execução",scheduled,"Atividades distintas"],
    ["Com execução registrada",completed,"Depende de evidência validada"]
-  ].map(d=>'<div class="metric"><div class="metric-header">'+d[0]+'<span class="metric-icon">◉</span></div><strong>'+d[1]+'</strong><small>'+d[2]+'</small></div>').join("");
+  ].map(d=>'<div class="metric"><div class="metric-header">'+d[0]+'<span class="metric-icon">'+iconMarkup("coverage")+'</span></div><strong>'+d[1]+'</strong><small>'+d[2]+'</small></div>').join("");
   el("main").innerHTML=title("coverage","O objetivo é analisar o aproveitamento tecnicamente aplicável de cada atividade, sem forçar execução de serviços desnecessários.",
-    '<button class="btn btn-secondary" data-nav="field_programs">Planejamento mensal ↗</button><button class="btn btn-primary" data-nav="field_plan_items">Ações programadas ↗</button>')+
+    '<button class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento mensal</button><button class="btn btn-primary" data-nav="field_plan_items">'+iconMarkup("clipboard")+' Ações programadas</button>')+
     '<div class="metric-grid">'+cards+'</div>'+
-    '<div class="notice"><strong>Critério de 100% de cobertura:</strong> todos os 73 itens analisados e classificados quanto à aplicabilidade, oportunidade, segurança, recursos e programação. Oportunidades candidatas não contam como itens validados. A execução depende de necessidade real, autorização, medição contratual e condições técnicas. “Não aplicável” exige justificativa e não conta como execução.</div>'+
-    '<section class="table-panel"><div class="table-head"><div><h2>Diagnóstico das 73 atividades</h2><span>Códigos da matriz técnica interna, distintos da planilha de preços</span></div><div class="table-toolbar"><input type="search" id="coverage-search" class="searchbox" placeholder="Buscar atividade ou responsável..." aria-label="Pesquisar catálogo"></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Item</th><th>Atividade</th><th>PROERG</th><th>Itaipu</th><th>Planejamento</th><th>Ação</th></tr></thead><tbody id="coverage-body"></tbody></table></div></section>';
+    '<p class="catalog-context-note">'+iconMarkup("check")+' Cobertura significa analisar e classificar cada atividade. Serviços só são executados quando necessários e autorizados.</p>'+
+    '<section class="table-panel"><div class="table-head"><div><h2>Diagnóstico das 73 atividades</h2><span>Atividades, responsáveis e situação de planejamento</span></div><div class="table-toolbar"><input type="search" id="coverage-search" class="searchbox" placeholder="Buscar atividade ou responsável..." aria-label="Pesquisar catálogo"></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Item</th><th>Atividade</th><th>PROERG</th><th>Itaipu</th><th>Planejamento</th><th>Ação</th></tr></thead><tbody id="coverage-body"></tbody></table></div></section>';
   const tbody=el("coverage-body");
   const draw=(term="")=>{
    const found=records.filter(x=>[x.code,x.name,x.technical_lead,x.itaipu_technical_contact].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(term.toLocaleLowerCase("pt-BR"))));
