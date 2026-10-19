@@ -15,7 +15,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
   employees:[],teams:[],batches:[],recipients:[],deliveries:[],
   team:"all",search:"",selected:new Set(),sizes:new Map(),dirty:new Set(),
   cycle:formMonth(dateLocal()),day:dateLocal(),receipt:"",notes:"",
-  tab:"prepare",preview:false,busy:false,requestToken:null
+  tab:"prepare",historySearch:"",preview:false,busy:false,requestToken:null
  };
  const table=(name,cols,limit=1200)=>{
   const query=db.from(name).select(cols);
@@ -109,17 +109,43 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
    const count=state.recipients.filter(r=>r.batch_id===b.id).length;
    return '<tr><td>'+humanDate(b.delivered_on)+'</td><td>'+humanDate(b.cycle_start)+' a '+humanDate(oneDay(sixMonths(b.cycle_start)))+'</td><td>'+number(count)+'</td><td>'+number(count*9)+'</td><td>'+safe(b.receipt_ref||"—")+'</td></tr>';
   }).join("");
-  const total=state.deliveries.reduce((sum,d)=>sum+Number(d.quantity||0),0);
-  return '<section class="uniform-history"><div class="uniform-section-head"><div><span class="eyebrow">HISTÓRICO</span><h2>Distribuições registradas</h2><p>Lotes por semestre e lançamentos avulsos permanecem rastreáveis por colaborador.</p></div>'+
+  const search=state.historySearch.toLocaleLowerCase("pt-BR");
+  const workerName=id=>state.employees.find(e=>e.id===id)?.name||"Colaborador não localizado";
+  const entries=[...state.deliveries].sort((a,b)=>String(b.delivered_on).localeCompare(String(a.delivered_on)));
+  const filtered=entries.filter(d=>!search||workerName(d.employee_id).toLocaleLowerCase("pt-BR").includes(search));
+  const pieceName={camisa_uv:"Camisa UV",camisa_polo:"Camisa polo",calca_tatica:"Calça tática",outro:"Outro"};
+  const detailRows=filtered.slice(0,100).map(d=>
+   '<tr><td>'+safe(workerName(d.employee_id))+'</td><td>'+safe(pieceName[d.item_type]||d.item_type)+'</td><td>'+safe(d.size||"—")+'</td><td>'+number(d.quantity)+'</td><td>'+humanDate(d.delivered_on)+'</td><td><span class="uniform-tag '+(d.batch_id?"complete":"pending")+'">'+(d.batch_id?"Kit":"Avulsa")+'</span></td></tr>'
+  ).join("");
+  return '<section class="uniform-history"><div class="uniform-section-head"><div><span class="eyebrow">HISTÓRICO</span><h2>Distribuições registradas</h2><p>Confira cada lote e todas as peças associadas a cada colaborador.</p></div>'+
    '<button type="button" class="btn btn-ghost" data-uniform-action="single">Entrega complementar</button></div>'+
    '<div class="catalog-stats uniform-history-stats">'+[
      ["Lotes",batchList.length,"Entregas coletivas"],
      ["Colaboradores em lotes",state.recipients.length,"Participações registradas"],
-     ["Peças em lotes",state.recipients.length*9,"Total nos kits completos"]
+     ["Peças entregues",entries.reduce((sum,x)=>sum+Number(x.quantity||0),0),"Kits e entregas avulsas"]
    ].map(([name,value,help])=>'<div class="catalog-stat"><span>'+safe(name)+'</span><strong>'+number(value)+'</strong><small>'+safe(help)+'</small></div>').join("")+'</div>'+
-   '<div class="table-panel"><div class="table-head"><h2>Últimas entregas coletivas</h2></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Data</th><th>Ciclo</th><th>Colaboradores</th><th>Peças</th><th>Comprovante</th></tr></thead><tbody>'+
+   '<div class="table-panel"><div class="table-head"><h2>Entregas coletivas</h2></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Data</th><th>Ciclo</th><th>Colaboradores</th><th>Peças</th><th>Comprovante</th></tr></thead><tbody>'+
     (rows||'<tr><td colspan="5" class="uniform-empty">Nenhum lote registrado até agora.</td></tr>')+'</tbody></table></div></div>'+
-   '<p class="uniform-history-help">Para consultar todas as peças entregues por colaborador, utilize a exportação dos registros ou os relatórios de distribuição. A entrega complementar continua disponível quando necessário.</p></section>';
+   '<div class="table-panel uniform-history-details"><div class="table-head"><div><h2>Histórico por colaborador</h2><span>'+number(filtered.length)+' lançamento(s)'+(filtered.length>100?" · primeiros 100 exibidos":"")+'</span></div>'+
+   '<div class="table-toolbar"><input id="uniform-history-search" class="searchbox" type="search" placeholder="Buscar colaborador…" value="'+safe(state.historySearch)+'">'+
+   '<button type="button" class="btn btn-ghost" data-uniform-action="export-history">Baixar CSV</button></div></div>'+
+   '<div class="table-scroll"><table class="data-table"><thead><tr><th>Colaborador</th><th>Peça</th><th>Tamanho</th><th>Quantidade</th><th>Entrega</th><th>Tipo</th></tr></thead><tbody>'+
+   (detailRows||'<tr><td colspan="6" class="uniform-empty">Nenhuma entrega localizada.</td></tr>')+'</tbody></table></div></div>'+
+   '<p class="uniform-history-help">O histórico mostra entregas confirmadas. Quantidades e tamanhos devem corresponder ao recibo ou à conferência física.</p></section>';
+ }
+ function downloadHistory(){
+  const workerName=id=>state.employees.find(e=>e.id===id)?.name||"Colaborador não localizado";
+  const headers=["Colaborador","Peça","Tamanho","Quantidade","Data da entrega","Modalidade"];
+  const names={camisa_uv:"Camisa UV",camisa_polo:"Camisa polo",calca_tatica:"Calça tática",outro:"Outro"};
+  const rows=state.deliveries.map(d=>[workerName(d.employee_id),names[d.item_type]||d.item_type,d.size||"",d.quantity,d.delivered_on,d.batch_id?"Kit":"Avulsa"]);
+  const clean=v=>{
+   let x=String(v??"");if(/^[=+@-]/.test(x.trim()))x="'"+x;
+   return '"'+x.replaceAll('"','""')+'"';
+  };
+  const csv="\uFEFF"+[headers,...rows].map(c=>c.map(clean).join(";")).join("\r\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+  const a=document.createElement("a");a.href=url;a.download="SIGA_fardamentos_historico.csv";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
  }
  function preview(){
   const workers=prepared(),day=state.day;
@@ -159,7 +185,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
    table("teams","id,code,name,active",60),
    table("uniform_delivery_batches","id,request_token,cycle_start,delivered_on,receipt_ref,notes,created_at",700),
    table("uniform_delivery_batch_recipients","id,batch_id,employee_id,cycle_start",1800),
-   table("uniform_deliveries","id,employee_id,item_type,quantity,delivered_on,batch_id",1800)
+   table("uniform_deliveries","id,employee_id,item_type,size,quantity,delivered_on,batch_id",1800)
   ]);
   state.employees=employees.filter(e=>e.active!==false).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
   state.teams=teams.filter(t=>t.active!==false).sort((a,b)=>String(a.code).localeCompare(String(b.code),"pt-BR"));
@@ -235,6 +261,12 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
    if(input&&caret!==null)input.setSelectionRange(caret,caret);
    return;
   }
+  if(target.id==="uniform-history-search"){
+   const pos=target.selectionStart;state.historySearch=target.value;draw();
+   const field=root.querySelector("#uniform-history-search");
+   field?.focus();if(field&&pos!==null)field.setSelectionRange(pos,pos);
+   return;
+  }
   if(target.id==="uniform-receipt")state.receipt=target.value;
   if(target.id==="uniform-notes")state.notes=target.value;
  });
@@ -259,6 +291,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
   if(!button||state.busy)return;
   const action=button.dataset.uniformAction;
   if(action==="single"){onSingle?.();return}
+  if(action==="export-history"){downloadHistory();return}
   if(action==="select-visible"){
    const eligible=eligibleVisible();
    if(!eligible.length)return notify("Não há colaboradores elegíveis neste filtro.",true);
