@@ -407,3 +407,12 @@
 @media(max-width:800px){
  .sidebar .brand-mark img{width:34px!important;height:auto!important;max-height:33px!important}
 }
+
+/* Navegação lateral em peso regular, sem alterar o destaque de cor. */
+.sidebar .nav-home,
+.sidebar .nav-home.active,
+.sidebar .nav-section-toggle,
+.sidebar .nav-section-title,
+.sidebar .nav-section .nav-link,
+.sidebar .nav-section .nav-link.active,
+.sidebar .nav-link-text{font-weight:400!important}
