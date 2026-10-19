@@ -258,3 +258,43 @@
  .analytics-footline{gap:12px!important}
  .analytics-donut{width:113px;height:113px}
 }
+
+
+/* 3. Colaboradores: prioriza os dados reais e evita colunas técnicas e vazias. */
+.people-table .data-table{min-width:730px}
+.people-table .data-table th:first-child,
+.people-table .data-table td:first-child{min-width:220px;width:27%}
+.people-table .data-table th:nth-child(2),
+.people-table .data-table td:nth-child(2){min-width:145px;width:19%}
+.people-table .data-table th:nth-child(3),
+.people-table .data-table td:nth-child(3){min-width:160px;width:20%}
+.people-table .data-table th:nth-child(4),
+.people-table .data-table td:nth-child(4){min-width:100px}
+.people-table .employee-name{
+ display:block;font-size:12px;line-height:1.55;
+ color:#25431f;font-weight:700;
+ white-space:normal;overflow-wrap:break-word;
+}
+.people-table .employee-role{
+ color:#5d7554;
+ background:#f4f8f1;
+ display:inline-block;
+ border-radius:7px;
+ padding:5px 8px;
+ font-size:11px;
+ line-height:1.35;
+}
+.people-table .data-table td{vertical-align:middle}
+.people-table .data-table th,.people-table .data-table td{padding:13px 15px}
+/* Reforça o destaque de ações nos formulários sem aumentar o ruído visual. */
+.uniform-roster .data-table th{white-space:nowrap}
+.uniform-roster .uniform-person-name{font-size:12px}
+.uniform-manager .uniform-section-head h2{line-height:1.35}
+.uniform-manager .uniform-controls,.uniform-manager .uniform-distribution{
+ box-shadow:0 6px 22px rgba(24,51,6,.032)
+}
+.uniform-manager .uniform-delivery-form input{min-height:44px}
+@media(max-width:540px){
+ .people-table .data-table{min-width:660px}
+ .uniform-manager .uniform-kit-items>span{line-height:1.35}
+}
