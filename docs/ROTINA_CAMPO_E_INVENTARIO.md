@@ -1,5 +1,13 @@
 # SIGA Américas · Registro diário de campo e conferência de quantitativos
 
+## Preenchimento rápido (versão simplificada)
+
+Com login de técnico associado à equipe, o formulário exige normalmente **duas escolhas**: confirmar a **frente de trabalho** e escolher uma atividade entre os **73 itens técnicos**. A data já vem preenchida, a equipe é reconhecida pelo login e o resultado inicial é **Feito**, com alternativas **Parcial**, **Impedido** e **Não se aplica**. Para outras atividades, há **Adicionar outra atividade**, seguido de **Enviar relatório**.
+
+Em **Detalhes desta atividade** ficam quantidade, unidade, horas, ordem de serviço, local específico, evidência e trabalhadores participantes. Em **Mais detalhes do dia** ficam presença, clima, veículos, segurança e observações. Esses campos são opcionais.
+
+A ausência de presença preenchida significa **não informada**, nunca zero trabalhadores. Atividade feita sem quantidade é um relato qualitativo, não uma medição contratual. O envio não valida execução nem conclui automaticamente uma OS; a supervisão deve conferir.
+
 ## O que mudou em relação ao formulário anterior
 O formulário legado do Google Apps Script gravava em `05_Execucao`: **equipe, data, atividade realizada, horas, responsável, observações, dias de campo, quantidade e unidade**, alterando automaticamente o status do planejamento.
 
