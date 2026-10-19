@@ -5,6 +5,7 @@ import {iconMarkup} from "./icons.js?v=2";
 import {renderDashboardAnalytics} from "./analytics.js?v=4";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
 import {mountInventoryCheck} from "./resource-check.js?v=2";
+import {openUniformBatch} from "./uniform-batch.js?v=1";
 import {mountFieldReport} from "./field-forms.js?v=2";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 
@@ -316,7 +317,12 @@ async function modulePage(key){
   if(error)throw error;
   app.rows=data||[];
   if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
-  const buttons=(privileged()?'<button class="btn btn-primary" data-action="create">'+iconMarkup("plus")+' Novo registro</button>':"")+
+  const buttons=(privileged()
+    ?key==="uniform_deliveries"
+      ?'<button class="btn btn-primary" data-action="uniformBatch">'+iconMarkup("people")+' Registrar em lote</button>'+
+        '<button class="btn btn-secondary" data-action="create">'+iconMarkup("plus")+' Entrega individual</button>'
+      :'<button class="btn btn-primary" data-action="create">'+iconMarkup("plus")+' Novo registro</button>'
+    :"")+
    '<button class="btn btn-ghost" data-action="export">'+iconMarkup("download")+' Baixar CSV</button>';
   const special=isCatalogPage(key);
   const overview=special?catalogOverview(key,app.rows):"";
@@ -445,6 +451,7 @@ document.addEventListener("click",async e=>{
  const edit=e.target.closest("[data-edit]");if(edit){await openForm(edit.dataset.edit);return;}
  const action=e.target.closest("[data-action]")?.dataset.action;
  if(action==="create")await openForm();
+ if(action==="uniformBatch"&&app.page==="uniform_deliveries"&&privileged())await openUniformBatch({db:app.db,notify,afterSave:()=>modulePage("uniform_deliveries")});
  if(action==="export")exportCSV();
  if(action==="planActivity"){const id=e.target.closest("[data-activity-id]")?.dataset.activityId;if(id){app.prefillActivity=id;await navigate("field_plan_items");await openForm();}}
  if(action==="logout")await logout();
