@@ -35,7 +35,7 @@ export async function mountFieldMonitor(root,db,{user,notify}){
   const blocked=set.filter(r=>r.impediments?.trim()).length;
   const bars=activeTeams.map(t=>{
    const n=set.filter(r=>r.team_id===t.id).length,den=Math.max(1,...activeTeams.map(x=>set.filter(r=>r.team_id===x.id).length));
-   return '<div class="monitor-bar-row"><span>'+esc(t.code)+'</span><div class="analytics-bar-track"><span class="analytics-bar-fill" style="width:'+Math.round(n/den*100)+'%;background:#15826c"></span></div><strong>'+n+'</strong></div>';
+   return '<div class="monitor-bar-row"><span>'+esc(t.code)+'</span><div class="analytics-bar-track"><span class="analytics-bar-fill" style="width:'+Math.round(n/den*100)+'%;background:#4CA314"></span></div><strong>'+n+'</strong></div>';
   }).join("");
   root.innerHTML='<div class="field-header"><div><span class="eyebrow">SUPERVISÃO · REGISTROS DAS EQUIPES</span><h2>Acompanhamento das equipes</h2><p>Relatórios enviados pelos técnicos com atividade, equipe, frente, participantes, quantidades e impedimentos.</p></div></div>'+
    '<div class="monitor-controls"><label>Data de referência <input type="date" id="monitor-date" value="'+esc(period)+'"></label><label>Equipe <select id="monitor-team"><option value="all">Todas as equipes</option>'+teams.map(t=>'<option value="'+esc(t.id)+'"'+(selectedTeam===t.id?" selected":"")+'>'+esc(t.code+" · "+t.name)+'</option>').join("")+'</select></label><label>Situação <select id="monitor-status"><option value="all">Todas</option>'+Object.entries(statuses).map(([k,v])=>'<option value="'+k+'"'+(selectedStatus===k?" selected":"")+'>'+esc(v)+'</option>').join("")+'</select></label></div>'+
