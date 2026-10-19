@@ -39,7 +39,15 @@ export async function openUniformBatch({db,notify,afterSave}){
   document.removeEventListener("keydown",escKey);
   originalFocus?.focus?.();
  }
- const escKey=e=>{if(e.key==="Escape"){e.preventDefault();close()}};
+ const escKey=e=>{
+   if(e.key==="Escape"){e.preventDefault();close();return;}
+   if(e.key!=="Tab"||disposed)return;
+   const controls=[...overlay.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled])')].filter(x=>x.getClientRects().length);
+   if(!controls.length)return;
+   const first=controls[0],last=controls[controls.length-1];
+   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+   else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+  };
  document.addEventListener("keydown",escKey);
  overlay.addEventListener("click",event=>{
   if(event.target===overlay||event.target.closest("[data-uniform-close]"))close();
@@ -100,7 +108,7 @@ export async function openUniformBatch({db,notify,afterSave}){
    '<div class="uniform-staff-scroll"><table class="uniform-staff-table"><thead><tr><th scope="col">Selecionar</th><th scope="col">Colaborador</th><th scope="col">Camisa</th><th scope="col">Calça</th><th scope="col">Situação</th></tr></thead><tbody>'+
    (visibleRows.length?visibleRows.map(r=>{
     const entry=staff.get(r.id),dup=duplicate(r);
-    return '<tr data-uniform-person="'+esc(r.id)+'"><td><input type="checkbox" data-uniform-select aria-label="Selecionar '+esc(r.name)+'" '+(entry.selected?"checked":"")+(dup?" disabled":"")+'></td><td><strong>'+esc(r.name)+'</strong><small>'+esc(teams.find(t=>t.id===r.team_id)?.code||"Sem equipe")+'</small></td><td><label class="sr-only" for="uniform-shirt-'+esc(r.id)+'">Tamanho de camisa de '+esc(r.name)+'</label><input id="uniform-shirt-'+esc(r.id)+'" type="text" maxlength="12" data-uniform-shirt list="uniform-shirt-options" placeholder="Ex.: M" value="'+esc(entry.shirt)+'"></td><td><label class="sr-only" for="uniform-pants-'+esc(r.id)+'">Tamanho de calça de '+esc(r.name)+'</label><input id="uniform-pants-'+esc(r.id)+'" type="text" maxlength="12" data-uniform-pants list="uniform-pants-options" placeholder="Ex.: 42" value="'+esc(entry.pants)+'"></td><td><span class="uniform-staff-status '+(dup?"blocked":entry.shirt.trim()&&entry.pants.trim()?"ready":"missing")+'">'+(dup?"Já registrado":entry.shirt.trim()&&entry.pants.trim()?"Tamanhos OK":"Falta tamanho")+'</span></td></tr>';
+    return '<tr data-uniform-person="'+esc(r.id)+'"><td><input type="checkbox" data-uniform-select aria-label="Selecionar '+esc(r.name)+'" '+(entry.selected?"checked":"")+(dup&&!entry.selected?" disabled":"")+'></td><td><strong>'+esc(r.name)+'</strong><small>'+esc(teams.find(t=>t.id===r.team_id)?.code||"Sem equipe")+'</small></td><td><label class="sr-only" for="uniform-shirt-'+esc(r.id)+'">Tamanho de camisa de '+esc(r.name)+'</label><input id="uniform-shirt-'+esc(r.id)+'" type="text" maxlength="12" data-uniform-shirt list="uniform-shirt-options" placeholder="Ex.: M" value="'+esc(entry.shirt)+'"></td><td><label class="sr-only" for="uniform-pants-'+esc(r.id)+'">Tamanho de calça de '+esc(r.name)+'</label><input id="uniform-pants-'+esc(r.id)+'" type="text" maxlength="12" data-uniform-pants list="uniform-pants-options" placeholder="Ex.: 42" value="'+esc(entry.pants)+'"></td><td><span class="uniform-staff-status '+(dup?"blocked":entry.shirt.trim()&&entry.pants.trim()?"ready":"missing")+'">'+(dup?"Já registrado":entry.shirt.trim()&&entry.pants.trim()?"Tamanhos OK":"Falta tamanho")+'</span></td></tr>';
    }).join(""):'<tr><td colspan="5"><p class="empty-state">Nenhum colaborador encontrado.</p></td></tr>')+
    '</tbody></table></div>'+
    '<datalist id="uniform-shirt-options">'+["PP","P","M","G","GG","XG","XXG","G1","G2","G3"].map(x=>'<option value="'+x+'"></option>').join("")+'</datalist>'+
@@ -141,7 +149,14 @@ export async function openUniformBatch({db,notify,afterSave}){
    await loadHistory();if(!disposed)draw();
   });
   get("#uniform-date").addEventListener("change",e=>{day=e.target.value;confirmed=false;get("#uniform-confirm").checked=false;sync()});
-  get("#uniform-search").addEventListener("input",e=>{query=e.target.value.toLocaleLowerCase("pt-BR");draw();get("#uniform-search").focus()});
+  get("#uniform-search").addEventListener("input",e=>{
+   const position=e.target.selectionStart;
+   query=e.target.value.toLocaleLowerCase("pt-BR");
+   draw();
+   const next=get("#uniform-search");
+   next.focus();
+   if(position!==null)next.setSelectionRange(position,position);
+  });
   get("#uniform-receipt").addEventListener("input",e=>receipt=e.target.value);
   get("#uniform-notes").addEventListener("input",e=>notes=e.target.value);
   get("#uniform-confirm").addEventListener("change",e=>{confirmed=e.target.checked;sync()});
@@ -159,8 +174,10 @@ export async function openUniformBatch({db,notify,afterSave}){
   get(".uniform-staff-scroll").addEventListener("change",e=>{
    if(!e.target.matches("[data-uniform-select]"))return;
    const tr=e.target.closest("[data-uniform-person]");
+   const employee=rows.find(r=>r.id===tr.dataset.uniformPerson);
+   if(employee&&duplicate(employee)&&e.target.checked){e.target.checked=false;notify("Já existe entrega registrada para este período.",true);return}
    staff.get(tr.dataset.uniformPerson).selected=e.target.checked;
-   sync();
+   if(employee&&duplicate(employee))draw();else sync();
   });
   get("#uniform-apply-sizes").addEventListener("click",()=>{
    const shirt=get("#uniform-shared-shirt").value.toUpperCase().trim();
