@@ -10,7 +10,7 @@ import {mountFieldMonitor} from "./field-monitor.js";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const app={db:null,user:null,role:null,teamId:null,page:"inicio",rows:[],refs:{},editing:null,search:"",filters:{},busy:false,pendingPage:null,prefillActivity:null};
+const app={db:null,user:null,role:null,teamId:null,page:"inicio",rows:[],refs:{},editing:null,search:"",filters:{},sort:{key:null,descending:false},busy:false,pendingPage:null,prefillActivity:null};
 const privileged=()=>["admin","gestao","supervisao"].includes(app.role);
 const currency=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n||0));
 const dateBR=s=>s?new Date(String(s).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
@@ -206,22 +206,50 @@ function fieldValue(key,value){
  if(["party_responsible","provider_party"].includes(key))return '<span class="tag">'+escapeHTML(partyLabels[value]||value)+'</span>';
  if(key==="domain")return escapeHTML(domainLabels[value]||value);
  if(key==="category")return escapeHTML(categoryLabels[value]||String(value).replaceAll("_"," "));
- if(["status","priority","condition","validation_status","review_status","action_status"].includes(key)){const v=String(value),style=/imped|pendente|critica|indisponivel/.test(v)?"warn":/cancelada|inutilizavel/.test(v)?"red":"gray";return '<span class="tag '+style+'">'+escapeHTML(v.replaceAll("_"," "))+'</span>'}
+ if(["status","priority","condition","validation_status","review_status","action_status"].includes(key)){
+   const v=String(value);
+   const labels={a_conferir:"A conferir",em_execucao:"Em execução",nao_aplicavel:"Não aplicável",em_revisao:"Em revisão",em_adequacao:"Em adequação",em_analise:"Em análise",sem_programacao:"Sem programação",devolvido:"Devolvido",validado:"Validado",pendente:"Pendente de conferência",programada:"Programada",concluida:"Concluída",executada:"Executada",inviavel:"Inviável"};
+   const positive=/^(validado|concluida|concluido|executada|realizada|conforme|aprovado|ativa|ativo)$/.test(v);
+   const danger=/^(cancelada|inutilizavel|atrasada|atrasado)$/.test(v);
+   const warning=/^(impedida|impedido|devolvido|em_adequacao|critica|indisponivel)$/.test(v);
+   const info=/^(em_execucao|em_analise|programada|candidata)$/.test(v);
+   const style=positive?"positive":danger?"negative":warning?"warning":info?"info":"neutral";
+   return '<span class="tag status-chip '+style+'">'+escapeHTML(labels[v]||v.replaceAll("_"," "))+'</span>';
+ }
  return '<span class="truncate" title="'+escapeHTML(value)+'">'+escapeHTML(value)+'</span>';
 }
 function filteredRows(){
  const term=norm(app.search);
- return app.rows.filter(row=>{
+ const rows=app.rows.filter(row=>{
   const matches=!term||Object.values(row).some(v=>norm(v).includes(term))||modules[app.page].fields.some(f=>f.type==="ref"&&norm(optionLabel(f.table,row[f.key],f.display)).includes(term));
   const selections=Object.entries(app.filters||{}).every(([key,value])=>!value||String(row[key]??"")===String(value));
   return matches&&selections;
  });
+ const {key,descending}=app.sort||{};
+ if(!key)return rows;
+ const collator=new Intl.Collator("pt-BR",{sensitivity:"base",numeric:true});
+ rows.sort((a,b)=>{
+  let av=a[key],bv=b[key];
+  if(av==null||av==="")return bv==null||bv===""?0:1;
+  if(bv==null||bv==="")return -1;
+  const result=typeof av==="number"&&typeof bv==="number"?av-bv:collator.compare(String(av),String(bv));
+  return descending?-result:result;
+ });
+ return rows;
 }
 function renderRows(){
  const table=el("table-body");if(!table)return;
  const m=modules[app.page],rows=filteredRows(),financial=app.page==="contract_items";
  const count=el("records-shown");
  if(count)count.textContent=rows.length+" de "+app.rows.length+" registros";
+ el("main").querySelectorAll("[data-sort-col]").forEach(button=>{
+   const active=button.dataset.sortCol===app.sort?.key;
+   const direction=active?(app.sort.descending?"descending":"ascending"):"none";
+   button.closest("th")?.setAttribute("aria-sort",direction);
+   button.classList.toggle("active",active);
+   const marker=button.querySelector(".sort-arrow");
+   if(marker)marker.textContent=active?(app.sort.descending?"↓":"↑"):"↕";
+ });
  if(!rows.length){
   table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'"><div class="empty-state"><div class="empty-symbol">◌</div><strong>Nenhum registro encontrado</strong>Revise a pesquisa ou os filtros.</div></td></tr>';
   return;
@@ -231,7 +259,7 @@ function renderRows(){
   if(financial&&key==="name")return '<td><span class="catalog-name" title="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</span></td>';
   const klass=financial&&["estimated_quantity","unit_price","estimated_total"].includes(key)?' class="numeric-cell"':"";
   return '<td'+klass+'>'+fieldValue(key,row[key])+'</td>';
- }).join("")+'<td>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">Conferir / editar</button>':'<span class="muted">Consulta</span>')+'</td></tr>').join("");
+ }).join("")+'<td>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">'+iconMarkup('file')+' Editar</button>':'<span class="muted">Consulta</span>')+'</td></tr>').join("");
 }
 async function coveragePage(){
  app.page="coverage";app.search="";nav();header("coverage");
@@ -277,7 +305,7 @@ async function coveragePage(){
  }catch(e){el("main").innerHTML=title("coverage","Matriz de cobertura")+errorBanner(friendlyError(e))}
 }
 async function modulePage(key){
- app.page=key;app.search="";app.filters={};nav();header(key);
+ app.page=key;app.search="";app.filters={};app.sort={key:null,descending:false};nav();header(key);
  const m=modules[key];
  el("main").innerHTML=title(key,m.description)+'<div class="loading-page"><div class="loader"></div><p>Consultando registros...</p></div>';
  try{
@@ -289,15 +317,34 @@ async function modulePage(key){
   app.rows=data||[];
   if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
   const buttons=(privileged()?'<button class="btn btn-primary" data-action="create">'+iconMarkup("plus")+' Novo registro</button>':"")+
-   '<button class="btn btn-ghost" data-action="export">'+iconMarkup("download")+' Exportar CSV</button>';
+   '<button class="btn btn-ghost" data-action="export">'+iconMarkup("download")+' Baixar CSV</button>';
   const special=isCatalogPage(key);
   const overview=special?catalogOverview(key,app.rows):"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
-  '<section class="table-panel catalog-table"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros carregados</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="Pesquisar nesta tabela..." autocomplete="off"></div></div>'+
+  '<section class="table-panel catalog-table"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="Pesquisar..." autocomplete="off">'+
+   (special?'<button type="button" class="btn btn-ghost filter-clear" id="clear-list-filters">'+iconMarkup("close")+' Limpar</button>':"")+
+  '</div></div>'+
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
-  '<div class="table-scroll"><table class="data-table"><thead><tr>'+m.columns.map(col=>'<th'+(["unit_price","estimated_quantity","estimated_total"].includes(col)?' class="numeric-cell"':"")+'>'+escapeHTML(m.fields.find(f=>f.key===col)?.label||col)+'</th>').join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div><div class="filter-note">Consulta do Supabase. O CSV exporta apenas os registros carregados'+(special?" e filtrados":"")+'.</div></section>';
+  '<div class="table-scroll"><table class="data-table"><thead><tr>'+m.columns.map(col=>{
+    const numeric=["unit_price","estimated_quantity","estimated_total","required_quantity","observed_quantity"].includes(col);
+    const label=m.fields.find(f=>f.key===col)?.label||col;
+    return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'">'+escapeHTML(label)+' <span class="sort-arrow" aria-hidden="true">↕</span></button></th>';
+  }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
+  '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>';
   el("list-search").addEventListener("input",event=>{app.search=event.target.value;renderRows()});
+  el("main").querySelectorAll("[data-sort-col]").forEach(button=>button.addEventListener("click",()=>{
+   const key=button.dataset.sortCol;
+   app.sort=app.sort.key===key?{key,descending:!app.sort.descending}:{key,descending:false};
+   renderRows();
+  }));
+  const reset=el("clear-list-filters");
+  if(special&&reset)reset.addEventListener("click",()=>{
+   app.search="";app.filters={};app.sort={key:null,descending:false};
+   el("list-search").value="";
+   el("main").querySelectorAll("[data-list-filter]").forEach(select=>select.value="");
+   renderRows();
+  });
   el("main").querySelectorAll("[data-list-filter]").forEach(filter=>filter.addEventListener("change",event=>{app.filters[event.target.dataset.listFilter]=event.target.value;renderRows()}));
   renderRows();
  }catch(e){el("main").innerHTML=title(key,m.description)+errorBanner(friendlyError(e))}
