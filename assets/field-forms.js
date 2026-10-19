@@ -190,14 +190,14 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  }
  function fmtStatus(code){return '<span class="field-status '+esc(code)+'">'+esc(statuses[code]||code)+'</span>'}
  async function drawHistory(){
-  try{reports=await list(db,"field_daily_reports","id,team_id,area_id,report_date,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",300)}
+  try{reports=await list(db,"field_daily_reports","id,team_id,area_id,report_date,report_period,period_start,period_end,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",300)}
   catch(e){notify(e.message,true);return}
   reports.sort((a,b)=>String(b.report_date).localeCompare(String(a.report_date)));
   const own=reports.filter(r=>!isTech||r.team_id===teamId);
-  root.innerHTML=topbar()+'<div class="field-history"><div class="field-history-head"><h3>Histórico de relatórios</h3><p>Relatórios enviados pelos técnicos, com status de revisão da supervisão.</p></div>'+
+  root.innerHTML=topbar()+'<div class="field-history"><div class="field-history-head"><h3>Relatórios por semana</h3><p>Consulte os envios, os rascunhos e a análise da supervisão.</p></div>'+
   (own.length?own.map(r=>{
    const team=teams.find(x=>x.id===r.team_id),area=areas.find(x=>x.id===r.area_id);
-   return '<article class="field-history-item"><div><strong>'+esc(dateBR(r.report_date))+' · '+esc(team?.name||"Equipe")+'</strong><p>'+esc(area?.name||"Frente não identificada")+'</p></div>'+fmtStatus(r.status)+'<div class="field-history-buttons"><button type="button" class="table-action" data-view-report="'+esc(r.id)+'">Detalhes ↗</button>'+
+   return '<article class="field-history-item"><div><strong>'+esc(periodLabel(r))+' · '+esc(team?.name||"Equipe")+'</strong><p>'+esc(area?.name||"Frente não identificada")+'</p></div>'+fmtStatus(r.status)+'<div class="field-history-buttons"><button type="button" class="table-action" data-view-report="'+esc(r.id)+'">Detalhes ↗</button>'+
    (["rascunho","devolvido"].includes(r.status)&&r.reported_by===user.id?'<button type="button" class="table-action" data-resume-report="'+esc(r.id)+'">Retomar</button>':"")+'</div></article>';
   }).join(""):'<div class="empty-state">Ainda não há relatórios de campo cadastrados.</div>')+
   '</div>';
@@ -209,25 +209,25 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   try{
    const report=reports.find(r=>r.id===id);if(!report)return;
    const [i,a]=await Promise.all([
-    list(db,"field_daily_report_items","id,activity_id,result,quantity,unit,hours_worked,location,notes,evidence_ref,work_order_id,report_id",500),
+    list(db,"field_daily_report_items","id,area_id,activity_id,result,quantity,unit,hours_worked,location,notes,evidence_ref,work_order_id,report_id",500),
     list(db,"field_daily_attendance","id,employee_id,presence_status,report_id",500)
    ]);
    const parts=i.filter(r=>r.report_id===id);const pres=a.filter(x=>x.report_id===id);
-   const reportLine=parts.map(x=>{const activity=activities.find(y=>y.id===x.activity_id);return '<li><strong>'+esc(activity?.code||"—")+' · '+esc(activity?.name||"Atividade")+'</strong> — '+esc(results[x.result]||x.result)+(x.quantity!==null?' · '+esc(x.quantity||"")+' '+esc(x.unit||""):"")+' · '+esc(x.location||"Local não informado")+'</li>'}).join("");
-   root.innerHTML='<div class="field-history-detail"><button class="btn btn-ghost" id="field-back-history">← Histórico</button><h2>Relatório · '+esc(dateBR(report.report_date))+'</h2><p>'+fmtStatus(report.status)+'</p><h3>Atividades</h3><ul>'+reportLine+'</ul><h3>Trabalhadores</h3><p>'+(pres.length?pres.filter(x=>x.presence_status==="presente").length+' presentes; '+pres.filter(x=>x.presence_status==="ausente").length+' ausentes; '+pres.filter(x=>x.presence_status==="folga").length+' em folga.':'Presença não informada.')+'</p><h3>Impedimentos</h3><p>'+esc(report.impediments||"Não informados")+'</p><h3>Observações</h3><p>'+esc(report.general_notes||"Não informadas")+'</p></div>';
+   const reportLine=parts.map(x=>{const activity=activities.find(y=>y.id===x.activity_id);return '<li><strong>'+esc(activity?.code||"—")+' · '+esc(activity?.name||"Atividade")+'</strong> — '+esc(results[x.result]||x.result)+(x.quantity!==null?' · '+esc(x.quantity||"")+' '+esc(x.unit||""):"")+' · '+esc((areas.find(a=>a.id===x.area_id)?.name||"Frente não informada")+(x.location?" · "+x.location:""))+'</li>'}).join("");
+   root.innerHTML='<div class="field-history-detail"><button class="btn btn-ghost" id="field-back-history">← Histórico</button><h2>Relatório · '+esc(periodLabel(report))+'</h2><p>'+fmtStatus(report.status)+'</p><h3>Atividades</h3><ul>'+reportLine+'</ul><h3>Trabalhadores</h3><p>'+(pres.length?pres.filter(x=>x.presence_status==="presente").length+' presentes; '+pres.filter(x=>x.presence_status==="ausente").length+' ausentes; '+pres.filter(x=>x.presence_status==="folga").length+' em folga.':'Presença não informada.')+'</p><h3>Impedimentos</h3><p>'+esc(report.impediments||"Não informados")+'</p><h3>Observações</h3><p>'+esc(report.general_notes||"Não informadas")+'</p></div>';
    root.querySelector("#field-back-history").addEventListener("click",drawHistory);
   }catch(e){notify(e.message,true)}
  }
  async function resume(id){
   try{
    const report=reports.find(r=>r.id===id);
-   if(!report||report.reported_by!==user.id||!["rascunho","devolvido"].includes(report.status))return;
+   if(!report||report.report_period!=="semanal"||report.reported_by!==user.id||!["rascunho","devolvido"].includes(report.status))return;
    const [i,a,participants]=await Promise.all([
     list(db,"field_daily_report_items","*",600),list(db,"field_daily_attendance","*",600),list(db,"field_daily_item_workers","*",800)
    ]);
    draftId=report.id;currentReport=report;
    selectedTeam=report.team_id;
-   formState={report_date:report.report_date,team_id:report.team_id,area_id:report.area_id||"",shift:report.shift||"integral",team_leader:report.team_leader||"",weather:report.weather||"nao_informado",field_conditions:report.field_conditions||"",equipment_used:report.equipment_used||"",general_notes:report.general_notes||"",impediments:report.impediments||""};
+   formState={report_date:report.period_start||report.report_date,team_id:report.team_id,area_id:report.area_id||"",shift:report.shift||"integral",team_leader:report.team_leader||"",weather:report.weather||"nao_informado",field_conditions:report.field_conditions||"",equipment_used:report.equipment_used||"",general_notes:report.general_notes||"",impediments:report.impediments||""};
    attendance=Object.fromEntries(a.filter(x=>x.report_id===id).map(x=>[x.employee_id,x.presence_status]));
    items=i.filter(x=>x.report_id===id).map(x=>({...x,quantity:x.quantity??"",hours_worked:x.hours_worked??"",work_order_id:x.work_order_id||"",workers:participants.filter(p=>p.report_item_id===x.id).map(x=>x.employee_id)}));
    if(!items.length)items=[newItem()];
