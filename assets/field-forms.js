@@ -56,7 +56,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    id:card.dataset.itemId||null,
    activity_id:card.querySelector("[data-field-activity]")?.value||"",
    work_order_id:card.querySelector("[data-field-order]")?.value||"",
-   result:card.querySelector("[data-field-result]")?.value||"executada",
+   result:card.querySelector("[data-field-result]:checked")?.value||"executada",
    location:card.querySelector("[data-field-location]")?.value?.trim()||"",
    quantity:card.querySelector("[data-field-quantity]")?.value||"",
    unit:card.querySelector("[data-field-unit]")?.value?.trim()||"",
@@ -80,21 +80,27 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  function itemCard(item,i){
   const own=workersForTeam();
   const ordersForTeam=orders.filter(o=>o.team_id===selectedTeam);
-  return '<section class="field-activity-card" data-report-item="'+i+'" data-item-id="'+esc(item.id||"")+'"><div class="field-card-heading"><strong>Atividade '+(i+1)+'</strong><button type="button" data-remove-field-item="'+i+'" class="field-remove" '+(items.length===1?'disabled':'')+' aria-label="Remover atividade '+(i+1)+'">×</button></div>'+
-  '<div class="field-form-grid">'+
-   '<label class="field-input wide"><span>Atividade contratual (73 itens) *</span><select data-field-activity required>'+optList(activities,"activity",item.activity_id,"Selecione a atividade…")+'</select></label>'+
-   '<label class="field-input wide"><span>OS relacionada (se houver)</span><select data-field-order><option value="">Sem OS vinculada</option>'+ordersForTeam.map(o=>escOpt(o.id,o.reference+" · "+o.status,item.work_order_id)).join("")+'</select></label>'+
-   '<label class="field-input"><span>Resultado *</span><select data-field-result>'+Object.entries(results).map(([k,v])=>escOpt(k,v,item.result)).join("")+'</select></label>'+
-   '<label class="field-input"><span>Local/setor específico</span><input data-field-location maxlength="160" placeholder="Setor atendido" value="'+esc(item.location)+'"></label>'+
-   '<label class="field-input"><span>Quantidade executada</span><input data-field-quantity type="number" min="0" step="0.001" placeholder="0,000" value="'+esc(item.quantity)+'"></label>'+
-   '<label class="field-input"><span>Unidade de medida</span><input data-field-unit maxlength="30" placeholder="m², un, h, km…" value="'+esc(item.unit)+'"></label>'+
-   '<label class="field-input"><span>Horas de atividade</span><input data-field-hours type="number" min="0" max="24" step="0.25" placeholder="Ex.: 3,5" value="'+esc(item.hours_worked)+'"></label>'+
-   '<label class="field-input"><span>Referência da evidência</span><input data-field-evidence maxlength="250" placeholder="Foto/arquivo ou protocolo" value="'+esc(item.evidence_ref)+'"></label>'+
-   '<label class="field-input wide"><span>Observações / impedimentos</span><textarea data-field-notes rows="2" placeholder="Restrições, problemas e resultados relevantes">'+esc(item.notes)+'</textarea></label>'+
-  '</div>'+
-  '<details class="field-worker-details"><summary>Trabalhadores envolvidos na atividade <small>('+(item.workers||[]).length+' marcados)</small></summary><div class="field-worker-picks">'+
-  (own.length?own.map(w=>'<label class="field-worker-check"><input type="checkbox" data-field-worker value="'+esc(w.id)+'" '+((item.workers||[]).includes(w.id)?"checked":"")+'><span>'+esc(w.name)+'</span></label>').join(""):'<p class="field-muted">Cadastre os trabalhadores na equipe.</p>')+
-  '</div></details></section>';
+  const workerList=own.length?own.map(w=>
+   '<label class="field-worker-check"><input type="checkbox" data-field-worker value="'+esc(w.id)+'" '+((item.workers||[]).includes(w.id)?"checked":"")+'><span>'+esc(w.name)+'</span></label>'
+  ).join(""):'<p class="field-muted">A composição desta equipe ainda precisa ser conferida.</p>';
+  return '<section class="field-activity-card field-activity-quick" data-report-item="'+i+'" data-item-id="'+esc(item.id||"")+'">'+
+   '<div class="field-card-heading"><strong>'+(i===0?'O que foi feito?':'Outra atividade · '+(i+1))+'</strong><button type="button" data-remove-field-item="'+i+'" class="field-remove" '+(items.length===1?'disabled':'')+' aria-label="Remover atividade '+(i+1)+'">×</button></div>'+
+   '<label class="field-input wide field-activity-picker"><span>Atividade *</span><select data-field-activity required>'+optList(activities,"activity",item.activity_id,"Escolha a atividade")+'</select></label>'+
+   '<div class="field-result-choice"><span class="field-choice-label">Resultado</span><div class="field-result-options">'+[
+     ["executada","Feito"],["parcial","Parcial"],["impedida","Impedido"],["nao_aplicavel","Não realizado"]
+   ].map(x=>'<label class="field-result-pill"><input type="radio" name="field-result-'+i+'" data-field-result value="'+x[0]+'" '+(item.result===x[0]?"checked":"")+'><span>'+x[1]+'</span></label>').join("")+'</div></div>'+
+   '<details class="field-inline-details"><summary>+ Detalhes desta atividade <small>opcional</small></summary><div class="field-inline-details-content">'+
+   '<div class="field-form-grid">'+
+    '<label class="field-input wide"><span>OS relacionada</span><select data-field-order><option value="">Não informar</option>'+ordersForTeam.map(o=>escOpt(o.id,o.reference+" · "+o.status,item.work_order_id)).join("")+'</select></label>'+
+    '<label class="field-input wide"><span>Local específico</span><input data-field-location maxlength="160" placeholder="Ex.: jardim do bloco B" value="'+esc(item.location)+'"></label>'+
+    '<label class="field-input"><span>Quantidade realizada</span><input data-field-quantity type="number" min="0" step="0.001" placeholder="Ex.: 200" value="'+esc(item.quantity)+'"></label>'+
+    '<label class="field-input"><span>Unidade</span><input data-field-unit maxlength="30" placeholder="m², un, h…" value="'+esc(item.unit)+'"></label>'+
+    '<label class="field-input"><span>Horas na atividade</span><input data-field-hours type="number" min="0" max="24" step="0.25" placeholder="Ex.: 3,5" value="'+esc(item.hours_worked)+'"></label>'+
+    '<label class="field-input"><span>Evidência</span><input data-field-evidence maxlength="250" placeholder="Foto, arquivo ou protocolo" value="'+esc(item.evidence_ref)+'"></label>'+
+    '<label class="field-input wide"><span>Observação / motivo do impedimento</span><textarea data-field-notes rows="2" placeholder="Se for necessário explicar algo">'+esc(item.notes)+'</textarea></label>'+
+   '</div>'+
+   '<details class="field-worker-details"><summary>Quem participou? <small>opcional</small></summary><div class="field-worker-picks">'+workerList+'</div></details>'+
+   '</div></details></section>';
  }
  function drawForm(){
   root.innerHTML=topbar()+'<form id="field-entry-form" class="field-main-form">'+
