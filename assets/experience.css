@@ -373,3 +373,14 @@ button svg,.ui-icon{pointer-events:none}
  .field-result-pill>span{min-height:46px}
  .table-action{min-height:40px}
 }
+
+/* Hidden é regra de estado, mesmo quando .btn usa display:flex. */
+[hidden],button[hidden],.btn[hidden],.profile-menu[hidden]{display:none!important}
+.field-week-summary{display:flex;align-items:center;gap:9px;padding:10px 13px;background:#f0f8f2;border:1px solid #d9e9de;border-radius:10px;color:#376b50;font-size:11.5px;line-height:1.55}
+.field-week-summary svg{width:17px;height:17px;flex:none}
+.field-quick-grid .field-team-indicator{min-width:0}
+.field-quick-grid .field-input select{min-width:0}
+.field-week-main{grid-column:span 1}
+.field-front-label{display:block;margin-top:10px;font-size:11px;color:#799184}
+.field-area-assignment-info{color:#698a75;font-size:10.5px;margin-top:8px}
+@media(max-width:580px){.field-week-summary{font-size:11px}.field-week-main{grid-column:auto}}
