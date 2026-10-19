@@ -532,9 +532,12 @@ el("navigation").addEventListener("click",event=>{
  const details=summary?.parentElement;
  if(details?.matches("details.nav-section")){
   if(!mobileSidebar()&&el("app").classList.contains("sidebar-collapsed")){
-   el("app").classList.remove("sidebar-collapsed");
-   try{window.localStorage.setItem("siga-sidebar-collapsed","0");}catch(_){}
-   syncSidebarToggle();
+   // Ícone de grupo recolhido abre a primeira opção acessível, sem expandir a barra.
+   event.preventDefault();
+   const groupIndex=Number(details.dataset.navGroup);
+   const target=groups[groupIndex]?.items.find(canView);
+   if(target&&target!==app.page)navigate(target);
+   return;
   }
   if(!details.open){
    el("navigation").querySelectorAll("details.nav-section[open]").forEach(other=>{if(other!==details)other.open=false});
