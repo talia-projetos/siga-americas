@@ -1,11 +1,11 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=4";
+import {groups,modules} from "./modules.js?v=5";
 import {iconMarkup} from "./icons.js?v=2";
 import {renderDashboardAnalytics} from "./analytics.js?v=4";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
 import {mountInventoryCheck} from "./resource-check.js?v=2";
-import {openUniformBatch} from "./uniform-batch.js?v=1";
+import {openUniformBatch} from "./uniform-batch.js?v=2";
 import {mountFieldReport} from "./field-forms.js?v=2";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 
