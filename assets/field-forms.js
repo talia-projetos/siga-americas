@@ -5,6 +5,23 @@ const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const label=(obj,kind)=>kind==="activity"?[obj.code,obj.name].filter(Boolean).join(" · "):kind==="team"?[obj.code,obj.name].filter(Boolean).join(" · "):[obj.code,obj.name].filter(Boolean).join(" · ");
 const BRtoday=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const dateBR=x=>x?new Date(String(x).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
+const weekStart=date=>{
+ const d=new Date(String(date).slice(0,10)+"T12:00:00Z");
+ if(!Number.isFinite(d.getTime()))return "";
+ d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));
+ return d.toISOString().slice(0,10);
+};
+const weekEnd=start=>{
+ const d=new Date(String(start).slice(0,10)+"T12:00:00Z");
+ if(!Number.isFinite(d.getTime()))return "";
+ d.setUTCDate(d.getUTCDate()+6);
+ return d.toISOString().slice(0,10);
+};
+const periodLabel=r=>r.report_period==="semanal"&&r.period_start
+ ? "Semana de "+dateBR(r.period_start)+" a "+dateBR(r.period_end||weekEnd(r.period_start))
+ : "Registro de "+dateBR(r.report_date);
+const weekHint=date=>"De "+dateBR(weekStart(date))+" a "+dateBR(weekEnd(weekStart(date)));
+
 const statuses={rascunho:"Rascunho",enviado:"Aguardando validação",validado:"Validado",devolvido:"Devolvido para ajuste"};
 const results={executada:"Executada",parcial:"Parcial",impedida:"Impedida",nao_aplicavel:"Não aplicável"};
 const escOpt=(value,text,active)=>'<option value="'+esc(value)+'"'+(String(value)===String(active)?" selected":"")+'>'+esc(text)+'</option>';
@@ -17,17 +34,18 @@ function optList(items,kind,chosen="",empty="Selecione…"){
 export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Preparando formulário de campo…</p></div>';
  const isTech=role==="tecnico";
- let teams,areas,activities,workers,orders,reports,programs,planItems;
+ let teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks;
  try{
-  [teams,areas,activities,workers,orders,reports,programs,planItems]=await Promise.all([
+  [teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks]=await Promise.all([
    list(db,"teams","id,code,name,active"),
    list(db,"operational_areas","id,code,name,active"),
    list(db,"activity_catalog","id,code,name"),
    list(db,"employees","id,name,team_id,active"),
    list(db,"work_orders","id,reference,team_id,area_id,status",400),
-   list(db,"field_daily_reports","id,team_id,area_id,report_date,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",200),
+   list(db,"field_daily_reports","id,team_id,area_id,report_date,report_period,period_start,period_end,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",200),
    list(db,"field_programs","id,area_id,period_month,status",150),
-   list(db,"field_plan_items","id,program_id,activity_id",500)
+   list(db,"field_plan_items","id,program_id,activity_id",500),
+   list(db,"team_operational_areas","team_id,area_id,active",70)
   ]);
  }catch(e){root.innerHTML='<div class="notice danger">Falha ao consultar dados do formulário: '+esc(e.message)+'</div>';return;}
  activities.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
@@ -39,10 +57,11 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  }
  let tab="novo",draftId=null,currentReport=null,detailId=null;
  let selectedTeam=isTech?teamId:"";
- let formState={report_date:BRtoday(),team_id:selectedTeam,area_id:"",shift:"integral",team_leader:"",
+ let formState={report_date:weekStart(BRtoday()),team_id:selectedTeam,area_id:"",shift:"integral",team_leader:"",
     weather:"nao_informado",field_conditions:"",equipment_used:"",general_notes:"",impediments:""};
  let attendance={};let optionalOpen=false;let items=[newItem()];
- function newItem(){return {id:null,activity_id:"",work_order_id:"",field_plan_item_id:null,result:"executada",location:"",quantity:"",unit:"",hours_worked:"",notes:"",evidence_ref:"",workers:[]}}
+ function newItem(){return {id:null,area_id:"",activity_id:"",work_order_id:"",field_plan_item_id:null,result:"executada",location:"",quantity:"",unit:"",hours_worked:"",notes:"",evidence_ref:"",workers:[]}}
+ function areasForTeam(){return areas.filter(a=>teamAreaLinks.some(link=>link.team_id===selectedTeam&&link.area_id===a.id&&link.active!==false));}
  function workersForTeam(){return workers.filter(x=>x.team_id===selectedTeam).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"))}
  function capture(){
   const f=root.querySelector("#field-entry-form");if(!f)return;
@@ -55,6 +74,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   });
   items=[...root.querySelectorAll("[data-report-item]")].map(card=>({
    id:card.dataset.itemId||null,
+   area_id:card.querySelector("[data-field-area]")?.value||formState.area_id,
    activity_id:card.querySelector("[data-field-activity]")?.value||"",
    work_order_id:card.querySelector("[data-field-order]")?.value||"",
    result:card.querySelector("[data-field-result]:checked")?.value||"executada",
@@ -67,7 +87,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    workers:[...card.querySelectorAll("[data-field-worker]:checked")].map(el=>el.value)
   }));
  }
- const topbar=()=>'<div class="field-header"><div><span class="eyebrow">APONTAMENTO DE CAMPO · PROERG / ITAIPU</span><h2>Relatório rápido da equipe</h2><p>Informe onde a equipe trabalhou e o que fez. O restante é opcional.</p></div><span class="field-secure">✓ Acesso autenticado</span></div><div class="field-view-tabs"><button type="button" data-field-tab="novo" class="'+(tab==="novo"?"active":"")+'">Preencher relatório</button><button type="button" data-field-tab="historico" class="'+(tab==="historico"?"active":"")+'">Registros anteriores <small>'+reports.length+'</small></button></div>';
+ const topbar=()=>'<div class="field-header"><div><span class="eyebrow">APONTAMENTO DE CAMPO · PROERG / ITAIPU</span><h2>Relatório semanal de campo</h2><p>Registre as atividades da semana em um só formulário. A supervisão confere os resultados.</p></div><span class="field-secure">✓ Acesso autenticado</span></div><div class="field-view-tabs"><button type="button" data-field-tab="novo" class="'+(tab==="novo"?"active":"")+'">Preencher semana</button><button type="button" data-field-tab="historico" class="'+(tab==="historico"?"active":"")+'">Registros anteriores <small>'+reports.length+'</small></button></div>';
  function attendanceHTML(){
   const staff=workersForTeam();
   if(!staff.length)return '<div class="notice warning">Nenhum colaborador ativo vinculado a esta equipe no cadastro. Confira os dados antes de registrar presença.</div>';
