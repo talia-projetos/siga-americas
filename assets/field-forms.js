@@ -237,16 +237,24 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  async function save(send){
   capture();
   const f=formState;
-  if(!f.report_date||!selectedTeam||!f.area_id){notify("Informe data, equipe e frente operacional.",true);return}
+  const monday=weekStart(f.report_date),sunday=weekEnd(monday);
+  if(!monday||!selectedTeam||!f.area_id){notify("Escolha a semana, a equipe e a frente principal.",true);return}
+  const permitted=areasForTeam();
+  if(!permitted.some(a=>a.id===f.area_id)||items.some(x=>!permitted.some(a=>a.id===(x.area_id||f.area_id)))){
+    notify("Esta frente não está vinculada à equipe. Confira a seleção.",true);return;
+  }
+  if(!draftId&&reports.some(r=>r.report_period==="semanal"&&r.team_id===selectedTeam&&r.period_start===monday)){
+    notify("Já existe um relatório desta equipe para esta semana. Acesse Registros anteriores para consultar ou retomar.",true);return;
+  }
   if(isTech&&selectedTeam!==teamId){notify("Este usuário só pode informar a própria equipe.",true);return}
   if(!items.length||items.some(x=>!x.activity_id)){notify("Selecione uma atividade da matriz de 73 itens em cada registro.",true);return}
-  if(items.some(x=>(x.quantity!==""&&(!Number.isFinite(Number(x.quantity))||Number(x.quantity)<0))||(x.hours_worked!==""&&(!Number.isFinite(Number(x.hours_worked))||Number(x.hours_worked)<0||Number(x.hours_worked)>24)))){notify("Confira as quantidades e horas informadas.",true);return}
+  if(items.some(x=>(x.quantity!==""&&(!Number.isFinite(Number(x.quantity))||Number(x.quantity)<0))||(x.hours_worked!==""&&(!Number.isFinite(Number(x.hours_worked))||Number(x.hours_worked)<0||Number(x.hours_worked)>168)))){notify("Confira as quantidades e horas informadas.",true);return}
   const buttons=[root.querySelector("#field-save-draft"),root.querySelector("#field-submit")].filter(Boolean);
   buttons.forEach(x=>x.disabled=true);
   try{
    const pres=Object.entries(attendance).filter(([id,status])=>status&&workersForTeam().some(w=>w.id===id));
    const report={
-    team_id:selectedTeam,area_id:f.area_id,report_date:f.report_date,shift:f.shift,reported_by:user.id,
+    team_id:selectedTeam,area_id:f.area_id,report_date:monday,report_period:"semanal",period_start:monday,period_end:sunday,shift:f.shift,reported_by:user.id,
     team_leader:f.team_leader||null,weather:f.weather||"nao_informado",
     field_conditions:f.field_conditions||null,equipment_used:f.equipment_used||null,
     team_size:pres.length?pres.filter(([id,status])=>status==="presente").length:null,
@@ -265,10 +273,9 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
     if(created.error)throw created.error;
     draftId=created.data.id;
    }
-   const program=programs.find(p=>p.area_id===f.area_id&&String(p.period_month).slice(0,7)===f.report_date.slice(0,7));
    const payload=items.map(x=>({
-     id:crypto.randomUUID(),report_id:draftId,activity_id:x.activity_id,work_order_id:x.work_order_id||null,
-     field_plan_item_id:program?(planItems.find(p=>p.program_id===program.id&&p.activity_id===x.activity_id)?.id||null):null,
+     id:crypto.randomUUID(),report_id:draftId,activity_id:x.activity_id,area_id:x.area_id||f.area_id,work_order_id:x.work_order_id||null,
+     field_plan_item_id:(()=>{const area=x.area_id||f.area_id;const program=programs.find(p=>p.area_id===area&&String(p.period_month).slice(0,7)===monday.slice(0,7));return program?(planItems.find(p=>p.program_id===program.id&&p.activity_id===x.activity_id)?.id||null):null;})(),
      result:x.result,location:x.location||null,quantity:x.quantity===""?null:Number(x.quantity),
      unit:x.unit||null,hours_worked:x.hours_worked===""?null:Number(x.hours_worked),
      notes:x.notes||null,evidence_ref:x.evidence_ref||null
@@ -289,7 +296,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
     const submitted=await db.from("field_daily_reports").update({status:"enviado",submitted_at:new Date().toISOString()}).eq("id",draftId).select("id").single();
     if(submitted.error)throw submitted.error;
    }
-   notify(send?"Relatório enviado para conferência da supervisão.":"Rascunho salvo com segurança.");
+   notify(send?"Relatório semanal enviado à supervisão.":"Rascunho da semana salvo.");
    tab="historico";draftId=null;currentReport=null;await drawHistory();
   }catch(error){
    notify("Não foi possível concluir: "+error.message+". O registro pode ter ficado em rascunho para recuperação.",true);
