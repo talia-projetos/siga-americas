@@ -27,6 +27,12 @@ function canView(key){
 }
 function groupFor(key){return groups.find(group=>group.items.includes(key))||null}
 const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR");
+// Matriz técnica contratual: 3.1–3.57 são ações executáveis; 3.58–3.73 são rubricas de postos,
+// serviços eventuais, diárias, máquinas e insumos, preservadas no catálogo de 73 itens.
+function isProgrammableAction(code){
+ const m=String(code??"").trim().match(/^3\.(\d+)$/);
+ return Boolean(m&&Number(m[1])>=1&&Number(m[1])<=57);
+}
 function nav(){
  const root=el("navigation");
  if(!app.role){root.innerHTML="";return;}
@@ -191,6 +197,10 @@ async function ensureRefs(key){
   if(error)throw error;app.refs[table]=data||[];
  });
  await Promise.all(fetches);
+ // No formulário de Ações programadas, selecionar somente atividades operacionais.
+ if(key==="field_plan_items"&&app.refs.activity_catalog){
+  app.refs.activity_catalog=app.refs.activity_catalog.filter(item=>isProgrammableAction(item.code));
+ }
 }
 function optionLabel(table,id,display){
  if(!id)return "—";
@@ -330,6 +340,11 @@ async function modulePage(key){
   const {data,error}=await query.limit(500);
   if(error)throw error;
   app.rows=data||[];
+  // As rubricas não operacionais permanecem no banco e na matriz completa, mas não nesta tela nem no CSV.
+  if(key==="field_plan_items"){
+   const allowed=new Set((app.refs.activity_catalog||[]).map(item=>item.id));
+   app.rows=app.rows.filter(row=>allowed.has(row.activity_id));
+  }
   if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
   const buttons=(privileged()
     ?key==="uniform_deliveries"
@@ -458,6 +473,9 @@ async function saveRecord(e){
   if(f.type==="number"&&!Number.isFinite(payload[f.key])){notify("Valor numérico inválido: "+f.label,true);return;}
  }
  if(app.page==="contract_items"&&payload.source_type!=="precos"){notify("Use exclusivamente a planilha de preços neste módulo.",true);return;}
+ if(app.page==="field_plan_items"&&!(app.refs.activity_catalog||[]).some(item=>item.id===payload.activity_id&&isProgrammableAction(item.code))){
+  notify("Selecione uma ação contratual executável. Máquinas, diárias, postos e fornecimentos não entram nesta programação.",true);return;
+ }
  if(["responsibility_terms","maintenance"].includes(app.page)){
   const a=Boolean(payload.vehicle_id),b=Boolean(payload.equipment_id);
   if(a===b){notify("Selecione somente um: veículo OU equipamento.",true);return;}
