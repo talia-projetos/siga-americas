@@ -5,7 +5,7 @@ import {iconMarkup} from "./icons.js";
 import {renderDashboardAnalytics} from "./analytics.js";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js";
 import {mountInventoryCheck} from "./resource-check.js";
-import {mountFieldReport} from "./field-forms.js";
+import {mountFieldReport} from "./field-forms.js?v=2";
 import {mountFieldMonitor} from "./field-monitor.js";
 
 const el=id=>document.getElementById(id);
