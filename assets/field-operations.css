@@ -105,3 +105,67 @@
 @media(max-width:720px){.field-form-grid,.field-attendance-grid,.field-worker-picks{grid-template-columns:1fr}.field-history-item{flex-wrap:wrap}.field-form-actions{position:sticky;bottom:0;z-index:5;border-radius:11px;box-shadow:0 -8px 25px #12371f18}.field-form-actions .btn{flex:1;min-width:0}.field-section{padding:18px 16px}.field-header{flex-direction:column}.field-secure{align-self:flex-start}.monitor-detail-body{padding:5px 18px 22px}}
 @media(max-width:480px){.inventory-kpis,.monitor-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.inventory-kpis .catalog-stat,.monitor-stats .catalog-stat{padding:13px}.inventory-kpis .catalog-stat strong,.monitor-stats .catalog-stat strong{font-size:22px}.field-form-actions{gap:6px;padding:12px 9px}.field-form-actions .btn{padding:11px 8px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.inventory-progress-bar{transition:none}}
+
+/* Registro rápido: prioriza decisões essenciais no celular; extras só quando solicitados */
+.field-main-form-simple{max-width:920px;gap:15px}
+.field-quick-section{padding:21px 24px 24px}
+.field-quick-section .field-section-head{margin-bottom:17px}
+.field-quick-grid{display:grid;grid-template-columns:1.15fr .85fr 1.3fr;gap:13px;align-items:end}
+.field-team-indicator{display:flex;flex-direction:column;justify-content:center;gap:5px;min-height:72px;background:#f1faf4;border:1px solid #d8ede0;border-radius:10px;padding:12px 14px}
+.field-team-indicator>span{font-weight:720;color:#638779;font-size:10.5px}
+.field-team-indicator strong{font-size:12.5px;color:#174b37;overflow-wrap:anywhere}
+.field-team-indicator small{color:#84a08d;font-size:9.5px}
+.field-quick-section>.field-activities{gap:14px}
+.field-activity-quick{padding:16px 18px 15px;border-color:#d5e8db;box-shadow:0 5px 18px rgba(20,80,48,.035)}
+.field-activity-quick .field-card-heading{margin-bottom:11px}
+.field-activity-quick .field-card-heading strong{font-size:12.3px}
+.field-activity-picker select{min-height:49px;font-size:12.5px!important;border-color:#c4dece!important}
+.field-result-choice{margin:15px 0 0}
+.field-choice-label{display:block;margin:0 0 9px;font-size:10.5px;color:#668574;font-weight:730}
+.field-result-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.field-result-pill{display:block;position:relative;cursor:pointer;min-width:0}
+.field-result-pill input{position:absolute;opacity:0;width:1px;height:1px}
+.field-result-pill>span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:43px;padding:8px 7px;border:1px solid #dce8de;border-radius:9px;background:#fff;font-size:11px;font-weight:740;color:#637b6e;transition:background .15s,border .15s,box-shadow .15s;user-select:none}
+.field-result-pill:hover>span{border-color:#9ccdb2;background:#f1faf4}
+.field-result-pill input:checked+span{background:#dcf4e7;border-color:#69ad88;color:#146844;box-shadow:inset 0 0 0 1px #69ad88}
+.field-result-pill input:focus-visible+span{outline:3px solid #8edab4;outline-offset:2px}
+.field-inline-details{margin-top:15px;background:#f9fcf9;border:1px solid #e0ece3;border-radius:9px;overflow:hidden}
+.field-inline-details>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:flex-start;gap:6px;padding:12px 14px;font-weight:750;font-size:11px;color:#388061}
+.field-inline-details>summary::-webkit-details-marker{display:none}
+.field-inline-details>summary small{font-weight:490;font-size:10.2px;color:#899f8d}
+.field-inline-details[open]>summary{border-bottom:1px solid #e6efe8}
+.field-inline-details-content{padding:16px}
+.field-inline-details-content .field-worker-details{margin-top:15px}
+.field-add-quick{min-height:43px;border-style:dashed!important;background:#f5faf6!important;color:#227a55!important}
+.field-optional-section{display:block;border:1px solid #dbe9de;background:#fff;border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
+.field-optional-section>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:13px;padding:17px 20px}
+.field-optional-section>summary::-webkit-details-marker{display:none}
+.field-optional-section>summary>span:nth-child(2){display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.field-optional-section>summary strong{font-size:12px;color:#2e664a}
+.field-optional-section>summary small{font-size:10.5px;color:#90a396;line-height:1.45}
+.field-optional-icon{display:grid;place-items:center;width:31px;height:31px;border-radius:8px;border:1px solid #d6eadd;background:#edf8f1;color:#2d8560;font-size:17px;font-weight:400;flex:none}
+.field-optional-arrow{font-size:16px;color:#78a089;transform:rotate(0);transition:transform .18s}
+.field-optional-section[open] .field-optional-arrow{transform:rotate(180deg)}
+.field-optional-section[open]>.field-optional-icon{background:#d9f4e4}
+.field-optional-body{border-top:1px solid #e8f0e9;padding:18px 20px 21px}
+.field-optional-attendance{margin-top:20px;padding-top:16px;border-top:1px solid #e6eee8}
+.field-optional-attendance h4{font-size:12.5px;color:#376c4c;margin:0 0 12px}
+.field-main-form-simple .field-form-actions{justify-content:space-between}
+.field-main-form-simple .field-form-actions .btn-primary{font-size:13px;min-height:47px;font-weight:770}
+.field-main-form-simple .field-help{margin:0 4px 20px}
+@media(max-width:960px){.field-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.field-quick-grid .field-input:last-child{grid-column:1/-1}}
+@media(max-width:580px){
+ .field-quick-grid{grid-template-columns:1fr;gap:12px}
+ .field-quick-grid .field-input:last-child{grid-column:auto}
+ .field-quick-section{padding:17px 14px 18px}
+ .field-quick-section .field-section-head{margin-bottom:16px}
+ .field-activity-quick{padding:16px 12px 12px}
+ .field-result-options{gap:5px}
+ .field-result-pill>span{font-size:10.2px;min-height:45px;padding:6px 3px}
+ .field-team-indicator{min-height:59px}
+ .field-optional-section>summary{padding:15px 14px}
+ .field-optional-body{padding:16px 12px 18px}
+ .field-inline-details-content{padding:13px 11px}
+ .field-main-form-simple .field-form-actions .btn{min-width:0;flex:1}
+}
+@media(prefers-reduced-motion:reduce){.field-result-pill>span,.field-optional-arrow{transition:none}}
