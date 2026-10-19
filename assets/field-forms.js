@@ -91,9 +91,9 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  function attendanceHTML(){
   const staff=workersForTeam();
   if(!staff.length)return '<div class="notice warning">Nenhum colaborador ativo vinculado a esta equipe no cadastro. Confira os dados antes de registrar presença.</div>';
-  return '<p class="field-muted">Indique quem participou do trabalho nesta semana. Não substitui o controle de ponto e não deve conter motivos médicos. Os nomes e a equipe foram carregados do cadastro de colaboradores.</p><div class="field-attendance-grid">'+staff.map(w=>{
-   const v=attendance[w.id]||"";
-   return '<div class="field-attendance-row" data-presence-id="'+esc(w.id)+'"><span>'+esc(w.name)+'</span><select data-presence aria-label="Presença de '+esc(w.name)+'"><option value="">Não informado</option>'+[
+  return '<p class="field-muted">Todos os colaboradores ativos iniciam como presentes. Altere somente as exceções. Não substitui o controle de ponto e não deve conter motivos médicos. Os nomes e a equipe foram carregados do cadastro de colaboradores.</p><div class="field-attendance-grid">'+staff.map(w=>{
+   const v=attendance[w.id]??"presente";
+   return '<div class="field-attendance-row" data-presence-id="'+esc(w.id)+'"><span>'+esc(w.name)+'</span><select data-presence aria-label="Presença de '+esc(w.name)+'">'+[
      ["presente","Presente"],["ausente","Ausente"],["folga","Folga"],["outro","Outro"]
    ].map(x=>escOpt(x[0],x[1],v)).join("")+'</select></div>';
   }).join("")+'</div>';
