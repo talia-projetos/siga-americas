@@ -91,7 +91,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  function attendanceHTML(){
   const staff=workersForTeam();
   if(!staff.length)return '<div class="notice warning">Nenhum colaborador ativo vinculado a esta equipe no cadastro. Confira os dados antes de registrar presença.</div>';
-  return '<p class="field-muted">Indique quem esteve em campo. Não registre motivos médicos de ausência. Os nomes e a equipe foram carregados do cadastro de colaboradores.</p><div class="field-attendance-grid">'+staff.map(w=>{
+  return '<p class="field-muted">Indique quem participou do trabalho nesta semana. Não substitui o controle de ponto e não deve conter motivos médicos. Os nomes e a equipe foram carregados do cadastro de colaboradores.</p><div class="field-attendance-grid">'+staff.map(w=>{
    const v=attendance[w.id]||"";
    return '<div class="field-attendance-row" data-presence-id="'+esc(w.id)+'"><span>'+esc(w.name)+'</span><select data-presence aria-label="Presença de '+esc(w.name)+'"><option value="">Não informado</option>'+[
      ["presente","Presente"],["ausente","Ausente"],["folga","Folga"],["outro","Outro"]
@@ -100,12 +100,15 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  }
  function itemCard(item,i){
   const own=workersForTeam();
-  const ordersForTeam=orders.filter(o=>o.team_id===selectedTeam);
+  const permitted=areasForTeam();
+  const activeArea=permitted.some(a=>a.id===item.area_id)?item.area_id:formState.area_id;
+  const ordersForTeam=orders.filter(o=>o.team_id===selectedTeam&&(!o.area_id||permitted.some(a=>a.id===o.area_id)));
   const workerList=own.length?own.map(w=>
    '<label class="field-worker-check"><input type="checkbox" data-field-worker value="'+esc(w.id)+'" '+((item.workers||[]).includes(w.id)?"checked":"")+'><span>'+esc(w.name)+'</span></label>'
   ).join(""):'<p class="field-muted">A composição desta equipe ainda precisa ser conferida.</p>';
   return '<section class="field-activity-card field-activity-quick" data-report-item="'+i+'" data-item-id="'+esc(item.id||"")+'">'+
    '<div class="field-card-heading"><strong>'+(i===0?'O que foi feito?':'Outra atividade · '+(i+1))+'</strong><button type="button" data-remove-field-item="'+i+'" class="field-remove" '+(items.length===1?'disabled':'')+' aria-label="Remover atividade '+(i+1)+'">×</button></div>'+
+   (permitted.length>1?'<label class="field-input wide field-activity-area"><span>Frente atendida *</span><select data-field-area required>'+optList(permitted,"area",activeArea,"Selecione a frente")+'</select></label>':'')+
    '<label class="field-input wide field-activity-picker"><span>Atividade *</span><select data-field-activity required>'+optList(activities,"activity",item.activity_id,"Escolha a atividade")+'</select></label>'+
    '<div class="field-result-choice"><span class="field-choice-label">Resultado</span><div class="field-result-options">'+[
      ["executada","Feito"],["parcial","Parcial"],["impedida","Impedido"],["nao_aplicavel","Não se aplica"]
@@ -116,7 +119,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
     '<label class="field-input wide"><span>Local específico</span><input data-field-location maxlength="160" placeholder="Ex.: jardim do bloco B" value="'+esc(item.location)+'"></label>'+
     '<label class="field-input"><span>Quantidade realizada</span><input data-field-quantity type="number" min="0" step="0.001" placeholder="Ex.: 200" value="'+esc(item.quantity)+'"></label>'+
     '<label class="field-input"><span>Unidade</span><input data-field-unit maxlength="30" placeholder="m², un, h…" value="'+esc(item.unit)+'"></label>'+
-    '<label class="field-input"><span>Horas na atividade</span><input data-field-hours type="number" min="0" max="24" step="0.25" placeholder="Ex.: 3,5" value="'+esc(item.hours_worked)+'"></label>'+
+    '<label class="field-input"><span>Horas acumuladas na semana</span><input data-field-hours type="number" min="0" max="168" step="0.25" placeholder="Ex.: 16" value="'+esc(item.hours_worked)+'"></label>'+
     '<label class="field-input"><span>Evidência</span><input data-field-evidence maxlength="250" placeholder="Foto, arquivo ou protocolo" value="'+esc(item.evidence_ref)+'"></label>'+
     '<label class="field-input wide"><span>Observação / motivo do impedimento</span><textarea data-field-notes rows="2" placeholder="Se for necessário explicar algo">'+esc(item.notes)+'</textarea></label>'+
    '</div>'+
@@ -124,44 +127,51 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    '</div></details></section>';
  }
  function drawForm(){
-  if(!formState.area_id&&selectedTeam){
-   const code=teams.find(t=>t.id===selectedTeam)?.code;
-   const suggestion=areas.find(a=>a.code===code);
-   if(suggestion)formState.area_id=suggestion.id;
-  }
+  const permitted=areasForTeam();
+  if(!permitted.some(a=>a.id===formState.area_id))formState.area_id=permitted[0]?.id||"";
   const team=teams.find(t=>t.id===selectedTeam);
   const teamField=isTech
    ?'<div class="field-team-indicator"><span>Equipe</span><strong>'+esc(team?[team.code,team.name].filter(Boolean).join(" · "):"Não vinculada")+'</strong><small>Identificada automaticamente pelo login</small><input type="hidden" name="team_id" value="'+esc(selectedTeam)+'"></div>'
    :'<label class="field-input"><span>Equipe *</span><select name="team_id" required>'+optList(teams,"team",selectedTeam,"Selecione uma equipe")+'</select></label>';
   root.innerHTML=topbar()+'<form id="field-entry-form" class="field-main-form field-main-form-simple">'+
-   '<div class="field-section field-quick-section"><div class="field-section-head"><span class="field-step">1</span><div><h3>Onde e quando?</h3><p>Confirme a frente de trabalho; a data já vem preenchida.</p></div></div>'+
+   '<div class="field-section field-quick-section"><div class="field-section-head"><span class="field-step">1</span><div><h3>Semana e equipe</h3><p>Escolha a semana e confira a frente principal da equipe.</p></div></div>'+
    '<div class="field-quick-grid">'+
     teamField+
-    '<label class="field-input"><span>Data *</span><input name="report_date" type="date" required value="'+esc(formState.report_date)+'"></label>'+
-    '<label class="field-input"><span>Frente de trabalho *</span><select name="area_id" required>'+optList(areas,"area",formState.area_id,"Selecione a frente")+'</select></label>'+
-   '</div></div>'+
+    '<label class="field-input field-week-main"><span>Início da semana *</span><input name="report_date" id="field-week-start" type="date" required value="'+esc(formState.report_date)+'"></label>'+
+    '<label class="field-input"><span>Frente principal *</span><select name="area_id" required>'+optList(permitted,"area",formState.area_id,"Selecione a frente")+'</select></label>'+
+   '</div><div class="field-week-summary" id="field-week-summary">'+weekHint(formState.report_date)+' · segunda a domingo</div>'+
+   (permitted.length>1?'<p class="field-area-assignment-info">Sua equipe atende várias frentes. Selecione a frente de cada atividade abaixo.</p>':'')+
+   '</div>'+
    '<div class="field-section field-quick-section"><div class="field-section-head"><span class="field-step">2</span><div><h3>O que foi feito?</h3><p>Escolha a atividade e o resultado. Os detalhes são opcionais.</p></div></div>'+
    '<div class="field-activities">'+items.map(itemCard).join("")+'</div>'+
    '<button type="button" class="btn btn-secondary field-add-quick" id="field-add-activity">+ Adicionar outra atividade</button></div>'+
-   '<details id="field-day-extras" class="field-optional-section" '+(optionalOpen?'open':'')+'><summary><span class="field-optional-icon">+</span><span><strong>Mais detalhes do dia</strong><small>Presença, clima, veículos e observações · opcional</small></span><span class="field-optional-arrow">⌄</span></summary>'+
+   '<details id="field-day-extras" class="field-optional-section" '+(optionalOpen?'open':'')+'><summary><span class="field-optional-icon">+</span><span><strong>Detalhes adicionais da semana</strong><small>Participantes, equipamentos e observações · opcional</small></span><span class="field-optional-arrow">⌄</span></summary>'+
    '<div class="field-optional-body">'+
     '<div class="field-form-grid">'+
-     '<label class="field-input"><span>Período</span><select name="shift">'+[["manha","Manhã"],["tarde","Tarde"],["integral","Dia inteiro"],["outro","Outro"]].map(([k,v])=>escOpt(k,v,formState.shift)).join("")+'</select></label>'+
+     '<label class="field-input"><span>Turno predominante</span><select name="shift">'+[["manha","Manhã"],["tarde","Tarde"],["integral","Dia inteiro"],["outro","Outro"]].map(([k,v])=>escOpt(k,v,formState.shift)).join("")+'</select></label>'+
      '<label class="field-input"><span>Responsável em campo</span><input name="team_leader" maxlength="140" value="'+esc(formState.team_leader)+'" placeholder="Nome, se necessário"></label>'+
-     '<label class="field-input"><span>Tempo/clima</span><select name="weather">'+[["nao_informado","Não informado"],["ensolarado","Ensolarado"],["nublado","Nublado"],["chuva","Chuva"],["temporal","Temporal"],["variavel","Variável"]].map(([k,v])=>escOpt(k,v,formState.weather)).join("")+'</select></label>'+
+     '<label class="field-input"><span>Clima predominante</span><select name="weather">'+[["nao_informado","Não informado"],["ensolarado","Ensolarado"],["nublado","Nublado"],["chuva","Chuva"],["temporal","Temporal"],["variavel","Variável"]].map(([k,v])=>escOpt(k,v,formState.weather)).join("")+'</select></label>'+
      '<label class="field-input"><span>Máquinas e veículos utilizados</span><input name="equipment_used" maxlength="800" placeholder="Se relevante" value="'+esc(formState.equipment_used)+'"></label>'+
      '<label class="field-input wide"><span>Condições de segurança</span><input name="field_conditions" maxlength="500" placeholder="Ocorrências, restrições ou riscos" value="'+esc(formState.field_conditions)+'"></label>'+
      '<label class="field-input wide"><span>Impedimentos gerais</span><textarea name="impediments" rows="2" maxlength="2500" placeholder="Se houve algum impedimento">'+esc(formState.impediments)+'</textarea></label>'+
      '<label class="field-input wide"><span>Observações para supervisão</span><textarea name="general_notes" rows="2" maxlength="2500" placeholder="Outras informações importantes">'+esc(formState.general_notes)+'</textarea></label>'+
     '</div>'+
-    '<div class="field-optional-attendance"><h4>Presença dos trabalhadores</h4>'+attendanceHTML()+'</div>'+
+    '<div class="field-optional-attendance"><h4>Participação dos trabalhadores</h4>'+attendanceHTML()+'</div>'+
    '</div></details>'+
    '<div class="field-form-actions"><button class="btn btn-ghost" type="button" id="field-save-draft">Salvar para depois</button><button class="btn btn-primary" type="submit" id="field-submit">Enviar relatório <span aria-hidden="true">→</span></button></div>'+
    '<p class="field-help">A supervisão fará a conferência. Este registro não substitui ponto, medição nem conclusão formal de uma OS.</p></form>';
   root.querySelectorAll("[data-field-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.fieldTab)));
+  root.querySelector("#field-week-start").addEventListener("change",e=>{
+   if(!e.target.value)return;
+   const monday=weekStart(e.target.value);
+   e.target.value=monday;
+   formState.report_date=monday;
+   const hint=root.querySelector("#field-week-summary");
+   if(hint)hint.textContent=weekHint(monday)+" · segunda a domingo";
+  });
   if(!isTech)root.querySelector('[name="team_id"]').addEventListener("change",e=>{
    capture();selectedTeam=e.target.value;formState.team_id=selectedTeam;formState.area_id="";attendance={};
-   items=items.map(x=>({...x,workers:[]}));drawForm();
+   items=items.map(x=>({...x,area_id:"",workers:[]}));drawForm();
   });
   root.querySelector("#field-add-activity").addEventListener("click",()=>{
    capture();items.push(newItem());drawForm();
