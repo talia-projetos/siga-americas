@@ -298,3 +298,112 @@
  .people-table .data-table{min-width:660px}
  .uniform-manager .uniform-kit-items>span{line-height:1.35}
 }
+
+/* 4. Identidade vetorial: respeita a proporção natural do SVG (549,4 × 486,1). */
+.sidebar .brand-mark{
+ display:grid!important;place-items:center!important;
+ width:40px!important;height:40px!important;
+ min-width:40px!important;max-width:40px!important;
+ padding:3px!important;
+ border-radius:11px!important;
+ overflow:hidden;
+ flex:0 0 40px!important;
+ box-sizing:border-box;
+}
+.sidebar .brand-mark img{
+ display:block!important;
+ width:34px!important;
+ max-width:100%!important;
+ height:auto!important;
+ max-height:33px!important;
+ aspect-ratio:549.4 / 486.1;
+ object-fit:contain!important;
+ object-position:center;
+ flex:none;
+ transform:none!important;
+}
+/* 5. Botão de três linhas: recolhimento efetivo no desktop, ícones sempre disponíveis. */
+@media(min-width:801px){
+ .topbar .menu-toggle{
+  display:inline-flex!important;
+  align-items:center;justify-content:center;
+  height:39px;min-width:39px;
+  color:#4b7240;
+  background:transparent;border:1px solid transparent;border-radius:10px;
+ }
+ .topbar .menu-toggle:hover,.topbar .menu-toggle:focus-visible{
+  background:#edf7e8;border-color:#dbeacc;color:#2d6518;
+ }
+ .app-shell.sidebar-collapsed{grid-template-columns:68px minmax(0,1fr)!important}
+ .app-shell.sidebar-collapsed .sidebar .brand{
+  justify-content:center!important;
+  padding:16px 7px!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .brand>span:not(.brand-mark){display:none!important}
+ .app-shell.sidebar-collapsed .sidebar .brand-mark{
+  width:40px!important;min-width:40px!important;max-width:40px!important;
+  height:40px!important;flex:0 0 40px!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .sidebar-content{
+  padding:12px 7px!important;
+  overflow-x:hidden!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .nav-search-wrap{display:none!important}
+ .app-shell.sidebar-collapsed .sidebar .nav-home{
+  justify-content:center!important;
+  width:48px!important;
+  min-height:46px!important;
+  padding:10px!important;
+  margin:0 0 12px!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .nav-home>span:not(.nav-home-icon){display:none!important}
+ .app-shell.sidebar-collapsed .sidebar .nav-home-icon,
+ .app-shell.sidebar-collapsed .sidebar .nav-section-icon{
+  width:21px!important;height:21px!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .nav-home-icon .ui-icon,
+ .app-shell.sidebar-collapsed .sidebar .nav-section-icon .ui-icon{
+  width:20px!important;height:20px!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .nav-section{
+  margin:5px 0!important;overflow:visible!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .nav-section-toggle{
+  display:flex!important;
+  justify-content:center!important;
+  gap:0!important;
+  width:48px!important;
+  min-height:46px!important;
+  padding:11px!important;
+  border-radius:9px!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .nav-section-title,
+ .app-shell.sidebar-collapsed .sidebar .nav-chevron,
+ .app-shell.sidebar-collapsed .sidebar .nav-section-items{
+  display:none!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .nav-section.contains-active>.nav-section-toggle{
+  background:#eaf5e3!important;
+  box-shadow:inset 3px 0 0 #4ca314!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .nav-section.contains-active .nav-section-icon,
+ .app-shell.sidebar-collapsed .sidebar .nav-section.contains-active .nav-section-icon .ui-icon{
+  color:#347a10!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .sidebar-foot{
+  min-height:56px;justify-content:center!important;
+  align-items:center!important;padding:10px 6px!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .sidebar-foot>span:not(.sidebar-foot-dot){display:none!important}
+ .app-shell.sidebar-collapsed .sidebar .sidebar-foot-dot{
+  width:8px;height:8px;margin:0!important;
+ }
+ .app-shell.sidebar-collapsed .sidebar .brand,
+ .app-shell.sidebar-collapsed .sidebar .nav-home,
+ .app-shell.sidebar-collapsed .sidebar .nav-section-toggle{
+  overflow:hidden!important;
+ }
+}
+@media(max-width:800px){
+ .sidebar .brand-mark img{width:34px!important;height:auto!important;max-height:33px!important}
+}
