@@ -6,7 +6,7 @@ import {renderDashboardAnalytics} from "./analytics.js?v=4";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
 import {mountInventoryCheck} from "./resource-check.js?v=2";
 import {mountUniformManager} from "./uniform-bulk.js?v=4";
-import {mountFieldReport} from "./field-forms.js?v=2";
+import {mountFieldReport} from "./field-forms.js?v=3";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 
 const el=id=>document.getElementById(id);
@@ -324,7 +324,7 @@ async function coveragePage(){
   const tbody=el("coverage-body");
   const draw=(term="")=>{
    const found=records.filter(x=>[x.code,x.name,x.technical_lead,x.itaipu_technical_contact].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(term.toLocaleLowerCase("pt-BR"))));
-   tbody.innerHTML=found.length?found.map(r=>'<tr><td><strong>'+escapeHTML(r.code)+'</strong></td><td><span class="truncate" title="'+escapeHTML(r.name)+'">'+escapeHTML(r.name)+'</span></td><td>'+escapeHTML(r.technical_lead||"A confirmar")+'</td><td>'+escapeHTML(r.itaipu_technical_contact||"A confirmar")+'</td><td><span class="tag '+(r.status==="sem_programacao"?"warn":"")+'">'+label(r.status)+'</span></td><td><button class="table-action" data-action="planActivity" data-activity-id="'+escapeHTML(r.id)+'">Programar ↗</button></td></tr>').join(""):'<tr><td colspan="6"><div class="empty-state">Nenhuma atividade localizada.</div></td></tr>';
+   tbody.innerHTML=found.length?found.map(r=>'<tr><td><strong>'+escapeHTML(r.code)+'</strong></td><td><span class="truncate" title="'+escapeHTML(r.name)+'">'+escapeHTML(r.name)+'</span></td><td>'+escapeHTML(r.technical_lead||"A confirmar")+'</td><td>'+escapeHTML(r.itaipu_technical_contact||"A confirmar")+'</td><td><span class="tag '+(r.status==="sem_programacao"?"warn":"")+'">'+label(r.status)+'</span></td><td>'+(isProgrammableAction(r.code)?'<button class="table-action" data-action="planActivity" data-activity-id="'+escapeHTML(r.id)+'">Programar ↗</button>':'<span class="muted">Rubrica contratual</span>')+'</td></tr>').join(""):'<tr><td colspan="6"><div class="empty-state">Nenhuma atividade localizada.</div></td></tr>';
   };
   draw();el("coverage-search").addEventListener("input",e=>draw(e.target.value));
  }catch(e){el("main").innerHTML=title("coverage","Matriz de cobertura")+errorBanner(friendlyError(e))}
