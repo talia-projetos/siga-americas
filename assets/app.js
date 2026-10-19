@@ -1,12 +1,12 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js";
-import {iconMarkup} from "./icons.js";
-import {renderDashboardAnalytics} from "./analytics.js";
-import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js";
-import {mountInventoryCheck} from "./resource-check.js";
+import {groups,modules} from "./modules.js?v=4";
+import {iconMarkup} from "./icons.js?v=2";
+import {renderDashboardAnalytics} from "./analytics.js?v=3";
+import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
+import {mountInventoryCheck} from "./resource-check.js?v=2";
 import {mountFieldReport} from "./field-forms.js?v=2";
-import {mountFieldMonitor} from "./field-monitor.js";
+import {mountFieldMonitor} from "./field-monitor.js?v=2";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
