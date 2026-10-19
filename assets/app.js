@@ -32,7 +32,7 @@ function nav(){
  if(!app.role){root.innerHTML="";return;}
  const query=norm(el("nav-search")?.value?.trim());
  const homeVisible=!query||norm(nameFor("inicio")).includes(query);
- const home=homeVisible?'<button type="button" class="nav-home '+(app.page==="inicio"?'active':'')+'" data-nav="inicio" '+(app.page==="inicio"?'aria-current="page"':'')+'><span class="nav-home-icon">'+iconMarkup("inicio")+'</span><span>'+escapeHTML(nameFor("inicio"))+'</span></button>':"";
+ const home=homeVisible?'<button type="button" class="nav-home '+(app.page==="inicio"?'active':'')+'" data-nav="inicio" title="Visão geral" '+(app.page==="inicio"?'aria-current="page"':'')+'><span class="nav-home-icon">'+iconMarkup("inicio")+'</span><span>'+escapeHTML(nameFor("inicio"))+'</span></button>':"";
  const sections=groups.map((group,i)=>{
   const all=group.items.filter(canView);
   const groupMatch=norm(group.label).includes(query);
@@ -495,7 +495,8 @@ el("menu-toggle").addEventListener("click",()=>{
   const expanded=el("sidebar").classList.toggle("open");
   document.body.classList.toggle("sidebar-visible",expanded);
  }else{
-  el("app").classList.toggle("sidebar-collapsed");
+  const collapsed=el("app").classList.toggle("sidebar-collapsed");
+  try{window.localStorage.setItem("siga-sidebar-collapsed",collapsed?"1":"0");}catch(_){}
   el("sidebar").classList.remove("open");
   document.body.classList.remove("sidebar-visible");
  }
@@ -514,6 +515,7 @@ el("navigation").addEventListener("click",event=>{
  if(details?.matches("details.nav-section")){
   if(!mobileSidebar()&&el("app").classList.contains("sidebar-collapsed")){
    el("app").classList.remove("sidebar-collapsed");
+   try{window.localStorage.setItem("siga-sidebar-collapsed","0");}catch(_){}
    syncSidebarToggle();
   }
   if(!details.open){
@@ -543,6 +545,8 @@ document.addEventListener("keydown",event=>{
 el("record-form").addEventListener("submit",saveRecord);
 window.addEventListener("hashchange",()=>{const key=decodeURIComponent(location.hash.replace("#",""));if(app.role&&modules[key]&&key!==app.page)navigate(key)});
 async function init(){
+ try{el("app").classList.toggle("sidebar-collapsed",window.localStorage.getItem("siga-sidebar-collapsed")==="1");}catch(_){}
+ syncSidebarToggle();
  if(!SUPABASE_URL||!SUPABASE_PUBLISHABLE_KEY){setup();return;}
  try{app.db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false}});
  await establishSession();
