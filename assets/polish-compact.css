@@ -647,3 +647,72 @@
  .routine-photo-entry-head{flex-wrap:wrap}
  .routine-photo-entry-head .btn{margin-left:auto}
 }
+
+
+/* Central de documentos: emissão e impressão em lote sem confundir assinatura com cadastro. */
+#document-center-root{display:grid;gap:17px;min-width:0;max-width:100%;padding-bottom:24px}
+.document-guide,.document-workspace{background:#fff;border:1px solid #dce6de;border-radius:16px;min-width:0;max-width:100%;padding:22px 24px}
+.document-guide{background:linear-gradient(115deg,#f2f8f3 0%,#fff 76%)}
+.document-guide-head,.document-workspace-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.document-guide-head h2{font-size:clamp(20px,2vw,27px);letter-spacing:-.6px;margin:7px 0;color:#1c4732}
+.document-guide-head p{max-width:780px;font-size:12px;line-height:1.65;color:#60786a;margin:0}
+.document-total{flex:0 0 auto;text-align:center;font-size:30px;font-weight:750;color:#215b38;line-height:1.1}
+.document-total small{display:block;font-size:10px;line-height:1.4;font-weight:500;color:#647b6d}
+.document-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:22px}
+.document-actions>span{font-size:11px;color:#718275}
+.document-workspace-head{align-items:center;margin:0 0 15px}
+.document-workspace-head h3{font-size:16px;color:#214a36;margin:0;letter-spacing:-.2px}
+.document-workspace-head>span{font-size:11px;color:#748777;text-align:right}
+.document-filters{display:grid;grid-template-columns:minmax(170px,220px) minmax(190px,1fr) auto auto;align-items:end;gap:10px;margin:0 0 15px}
+.document-filters label{display:grid;gap:6px;color:#526a5b;font-weight:650;font-size:10.5px;min-width:0}
+.document-filters select,.document-filters input{height:40px;border:1px solid #d3e2d5;border-radius:8px;min-width:0;width:100%;padding:9px 11px;font-size:12px;box-sizing:border-box;background:#fff;color:#274734}
+.document-batch-actions{background:#f6faf7;border:1px solid #e1eae2;border-radius:12px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.document-batch-actions>div{min-width:210px;flex:1}
+.document-batch-actions strong{font-size:12px;color:#264f36}
+.document-batch-actions small{display:block;margin-top:5px;font-size:10px;line-height:1.55;color:#748578}
+.document-batch-actions button{font-size:11px;white-space:normal}
+.document-rows{display:grid;gap:8px;margin-top:13px}
+.document-record{display:grid;grid-template-columns:28px minmax(110px,.9fr) minmax(170px,1.5fr) minmax(85px,.65fr) auto;gap:11px;align-items:center;border:1px solid #e2eae2;background:#fff;border-radius:11px;padding:11px 13px;min-width:0}
+.document-record:nth-child(even){background:#fbfdfb}
+.document-choice input{accent-color:#267343;width:17px;height:17px}
+.document-record-title,.document-record-detail{min-width:0;display:grid;gap:3px}
+.document-record-title strong,.document-record-detail strong{font-size:11.5px;line-height:1.5;overflow-wrap:anywhere;color:#244934}
+.document-record-title small,.document-record-detail small{color:#778a79;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.document-record-status{font-size:10px;color:#617965;background:#f0f5f0;border:1px solid #e1e9e1;border-radius:8px;padding:6px 7px;line-height:1.45;text-align:center;overflow-wrap:anywhere}
+.document-record-buttons{display:flex;flex-wrap:wrap;gap:9px;justify-content:end}
+.document-record-buttons .table-action{padding:6px 1px;font-size:11px}
+.document-empty{padding:33px 15px;text-align:center;border:1px dashed #d6e4d7;border-radius:11px;background:#f8fbf8;color:#4c6755}
+.document-empty strong{font-size:13px}
+.document-empty p{font-size:11.5px;margin:6px auto 0;max-width:490px;line-height:1.65}
+.doc-templates-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.doc-preview-card{border:1px solid #d7e4d9;background:#fff;box-shadow:0 7px 20px #214d2110;padding:20px 21px;min-width:0;min-height:265px}
+.doc-preview-top{color:#245c3c;font-size:14px;font-weight:800;letter-spacing:-.3px}
+.doc-preview-top span{font-size:10px;letter-spacing:0;margin-left:10px;font-weight:600;color:#527961}
+.doc-preview-divider{height:4px;background:#2c714a;margin:13px 0 17px}
+.doc-preview-card>small{font-size:9px;letter-spacing:1px;color:#728778}
+.doc-preview-card h3{font-size:18px;color:#1c402d;margin:12px 0}
+.doc-preview-card p{font-size:10px;line-height:1.7;color:#678071;max-width:450px}
+.doc-preview-lines{height:61px;background:repeating-linear-gradient(180deg,transparent 0,transparent 19px,#e5ede6 20px,#e5ede6 21px);margin-bottom:14px}
+.doc-preview-sign{text-align:center;font-size:9px;line-height:2;color:#506f59}
+.document-legal-note{font-size:11px;color:#708171;line-height:1.6;margin:16px 0 0}
+.document-issues{display:grid;gap:5px}
+.document-issues>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(120px,1fr) minmax(160px,1fr);gap:12px;padding:10px;border-bottom:1px solid #eef2ee;font-size:11px;color:#506c58}
+.document-issues strong{font-size:11px;color:#315942}
+.document-issues small{font-size:10px;color:#728573}
+.document-muted{font-size:11.5px;color:#718274}
+@media(max-width:1200px){
+ .document-record{grid-template-columns:24px minmax(115px,1fr) minmax(145px,1.6fr) auto}
+ .document-record-status{display:none}
+ .document-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:750px){
+ .document-guide,.document-workspace{padding:16px}
+ .document-guide-head{align-items:center}
+ .document-record{grid-template-columns:24px minmax(0,1fr);gap:9px}
+ .document-record-detail,.document-record-buttons{grid-column:2}
+ .document-record-buttons{justify-content:flex-start}
+ .doc-templates-preview{grid-template-columns:minmax(0,1fr)}
+ .document-issues>div{grid-template-columns:1fr 1fr}
+ .document-filters{grid-template-columns:minmax(0,1fr)}
+ .document-batch-actions>div{flex-basis:100%}
+}
