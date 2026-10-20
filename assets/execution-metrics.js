@@ -6,17 +6,20 @@ const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">"
 const dateBR=d=>d?String(d).slice(8,10)+"/"+String(d).slice(5,7)+"/"+String(d).slice(0,4):"—";
 const monthBR=m=>new Date(m+"-01T12:00:00").toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
 const counted=r=>r.execution_status!=="cancelada"&&r.validation_status!=="glosada";
-export function monthlyExecution(entries,goals,month){
+export function monthlyExecution(entries,goals,month,matrix=[]){
  const rows=(entries||[]).filter(r=>String(r.performed_on||"").slice(0,7)===month);
  const target=Number((goals||[]).find(g=>String(g.period_month||"").slice(0,7)===month)?.target_amount??700000);
  const included=rows.filter(counted);
+ const executed=included.filter(r=>r.execution_status==="executada");
+ const matrixIds=new Set((matrix||[]).map(r=>r.id));
+ const executedActivities=new Set(executed.filter(r=>matrixIds.has(r.activity_id)).map(r=>r.activity_id));
  const estimated=included.reduce((s,r)=>s+Number(r.estimated_amount||0),0);
  const validated=included.filter(r=>r.validation_status==="validada").reduce((s,r)=>s+Number(r.estimated_amount||0),0);
  const pct=target>0?estimated/target*100:0;
- return {rows,estimated,validated,target,pct,pending:rows.filter(r=>r.validation_status==="a_conferir").length,remaining:Math.max(0,target-estimated)};
+ return {rows,estimated,validated,target,pct,executionCount:executed.length,executedActivities:executedActivities.size,matrixTotal:matrixIds.size,pending:rows.filter(r=>r.validation_status==="a_conferir").length,remaining:Math.max(0,target-estimated)};
 }
-export function renderFinancialIndicator(entries,goals,month,compact=false){
- const m=monthlyExecution(entries,goals,month),pct=Math.min(100,Math.max(0,m.pct));
+export function renderFinancialIndicator(entries,goals,month,compact=false,matrix=[]){
+ const m=monthlyExecution(entries,goals,month,matrix),pct=Math.min(100,Math.max(0,m.pct));
  const boxes=[
   ["Valor potencial registrado",money(m.estimated),"Execução informada, ainda sujeita à conferência"],
   ["Meta-base mensal",money(m.target),"Referência gerencial, não receita garantida"],
@@ -31,7 +34,11 @@ export function renderFinancialIndicator(entries,goals,month,compact=false){
     '<div class="metric"><div class="metric-header">'+escape(name)+'</div><strong>'+escape(value)+'</strong><small>'+escape(hint)+'</small></div>').join('')+'</div>'+
   '<div class="execution-goal-progress"><div><strong>Meta-base: '+escape(money(m.target))+'</strong><span>'+escape(numeric(m.pct))+'% do valor potencial registrado</span></div>'+
   '<div class="execution-progress-track"><span style="width:'+pct.toFixed(2)+'%"></span></div>'+
-  '<small>'+m.rows.length+' registros nesta competência · '+m.pending+' pendentes de conferência · '+money(m.validated)+' validados · nenhum valor aprovado para faturamento por este indicador.</small></div></section>';
+  ''<div class="execution-finance-detail"><strong>'+m.executionCount+' execuções registradas</strong>'+
+  '<span>'+m.executedActivities+' de '+m.matrixTotal+' itens da matriz de atividades com execução neste mês</span>'+
+  '<span>'+m.pending+' registros aguardam conferência documental</span>'+
+  (m.validated>0?'<span>Valor tecnicamente validado: '+money(m.validated)+'</span>':'<span>Validação técnica ainda não concluída</span>')+
+  '<span>Medição aprovada e faturamento não são controlados neste indicador.</span></div></div></section>';
 }
 export function renderExecutionTable(entries,month){
  const rows=(entries||[]).filter(r=>String(r.performed_on||"").slice(0,7)===month)
