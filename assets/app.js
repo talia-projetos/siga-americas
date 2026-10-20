@@ -9,7 +9,7 @@ import {mountUniformManager} from "./uniform-bulk.js?v=8";
 import {mountFieldReport} from "./field-forms.js?v=3";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 import {renderFinancialIndicator,renderExecutionTable} from "./execution-metrics.js?v=3";
-import {mountContractSuggestions} from "./contract-suggestions.js?v=2";
+import {mountContractSuggestions} from "./contract-suggestions.js?v=3";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
