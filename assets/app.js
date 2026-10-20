@@ -313,10 +313,14 @@ function optionLabel(table,id,display){
 function fieldValue(key,value){
  if(app.page==="teams"&&key==="name"){
   const members=(app.refs.teamWorkers||[]).filter(person=>person.team_id===app.rows.find(team=>team.name===value)?.id);
-  const technicians=members.filter(p=>/t[eé]cnic/i.test(p.job_title||""));
+  // Técnico de Segurança do Trabalho permanece na equipe como apoio,
+  // mas não é confundido com o Técnico Agrícola que lidera a frente.
+  const technicians=members.filter(p=>/t[eé]cnico\s+agr[ií]cola/i.test(p.job_title||""));
+  const names=technicians.map(p=>p.name);
   return '<div class="team-search-cell"><strong>'+escapeHTML(value||"Equipe")+'</strong>'+
-   (technicians.length?'<small>Técnicos: '+escapeHTML(technicians.map(p=>p.name).join(", "))+'</small>':
-    '<small>Técnico responsável não identificado no cadastro</small>')+'</div>';
+   (names.length?'<small>'+ (names.length===1?"Técnico de campo: ":"Técnicos de campo: ")+
+     escapeHTML(names.join(", "))+'</small>':
+    '<small>Técnico de campo ainda não identificado no cadastro</small>')+'</div>';
  }
  if(value===null||value===undefined||value==="")return '<span class="muted">—</span>';
  const f=modules[app.page]?.fields?.find(x=>x.key===key);
