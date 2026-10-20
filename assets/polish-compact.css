@@ -827,3 +827,61 @@
 .document-record-status[data-status="ativo"],.document-record-status[data-status="concluida"],.document-record-status[data-status="encerrado"]{color:var(--siga-state-green)!important;background:var(--siga-state-green-bg)!important;border-color:var(--siga-state-green-border)!important}
 .document-record-status[data-status="cancelada"],.document-record-status[data-status="inviavel"]{color:var(--siga-state-red)!important;background:var(--siga-state-red-bg)!important;border-color:var(--siga-state-red-border)!important}
 .suggest-stopped{color:var(--siga-state-red)!important;background:var(--siga-state-red-bg)!important;border-color:var(--siga-state-red-border)!important}
+
+
+/* Mapa da visão geral: altura controlada, camadas roláveis apenas no próprio painel.
+   O Leaflet nunca deve ultrapassar a janela do mapa nem a barra superior do sistema. */
+#dashboard-coverage-map{position:relative;isolation:isolate;z-index:0;max-width:100%;min-width:0;margin:14px 0 21px}
+#dashboard-coverage-map .coverage-map-shell{position:relative;isolation:isolate;max-width:100%;min-width:0;overflow:hidden}
+#dashboard-coverage-map .coverage-map-header{padding:13px 18px 10px}
+#dashboard-coverage-map .coverage-map-header h2{font-size:18px;margin:3px 0}
+#dashboard-coverage-map .coverage-map-header p{font-size:11px;line-height:1.4;margin:3px 0 0}
+#dashboard-coverage-map .coverage-map-toolbar{padding:8px 18px;gap:8px}
+#dashboard-coverage-map .coverage-map-toolbar select{min-height:35px;padding:7px 10px}
+#dashboard-coverage-map .coverage-map-layout{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,285px);
+ min-width:0;max-width:100%;height:325px!important;min-height:0!important;max-height:325px!important;
+ overflow:hidden;
+}
+#dashboard-coverage-map .coverage-map-canvas,
+#dashboard-coverage-map .coverage-map-canvas.leaflet-container{
+ display:block;position:relative;isolation:isolate;z-index:0;
+ box-sizing:border-box;height:325px!important;min-height:0!important;max-height:325px!important;
+ width:100%!important;min-width:0;max-width:100%;overflow:hidden!important;
+}
+#dashboard-coverage-map .coverage-map-sidebar{
+ height:325px;max-height:325px;min-height:0;
+ overflow:hidden;display:flex;flex-direction:column;
+}
+#dashboard-coverage-map .coverage-map-summary{padding:11px 12px;flex:0 0 auto}
+#dashboard-coverage-map .coverage-map-stats{gap:5px;margin:7px 0}
+#dashboard-coverage-map .coverage-map-stats>span{font-size:12px;padding:7px}
+#dashboard-coverage-map .coverage-map-layer-list{
+ display:block;flex:1 1 auto;overflow-y:auto!important;overflow-x:hidden!important;
+ overscroll-behavior:contain;min-height:0;max-height:100%;
+}
+#dashboard-coverage-map .coverage-layer-row{padding:9px 11px}
+#dashboard-coverage-map .coverage-map-footer{padding:9px 18px;font-size:10px}
+#dashboard-coverage-map .leaflet-pane,
+#dashboard-coverage-map .leaflet-top,
+#dashboard-coverage-map .leaflet-bottom{max-width:100%}
+@media(max-width:820px){
+ #dashboard-coverage-map .coverage-map-layout{
+  display:flex;flex-direction:column;height:auto!important;max-height:none!important;
+ }
+ #dashboard-coverage-map .coverage-map-canvas,
+ #dashboard-coverage-map .coverage-map-canvas.leaflet-container{
+  height:255px!important;max-height:255px!important;min-height:0!important;flex:0 0 255px;
+ }
+ #dashboard-coverage-map .coverage-map-sidebar{height:175px;max-height:175px;min-height:0;border-left:0;border-top:1px solid #e3eae4}
+ #dashboard-coverage-map .coverage-map-layer-list{display:block;overflow-y:auto!important}
+ #dashboard-coverage-map .coverage-layer-row:nth-child(odd){border-right:0}
+}
+@media(max-width:550px){
+ #dashboard-coverage-map .coverage-map-header{padding:12px 14px}
+ #dashboard-coverage-map .coverage-map-toolbar{padding:8px 14px}
+ #dashboard-coverage-map .coverage-map-canvas,
+ #dashboard-coverage-map .coverage-map-canvas.leaflet-container{height:230px!important;max-height:230px!important;flex-basis:230px}
+ #dashboard-coverage-map .coverage-map-sidebar{height:165px;max-height:165px}
+ #dashboard-coverage-map .coverage-map-footer{padding:10px 14px}
+}
