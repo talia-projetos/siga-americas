@@ -3,7 +3,8 @@
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n||0));
 const fmt=n=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0}).format(Number(n||0));
-const palette=["#648571","#869C86","#788E94","#9D9B88","#B2A18B","#809B96","#AAB49C"];
+// Paleta fosca e de baixa saturação, com matizes distintos para leitura das séries.
+const palette=["#60796E","#8A9A8C","#7D9097","#A3988B","#B3A58E","#819A95","#9891A1"];
 const statusLabels={candidata:"Oportunidades",a_validar:"A validar",programada:"Programadas",em_execucao:"Em execução",executada:"Executadas",inviavel:"Inviáveis",nao_aplicavel:"Não aplicáveis",aberta:"Abertas",impedida:"Impedidas",concluida:"Concluídas",pendente:"Pendentes de verificação",conforme:"Conformes",em_adequacao:"Em adequação",a_conferir:"A conferir",validado:"Validados",em_revisao:"Em revisão",realizada:"Realizadas"};
 const partyLabels={proerg:"PROERG",itaipu:"Itaipu",compartilhada:"Compartilhada",a_confirmar:"A confirmar"};
 const categoryLabels={mao_de_obra:"Mão de obra",veiculo:"Veículos",equipamento:"Equipamentos",ferramenta:"Ferramentas",epi:"EPIs",uniforme:"Uniformes","capacitação":"Capacitação",outro:"Outros"};
