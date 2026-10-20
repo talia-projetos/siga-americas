@@ -44,7 +44,10 @@ export async function mountInventoryCheck(root,db,{notify}){
   const observed=group.reduce((v,r)=>v+Number(r.observed_quantity||0),0);
   const missing=group.filter(r=>classification(r).kind==="missing").length;
   const tabsHTML=tabs.map(t=>'<button type="button" class="inventory-tab '+(active===t.id?'active':'')+'" data-inventory-tab="'+t.id+'">'+html(t.title)+' <small>'+rows.filter(r=>r.category===t.id).length+'</small></button>').join("");
-  const assets=individual[active];
+  // Ordenação por bem (nome/modelo), com desempate pela identificação patrimonial.
+  const assets=individual[active]===null?null:[...individual[active]].sort((a,b)=>
+   String(a.name||a.description||"").localeCompare(String(b.name||b.description||""),"pt-BR",{numeric:true})||
+   String(a.asset_tag||a.plate||"").localeCompare(String(b.asset_tag||b.plate||""),"pt-BR",{numeric:true}));
   const assetSummary=active==="ferramenta"?"":assets===null?'<div class="notice">Identificação individual indisponível com o perfil atual.</div>':
    '<section class="inventory-asset-section"><div class="inventory-asset-heading"><div><span class="eyebrow">RASTREABILIDADE</span><h3>Identificação individual dos '+(active==="veiculo"?"veículos":"equipamentos")+'</h3><p>'+assets.length+' cadastro(s) individualizados; não confundir com quantidade declarada. A indicação de conferido exige data e referência da evidência.</p></div><button type="button" class="btn btn-secondary" data-nav="'+(active==="veiculo"?"vehicles":"equipment")+'">Abrir cadastro individual ↗</button></div>'+
    (assets.length?'<div class="table-scroll"><table class="data-table"><thead><tr><th>Bem</th><th>'+(active==="veiculo"?"Placa / chassi":"Patrimônio / série")+'</th><th>Lacre</th><th>Verificação</th></tr></thead><tbody>'+assets.map(a=>'<tr><td>'+html(a.description||a.name||"Não informado")+'</td><td>'+html([a.plate||a.asset_tag,a.chassis||a.serial_number].filter(Boolean).join(" · ")||"A conferir")+'</td><td>'+html(a.seal_number||"—")+'</td><td>'+html(a.verification_status==="conferido"?"Conferido":a.verification_status==="divergente"?"Divergente":"A conferir")+'</td></tr>').join("")+'</tbody></table></div>':
