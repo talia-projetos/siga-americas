@@ -92,7 +92,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
     '<td>'+label+'</td></tr>';
   }).join("");
   return '<section class="table-panel uniform-roster"><div class="table-head"><div><h2>Tamanhos por colaborador</h2><span>'+number(people.length)+' exibido(s) · Camisa, calça, botina e jaqueta editáveis nesta tabela. Salvar tamanhos não registra entrega.</span></div></div>'+
-  '<div class="table-scroll"><table class="data-table"><thead><tr><th>Colaborador</th><th>Camisa</th><th>Calça</th><th>Botina</th><th>Jaqueta</th><th>Observação</th><th>Situação no ciclo</th></tr></thead><tbody>'+
+  '<div class="table-scroll"><table class="data-table"><colgroup><col style="width:26%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:13%"><col style="width:13%"></colgroup><thead><tr><th>Colaborador</th><th>Camisa</th><th>Calça</th><th>Botina</th><th>Jaqueta</th><th>Observação</th><th>Situação</th></tr></thead><tbody>'+
    (rows||'<tr><td colspan="7" class="uniform-empty">Nenhum colaborador encontrado.</td></tr>')+'</tbody></table></div></section>';
  }
  function distribution(){
