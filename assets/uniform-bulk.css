@@ -93,3 +93,25 @@
  .uniform-confirm-actions>.btn{flex:1}
  .uniform-history-stats{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Grade completa da relação de setembro: tamanhos sem vincular a entrega. */
+.uniform-roster .data-table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+.uniform-roster .data-table th:first-child{width:27%;min-width:0}
+.uniform-roster .data-table th:nth-child(2),
+.uniform-roster .data-table th:nth-child(3){width:14%}
+.uniform-roster .data-table th:nth-child(4),
+.uniform-roster .data-table th:nth-child(5){width:11%}
+.uniform-roster .data-table th:nth-child(6){width:23%}
+.uniform-roster .data-table th,
+.uniform-roster .data-table td{min-width:0!important;padding:11px 8px!important;overflow-wrap:anywhere;white-space:normal!important}
+.uniform-roster .uniform-extra-size{font-size:12px;color:#375635;font-weight:600}
+.uniform-roster .uniform-size{width:100%;max-width:100%;min-width:0}
+@media(max-width:800px){
+ .uniform-roster .data-table thead{display:none}
+ .uniform-roster .data-table{display:block}
+ .uniform-roster .data-table tbody{display:grid;gap:10px}
+ .uniform-roster .data-table tr{display:flex;flex-direction:column;border:1px solid #e0e9d9;border-radius:10px;overflow:hidden}
+ .uniform-roster .data-table td{display:flex;align-items:center;gap:12px;justify-content:space-between;text-align:right;width:100%!important;padding:10px 12px!important}
+ .uniform-roster .data-table td:before{content:attr(data-label);flex:0 0 35%;font-size:11px;color:#657e61;text-align:left}
+ .uniform-roster .data-table td .uniform-size{max-width:62%;min-width:0}
+}
