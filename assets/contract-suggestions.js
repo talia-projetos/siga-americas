@@ -173,7 +173,12 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
     ["Bloqueios no cenário",blockers,"Prioridade absoluta: segurança e viabilidade"]
    ].map(([label,value,note])=>'<div class="suggestion-stat"><small>'+text(label)+'</small><strong>'+text(value)+'</strong><span>'+text(note)+'</span></div>').join('')+'</div>';
   root.querySelector("#suggest-shortlist").innerHTML='<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Direcionamento para a reunião</h3><p>Oportunidades para vistoria e confirmação, não autorização de execução. '+text(datesLabel)+'.</p></div><button type="button" class="btn btn-ghost" id="suggest-export">Exportar os 73 itens (CSV)</button></div>'+
-   '<div class="suggestion-list">'+top.map(x=>row(x,true)).join('')+'</div></section>';
+   '<div class="suggestion-list">'+top.map(x=>row(x,true)).join('')+'</div></section>'+
+   '<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Maiores valores registrados · por item da matriz</h3>'+
+   '<p>Valores dos apontamentos já cadastrados, sujeitos à conferência. Rubricas de apoio, como SE, não são novas ações executáveis.</p></div></div>'+
+   '<div class="suggestion-finance-list">'+all.filter(x=>x.sum>0).sort((a,b)=>b.sum-a.sum).slice(0,6).map(x=>
+    '<div><span><strong>'+text(x.activity.code)+' · '+text(x.activity.name)+'</strong><small>'+text(x.profile.situation==="support"?"Rubrica de apoio · conferir regime/OS":x.profile.situation==="fixed"?"Rotina de preço mensal":"Atividade com execução apontada")+'</small></span>'+
+    '<strong>'+money(x.sum)+'</strong></div>').join('')+'</div></section>';
   root.querySelector("#suggest-table").innerHTML='<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Matriz de prioridades</h3><p>'+list.length+' de 73 itens no filtro atual · valores comparáveis apenas com produção registrada na mesma rubrica.</p></div></div>'+
    '<div class="suggestion-list suggestion-list-all">'+(list.map(x=>row(x)).join('')||'<p>Nenhum item encontrado nesse filtro.</p>')+'</div></section>';
   root.querySelector("#suggest-export")?.addEventListener("click",exportCsv);
