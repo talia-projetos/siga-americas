@@ -90,8 +90,8 @@ function buildDocxContent(model,lib){
   ]}))
  });
  const children=[
-  para("PROERG  /  SIGA AMÉRICAS",{bold:true,size:25,color:green,after:60}),
-  para("GESTÃO CONTRATUAL  ·  ITAIPU BINACIONAL",{size:15,color:muted,after:240}),
+  para("PROERG",{bold:true,size:25,color:green,after:60}),
+  para("SIGA AMÉRICAS  |  SISTEMA DE GESTÃO DA PROERG EM ITAIPU",{size:15,color:muted,after:240}),
   para(model.heading,{bold:true,size:31,color:"193D2A",after:45}),
   para(model.subheading,{size:19,color:muted,after:175}),
   para(model.badge,{bold:true,size:15,color:"567B54",after:180}),
@@ -115,7 +115,7 @@ function buildDocxContent(model,lib){
 export async function generateWord(model){
  const lib=await docxLib();
  const document=new lib.Document({
-  creator:"SIGA Américas / PROERG",title:model.heading+" · "+model.reference,
+  creator:"PROERG · SIGA Américas (sistema de gestão)",title:model.heading+" · "+model.reference,
   description:"Modelo administrativo para assinatura manual. Emissão não comprova aceite.",
   styles:{default:{document:{run:{font:"Aptos",size:19,color:"294635"},paragraph:{spacing:{line:276}}}}},
   sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:850,bottom:760,left:900,right:900}}},children:buildDocxContent(model,lib)}]
@@ -143,7 +143,7 @@ export async function generatePDF(models){
  const lib=await pdfLib();
  const pdf=await lib.PDFDocument.create();
  pdf.setTitle(models.length===1?models[0].heading+" · "+models[0].reference:"SIGA Américas - documentos para assinatura");
- pdf.setAuthor("SIGA Américas / PROERG");
+ pdf.setAuthor("PROERG · Sistema SIGA Américas");
  pdf.setSubject("Documentos administrativos para coleta de assinatura física; sem comprovação de execução");
  const regular=await pdf.embedFont(lib.StandardFonts.Helvetica),bold=await pdf.embedFont(lib.StandardFonts.HelveticaBold);
  const dark=lib.rgb(.10,.26,.20),green=lib.rgb(.11,.37,.27),muted=lib.rgb(.37,.49,.42),line=lib.rgb(.85,.90,.86);
@@ -153,8 +153,8 @@ export async function generatePDF(models){
  const start=()=>{
   page=pdf.addPage([W,H]);pageNo++;
   page.drawRectangle({x:0,y:H-12,width:W,height:12,color:green});
-  page.drawText("PROERG  /  SIGA AMÉRICAS",{x:margin,y:H-47,size:14,font:bold,color:green});
-  page.drawText("GESTÃO CONTRATUAL · ITAIPU BINACIONAL",{x:margin,y:H-66,size:8.1,font:regular,color:muted});
+  page.drawText("PROERG",{x:margin,y:H-47,size:14,font:bold,color:green});
+  page.drawText("SIGA AMÉRICAS · SISTEMA DE GESTÃO DA PROERG EM ITAIPU",{x:margin,y:H-66,size:8.1,font:regular,color:muted});
   page.drawLine({start:{x:margin,y:H-78},end:{x:W-margin,y:H-78},thickness:1,color:line});
   page.drawText("Documento emitido para assinatura física · SIGA Américas",{x:margin,y:37,size:7.2,font:regular,color:muted});
   page.drawText(String(pageNo),{x:W-margin-5,y:37,size:8,font:regular,color:muted});
