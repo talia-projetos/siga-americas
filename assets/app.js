@@ -610,6 +610,18 @@ document.addEventListener("keydown",event=>{
   }
  }
 });
+el("modal-fields").addEventListener("change",event=>{
+ const target=event.target;
+ if(!target.matches("[data-purchase-select-all],[data-purchase-sector]"))return;
+ const area=el("modal-fields");
+ const boxes=[...area.querySelectorAll("[data-purchase-sector]")];
+ const all=area.querySelector("[data-purchase-select-all]");
+ if(target.matches("[data-purchase-select-all]"))boxes.forEach(box=>{box.checked=target.checked;});
+ const selected=boxes.filter(box=>box.checked).length;
+ if(all){all.checked=boxes.length>0&&selected===boxes.length;all.indeterminate=selected>0&&selected<boxes.length;}
+ const counter=area.querySelector("[data-purchase-sector-counter]");
+ if(counter)counter.textContent=selected+" de "+boxes.length+" setores selecionados";
+});
 el("record-form").addEventListener("submit",saveRecord);
 window.addEventListener("hashchange",()=>{const key=decodeURIComponent(location.hash.replace("#",""));if(app.role&&modules[key]&&key!==app.page)navigate(key)});
 async function init(){
