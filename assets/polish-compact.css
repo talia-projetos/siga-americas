@@ -1327,3 +1327,100 @@
 .inventory-asset-section .data-table th{background:#f4f7f3}
 .inventory-asset-section .table-scroll{max-width:100%;overflow-x:auto}
 @media(max-width:680px){.inventory-asset-heading{padding:16px}.inventory-asset-heading .btn{width:100%;justify-content:center}.inventory-asset-section .data-table{min-width:650px}}
+
+
+/* Tabela de preços: cada coluna ocupa espaço proporcional à informação.
+   Isolada do restante dos cadastros para não alterar suas larguras. */
+#main .catalog-table.price-table .table-scroll{
+ overflow-x:auto!important;
+ overscroll-behavior-x:contain;
+}
+#main .catalog-table.price-table .data-table{
+ width:100%!important;
+ min-width:960px!important;
+ table-layout:fixed!important;
+ border-spacing:0;
+}
+#main .price-table col.price-col-code{width:9%}
+#main .price-table col.price-col-name{width:31%}
+#main .price-table col.price-col-unit{width:10%}
+#main .price-table col.price-col-quantity{width:14%}
+#main .price-table col.price-col-price{width:12.5%}
+#main .price-table col.price-col-total{width:14.5%}
+#main .price-table col.price-col-actions{width:9%}
+#main .price-table .data-table th,
+#main .price-table .data-table td{
+ padding:13px 14px!important;
+ vertical-align:middle;
+ overflow-wrap:normal;
+ word-break:normal;
+}
+#main .price-table .data-table thead th{
+ line-height:1.4;
+ font-size:10.5px!important;
+ vertical-align:middle;
+}
+#main .price-table .data-table thead th .table-sort{
+ min-height:26px;
+ align-items:center!important;
+ gap:5px!important;
+}
+#main .price-table .data-table th:nth-child(3),
+#main .price-table .data-table td:nth-child(3){
+ text-align:center!important;
+}
+#main .price-table .data-table th:nth-child(3) .table-sort{
+ justify-content:center!important;
+ text-align:center!important;
+}
+#main .price-table .data-table th.numeric-cell,
+#main .price-table .data-table td.numeric-cell{
+ text-align:right!important;
+ font-variant-numeric:tabular-nums;
+}
+#main .price-table .data-table th.numeric-cell .table-sort{
+ justify-content:flex-end!important;
+ text-align:right!important;
+}
+#main .price-table .data-table td.numeric-cell{
+ white-space:nowrap!important;
+}
+#main .price-table .data-table td:nth-child(2) .catalog-name{
+ min-width:0;
+ max-width:none;
+ line-height:1.5;
+ overflow-wrap:break-word;
+}
+#main .price-table .data-table th:last-child,
+#main .price-table .data-table td:last-child{
+ min-width:0!important;
+ text-align:center!important;
+}
+#main .price-table .data-table td:last-child .table-action{
+ justify-content:center;
+ margin:0 auto;
+ padding:7px 9px!important;
+ white-space:nowrap!important;
+}
+#main .price-table .data-table tbody tr{height:auto}
+@media(max-width:800px){
+ #main .price-table .table-scroll{overflow:visible!important}
+ #main .price-table .data-table{min-width:0!important;display:block}
+ #main .price-table .data-table colgroup{display:none}
+ #main .price-table .data-table tbody td:nth-child(3),
+ #main .price-table .data-table tbody td:last-child{
+  text-align:right!important;
+ }
+ #main .price-table .data-table tbody td.numeric-cell{
+  white-space:normal!important;
+ }
+ #main .price-table .data-table tbody td:nth-child(2) .catalog-name{
+  min-width:0;
+  max-width:55%;
+  text-align:right;
+  overflow-wrap:break-word;
+ }
+ #main .price-table .data-table tbody td:last-child .table-action{
+  margin:0 0 0 auto;
+ }
+}
