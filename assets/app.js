@@ -334,7 +334,7 @@ async function coveragePage(){
     '<button class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento mensal</button><button class="btn btn-primary" data-nav="field_plan_items">'+iconMarkup("clipboard")+' Ações programadas</button>')+
     '<div class="metric-grid">'+cards+'</div>'+
     '<p class="catalog-context-note">'+iconMarkup("check")+' Cobertura significa analisar e classificar cada atividade. Serviços só são executados quando necessários e autorizados.</p>'+
-    renderApontamentosPreposto(escapeHTML)+
+    '<div id="coverage-execution-metrics"></div>'+
     '<section class="table-panel"><div class="table-head"><div><h2>Diagnóstico das 73 atividades</h2><span>Atividades, responsáveis e situação de planejamento</span></div><div class="table-toolbar"><input type="search" id="coverage-search" class="searchbox" placeholder="Buscar atividade ou responsável..." aria-label="Pesquisar catálogo"></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Item</th><th>Atividade</th><th>PROERG</th><th>Itaipu</th><th>Planejamento</th><th>Ação</th></tr></thead><tbody id="coverage-body"></tbody></table></div></section>';
   const tbody=el("coverage-body");
   const draw=(term="")=>{
@@ -342,6 +342,15 @@ async function coveragePage(){
    tbody.innerHTML=found.length?found.map(r=>'<tr><td><strong>'+escapeHTML(r.code)+'</strong></td><td><span class="truncate" title="'+escapeHTML(r.name)+'">'+escapeHTML(r.name)+'</span></td><td>'+escapeHTML(r.technical_lead||"A confirmar")+'</td><td>'+escapeHTML(r.itaipu_technical_contact||"A confirmar")+'</td><td><span class="tag '+(r.status==="sem_programacao"?"warn":"")+'">'+label(r.status)+'</span></td><td>'+(isProgrammableAction(r.code)?'<button class="table-action" data-action="planActivity" data-activity-id="'+escapeHTML(r.id)+'">Programar ↗</button>':'<span class="muted">Rubrica contratual</span>')+'</td></tr>').join(""):'<tr><td colspan="6"><div class="empty-state">Nenhuma atividade localizada.</div></td></tr>';
   };
   draw();el("coverage-search").addEventListener("input",e=>draw(e.target.value));
+  const metricsRoot=el("coverage-execution-metrics");
+  const renderMonth=month=>{
+   metricsRoot.innerHTML=renderFinancialIndicator(recorded,monthlyGoals,month)+renderExecutionTable(recorded,month);
+   const monthField=metricsRoot.querySelector("#execution-month");
+   if(monthField)monthField.addEventListener("change",event=>{
+    if(/^\\d{4}-\\d{2}$/.test(event.target.value))renderMonth(event.target.value);
+   });
+  };
+  renderMonth(new Date().toISOString().slice(0,7));
  }catch(e){el("main").innerHTML=title("coverage","Matriz de cobertura")+errorBanner(friendlyError(e))}
 }
 async function modulePage(key){
