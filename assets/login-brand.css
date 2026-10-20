@@ -1,153 +1,128 @@
-/* SIGA Américas · identidade monocromática PROERG na área de autenticação.
-   Só modifica a apresentação. A marca d'água é decorativa e não recebe eventos. */
+/* SIGA Américas · entrada no sistema de gestão da PROERG em Itaipu.
+   PROERG é a empresa; SIGA Américas é o sistema. O SVG do logotipo oficial
+   permanece intacto. Cinza aplicado apenas visualmente via CSS.
+   Fotografia botânica de fundo: Unsplash / photo-1600655584427-65c6ebfca603.
+   Se a fotografia externa não carregar, o gradiente verde continua funcional. */
 body.auth-locked{
  background:
-  radial-gradient(ellipse at 88% 18%,rgba(72,148,91,.19),transparent 40%),
-  radial-gradient(ellipse at 0% 90%,rgba(20,116,84,.3),transparent 47%),
-  linear-gradient(132deg,#0a3026 0%,#0b3d2c 50%,#0b3227 100%)!important;
+  radial-gradient(ellipse at 18% 12%,rgba(48,119,93,.2),transparent 39%),
+  radial-gradient(ellipse at 90% 77%,rgba(25,112,79,.14),transparent 44%),
+  linear-gradient(126deg,#07372e 0%,#073c31 43%,#0a3028 100%)!important;
  background-attachment:fixed;
 }
 body.auth-locked .app-shell,
 body.auth-locked .workspace,
-body.auth-locked .main-content{
- background:transparent!important;
-}
+body.auth-locked .main-content{background:transparent!important}
 body.auth-locked .workspace{min-height:100dvh}
 body.auth-locked .main-content{
- position:relative;
- isolation:isolate;
+ position:relative;isolation:isolate;
  min-height:100dvh;
  overflow:hidden;
- padding:100px 26px 55px;
+ display:flex;align-items:center;justify-content:center;
+ padding:38px 20px;
 }
-/* Folha ampla, suavizada e deslocada para o lado direito da composição. */
 body.auth-locked .main-content::before{
  content:"";
  position:absolute;
  z-index:-1;
  pointer-events:none;
- width:min(78vw,900px);
- aspect-ratio:1;
- right:clamp(-320px,-14vw,-110px);
- top:50%;
- transform:translateY(-49%) rotate(-14deg);
- background:url("./proerg-official-leaf.svg?v=1") center/contain no-repeat;
- opacity:.095;
+ width:min(60vw,950px);
+ height:100%;
+ top:0;right:0;
+ background-image:
+  linear-gradient(90deg,#07382f 0%,rgba(7,56,47,.32) 30%,rgba(7,56,47,.06) 100%),
+  url("https://images.unsplash.com/photo-1600655584427-65c6ebfca603?auto=format&fit=crop&w=1200&q=78");
+ background-size:cover;
+ background-position:center right;
+ background-repeat:no-repeat;
+ opacity:.58;
+ filter:saturate(.74) contrast(1.08);
+ -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 33%,#000 100%);
+ mask-image:linear-gradient(90deg,transparent 0%,#000 33%,#000 100%);
 }
 body.auth-locked .main-content::after{
  content:"";
  position:absolute;
- z-index:-2;
- inset:0;
  pointer-events:none;
- background:
-  radial-gradient(ellipse at 83% 66%,rgba(129,204,151,.08),transparent 35%),
-  linear-gradient(100deg,rgba(0,0,0,.06),transparent 55%);
+ z-index:-2;inset:0;
+ background:radial-gradient(ellipse at 69% 48%,rgba(127,190,135,.07),transparent 43%);
 }
 body.auth-locked .auth-wrap{
- position:relative;
- z-index:1;
- width:min(500px,100%);
- max-width:500px;
- margin:0;
-}
-body.auth-locked .auth-company{
- position:fixed;
- top:clamp(24px,4vh,48px);
- left:clamp(24px,4vw,68px);
- z-index:3;
- width:clamp(185px,20vw,275px);
- opacity:.95;
- pointer-events:none;
-}
-body.auth-locked .auth-company img{
- display:block;
- width:100%;
- height:auto;
- max-height:85px;
- object-fit:contain;
- object-position:left center;
+ position:relative;z-index:1;
+ width:min(470px,100%);max-width:470px;
+ margin-inline:auto;
 }
 body.auth-locked .auth-card{
- position:relative;
- z-index:1;
- border:1px solid rgba(225,239,230,.92);
- background:#fcfefc;
- box-shadow:0 35px 110px rgba(0,20,13,.34),0 2px 16px rgba(0,20,13,.08);
- border-radius:19px;
+ position:relative;z-index:1;
+ padding:29px 39px 36px;
+ border:1px solid rgba(233,242,233,.94);
+ background:#fff;
+ border-radius:20px;
+ box-shadow:0 28px 92px rgba(0,20,15,.29),0 4px 18px rgba(0,20,15,.075);
 }
 body.auth-locked .auth-card::before{
  content:"";
  position:absolute;
- top:0;
- left:38px;
- right:38px;
- height:3px;
- background:linear-gradient(90deg,transparent,#56a76b 45%,transparent);
- border-radius:0 0 100% 100%;
- opacity:.5;
+ top:0;left:24%;right:24%;height:2px;
+ opacity:.25;
+ background:linear-gradient(90deg,transparent,#5a9c74,transparent);
 }
-@media(max-width:900px){
- body.auth-locked .main-content::before{
-  width:min(92vw,680px);
-  right:-36%;
-  opacity:.07;
- }
- body.auth-locked .auth-company{width:195px;}
+body.auth-locked .auth-brand-stack{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ gap:5px;
+ margin:0 0 19px;
 }
-@media(max-width:600px){
- body.auth-locked .main-content{
-  min-height:100dvh;
-  padding:120px 16px 35px;
-  align-items:center;
- }
- body.auth-locked .auth-company{
-  position:absolute;
-  top:24px;
-  left:24px;
-  width:173px;
- }
- body.auth-locked .main-content::before{
-  width:550px;
-  max-width:none;
-  right:-345px;
-  top:48%;
-  opacity:.065;
- }
- body.auth-locked .auth-card{border-radius:16px;}
-}
-@media(prefers-reduced-motion:reduce){
- body.auth-locked .main-content::before{transition:none;animation:none}
-}
-
-/* Identidade PROERG: SVG oficial fornecido pela gestão; sem redesenho nem alteração dos caminhos.
-   O original possui margem interna no viewBox; o enquadramento abaixo apenas
-   recorta o espaço vazio, mantendo proporção e desenho integral da marca. */
-body.auth-locked .auth-wrap{margin-inline:auto;max-width:470px;width:min(470px,100%)}
 body.auth-locked .auth-company{
- width:clamp(245px,29vw,340px);
- height:90px;
+ position:relative;
+ display:block;
+ flex:0 0 auto;
+ width:174px;height:40px;
  overflow:hidden;
+ margin:0 auto;
+ pointer-events:none;
 }
 body.auth-locked .auth-company img{
  position:absolute;
- top:50%;
- left:50%;
- width:100%;
- height:auto;
- max-height:none;
- object-fit:contain;
- object-position:center;
+ display:block;
+ top:50%;left:50%;
+ width:100%;height:auto;max-height:none;
+ object-fit:contain;object-position:center;
  transform:translate(-50%,-50%);
+ filter:brightness(0);
+ opacity:.44;
 }
-body.auth-locked .main-content::before{
- width:min(84vw,760px);
- right:clamp(-270px,-14vw,-100px);
- transform:translateY(-45%) rotate(-14deg);
- opacity:.105;
+body.auth-locked .auth-brand{
+ width:100%;
+ margin:0;
+ padding:0 0 21px;
+ border-bottom:1px solid #e4eae4;
+ display:flex;align-items:center;justify-content:center;
+}
+body.auth-locked .auth-logo{
+ width:min(330px,100%);max-width:100%;
+ height:auto;max-height:106px;object-fit:contain;
+}
+body.auth-locked .auth-card h1{font-size:23px;letter-spacing:-.7px;margin-top:10px}
+body.auth-locked .auth-card p{font-size:12px;line-height:1.6;color:#677c73}
+body.auth-locked .auth-form .btn{padding:14px;font-size:13px}
+@media(max-width:800px){
+ body.auth-locked .main-content::before{width:70vw;opacity:.45}
 }
 @media(max-width:600px){
- body.auth-locked .auth-wrap{width:min(440px,100%);margin-inline:auto}
- body.auth-locked .auth-company{top:14px;left:14px;width:220px;height:70px}
- body.auth-locked .main-content::before{opacity:.075;right:-320px;width:510px}
+ body.auth-locked .main-content{padding:22px 15px;min-height:100dvh}
+ body.auth-locked .auth-wrap{width:min(440px,100%)}
+ body.auth-locked .auth-card{padding:24px 24px 28px;border-radius:17px}
+ body.auth-locked .auth-company{width:150px;height:34px}
+ body.auth-locked .auth-brand-stack{gap:3px;margin-bottom:16px}
+ body.auth-locked .auth-logo{max-height:96px}
+ body.auth-locked .main-content::before{
+  width:100vw;opacity:.24;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 63%);
+  mask-image:linear-gradient(90deg,transparent 0%,#000 63%);
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body.auth-locked .main-content::before{animation:none;transition:none}
 }
