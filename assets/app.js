@@ -189,13 +189,13 @@ async function dashboard(){
  if(finance)(async()=>{
   const month=new Date().toISOString().slice(0,7);
   try{
-   const [executions,goals]=await Promise.all([
-    app.db.from("field_execution_entries").select("performed_on,estimated_amount,validation_status,execution_status").gte("performed_on",month+"-01").lt("performed_on",month==="2026-12"?"2027-01-01":new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),1)).toISOString().slice(0,10)).limit(1200),
-    app.db.from("finance_goals").select("period_month,target_amount").eq("period_month",month+"-01")
+   const [executions,goals,matrix]=await Promise.all([
+    app.db.from("field_execution_entries").select("activity_id,performed_on,estimated_amount,validation_status,execution_status").gte("performed_on",month+"-01").lt("performed_on",new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),1)).toISOString().slice(0,10)).limit(1200),
+    app.db.from("finance_goals").select("period_month,target_amount").eq("period_month",month+"-01"),
+    app.db.from("activity_catalog").select("id").limit(100)
    ]);
-   if(executions.error)throw executions.error;
-   if(goals.error)throw goals.error;
-   if(app.page==="inicio")finance.innerHTML=renderFinancialIndicator(executions.data||[],goals.data||[],month,true)+
+   for(const item of [executions,goals,matrix])if(item.error)throw item.error;
+   if(app.page==="inicio")finance.innerHTML=renderFinancialIndicator(executions.data||[],goals.data||[],month,true,matrix.data||[])+
     '<p class="execution-dashboard-link"><button class="table-action" type="button" data-nav="coverage">Conferir lançamentos e preços na Cobertura ↗</button></p>';
   }catch(error){if(app.page==="inicio")finance.innerHTML='<p class="muted">Métricas de produção financeira indisponíveis neste momento.</p>';}
  })();
@@ -343,7 +343,7 @@ async function coveragePage(){
    ["Atividades no catálogo",records.length,candidates+" oportunidades aguardam análise"],
    ["Com decisão registrada",covered,pct+"% da matriz triada"],
    ["Em programação / execução",scheduled,"Atividades distintas"],
-   ["Com execução registrada",recorded.filter(x=>x.execution_status==="executada").length,completed+" atividades distintas · conferência documental pendente"]
+   ["Com execução registrada",completed+" / "+records.length,recorded.filter(x=>x.execution_status==="executada").length+" lançamentos individuais · sem confundir com validação"]
   ].map(d=>'<div class="metric"><div class="metric-header">'+d[0]+'<span class="metric-icon">'+iconMarkup("coverage")+'</span></div><strong>'+d[1]+'</strong><small>'+d[2]+'</small></div>').join("");
   el("main").innerHTML=title("coverage","O objetivo é analisar o aproveitamento tecnicamente aplicável de cada atividade, sem forçar execução de serviços desnecessários.",
     '<button class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento mensal</button><button class="btn btn-primary" data-nav="field_plan_items">'+iconMarkup("clipboard")+' Ações programadas</button>')+
@@ -359,7 +359,7 @@ async function coveragePage(){
   draw();el("coverage-search").addEventListener("input",e=>draw(e.target.value));
   const metricsRoot=el("coverage-execution-metrics");
   const renderMonth=month=>{
-   metricsRoot.innerHTML=renderFinancialIndicator(recorded,monthlyGoals,month)+renderExecutionTable(recorded,month);
+   metricsRoot.innerHTML=renderFinancialIndicator(recorded,monthlyGoals,month,false,a.data||[])+renderExecutionTable(recorded,month);
    const monthField=metricsRoot.querySelector("#execution-month");
    if(monthField)monthField.addEventListener("change",event=>{
     if(/^\\d{4}-\\d{2}$/.test(event.target.value))renderMonth(event.target.value);
