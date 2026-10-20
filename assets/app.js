@@ -8,7 +8,7 @@ import {mountInventoryCheck} from "./resource-check.js?v=2";
 import {mountUniformManager} from "./uniform-bulk.js?v=10";
 import {mountFieldReport} from "./field-forms.js?v=6";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
-import {renderFinancialIndicator,renderExecutionTable} from "./execution-metrics.js?v=5";
+import {renderFinancialIndicator} from "./execution-metrics.js?v=5";
 import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=3";
 import {mountCoverageMap} from "./coverage-map.js?v=6";
@@ -455,7 +455,8 @@ async function coveragePage(){
   draw();el("coverage-search").addEventListener("input",e=>draw(e.target.value));
   const metricsRoot=el("coverage-execution-metrics");
   const renderMonth=month=>{
-   metricsRoot.innerHTML=renderFinancialIndicator(recorded,monthlyGoals,month,false,a.data||[])+renderExecutionTable(recorded,month);
+   metricsRoot.innerHTML=renderFinancialIndicator(recorded,monthlyGoals,month,false,a.data||[])+
+    '<p class="execution-dashboard-link"><button type="button" class="table-action" data-nav="field_execution_entries">'+iconMarkup("file")+' Abrir Execuções registradas</button></p>';
    const monthField=metricsRoot.querySelector("#execution-month");
    if(monthField)monthField.addEventListener("change",event=>{
     if(/^\\d{4}-\\d{2}$/.test(event.target.value))renderMonth(event.target.value);
