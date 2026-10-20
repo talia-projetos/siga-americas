@@ -21,7 +21,7 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
   return response.data||[];
  }));
  const state={data:Object.fromEntries(tables.map((table,i)=>[table,results[i]])),
-  view:"todos",query:"",selected:new Set(),busy:false,issues:[]};
+  view:"todos",query:"",selected:new Set(),busy:false,issues:[],previewOpen:false};
  const records=()=>[
   ...(state.data.work_orders||[]).map(r=>({kind:"os",r})),
   ...(state.data.responsibility_terms||[]).map(r=>({kind:"termo",r}))
@@ -84,13 +84,16 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
      '<button type="button" class="table-action" data-doc-single="docx" data-doc-row="'+esc(key)+'">Word</button></div>'+
      '</article>';
    }).join("")||'<div class="document-empty"><strong>Nenhum documento encontrado.</strong><p>Cadastre uma ordem de serviço ou termo de responsabilidade para preencher os modelos automaticamente.</p></div>')+'</div></section>'+
-   '<section class="document-workspace"><div class="document-workspace-head"><h3>Padrão visual dos modelos</h3><span>Formato A4 · campos de assinatura</span></div>'+
-    printPreview()+
-    '<p class="document-legal-note">Os modelos são administrativos e devem ser conferidos antes do uso oficial. Não constituem laudo, autorização ambiental, assinatura digital, comprovante de entrega ou aprovação de medição. As responsabilidades por danos devem ser apuradas, nunca presumidas.</p></section>'+
+   '<details class="document-workspace doc-models-collapsible" id="doc-models-preview"'+(state.previewOpen?' open':'')+'>'+
+    '<summary class="document-workspace-head doc-models-summary"><span class="doc-models-summary-title"><h3>Padrão visual dos modelos</h3><small>Prévia da Ordem de Serviço e do Termo de Responsabilidade</small></span>'+
+    '<span class="doc-models-summary-meta">Formato A4 · campos de assinatura <span class="doc-models-chevron" aria-hidden="true"></span></span></summary>'+
+    '<div class="doc-models-content">'+printPreview()+
+    '<p class="document-legal-note">Os modelos são administrativos e devem ser conferidos antes do uso oficial. Não constituem laudo, autorização ambiental, assinatura digital, comprovante de entrega ou aprovação de medição. As responsabilidades por danos devem ser apuradas, nunca presumidas.</p></div></details>'+
    '<section class="document-workspace"><div class="document-workspace-head"><h3>Emissões recentes</h3><span>Registro de geração, não de assinatura</span></div>'+
    '<div class="document-issues">'+(state.issues.length?
      state.issues.slice(0,12).map(x=>'<div><strong>'+esc(x.source_reference)+'</strong><span>'+esc(labelKind(x.document_kind))+'</span><small>'+new Date(x.issued_at).toLocaleString("pt-BR")+' · '+esc(x.issue_format.toUpperCase())+'</small></div>').join(""):
      '<p class="document-muted">Nenhuma emissão registrada.</p>')+'</div></section>';
+  root.querySelector("#doc-models-preview").addEventListener("toggle",e=>{state.previewOpen=e.currentTarget.open;});
   root.querySelector("#doc-kind").addEventListener("change",e=>{state.view=e.target.value;refreshUI();});
   root.querySelector("#doc-search").addEventListener("input",e=>{
    const pos=e.target.selectionStart;
