@@ -31,7 +31,7 @@ body.auth-locked .main-content::before{
  right:clamp(-320px,-14vw,-110px);
  top:50%;
  transform:translateY(-49%) rotate(-14deg);
- background:url("./proerg-leaf-watermark.svg") center/contain no-repeat;
+ background:url("./proerg-official-leaf.svg?v=1") center/contain no-repeat;
  opacity:.095;
 }
 body.auth-locked .main-content::after{
@@ -118,4 +118,36 @@ body.auth-locked .auth-card::before{
 }
 @media(prefers-reduced-motion:reduce){
  body.auth-locked .main-content::before{transition:none;animation:none}
+}
+
+/* Identidade PROERG: SVG oficial fornecido pela gestão; sem redesenho nem alteração dos caminhos.
+   O original possui margem interna no viewBox; o enquadramento abaixo apenas
+   recorta o espaço vazio, mantendo proporção e desenho integral da marca. */
+body.auth-locked .auth-wrap{margin-inline:auto;max-width:470px;width:min(470px,100%)}
+body.auth-locked .auth-company{
+ width:clamp(245px,29vw,340px);
+ height:90px;
+ overflow:hidden;
+}
+body.auth-locked .auth-company img{
+ position:absolute;
+ top:50%;
+ left:50%;
+ width:100%;
+ height:auto;
+ max-height:none;
+ object-fit:contain;
+ object-position:center;
+ transform:translate(-50%,-50%);
+}
+body.auth-locked .main-content::before{
+ width:min(84vw,760px);
+ right:clamp(-270px,-14vw,-100px);
+ transform:translateY(-45%) rotate(-14deg);
+ opacity:.105;
+}
+@media(max-width:600px){
+ body.auth-locked .auth-wrap{width:min(440px,100%);margin-inline:auto}
+ body.auth-locked .auth-company{top:14px;left:14px;width:220px;height:70px}
+ body.auth-locked .main-content::before{opacity:.075;right:-320px;width:510px}
 }
