@@ -41,11 +41,11 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
  const selected=()=>records().filter(x=>state.selected.has(idKey(x.kind,x.r.id)));
  function printPreview(){
   return '<div class="doc-templates-preview">'+
-   '<div class="doc-preview-card"><div class="doc-preview-top">PROERG <span> Sistema SIGA Américas</span></div>'+
+   '<div class="doc-preview-card"><div class="doc-preview-top"><span class="doc-preview-company"><img src="./assets/proerg-official-white.svg?v=1" alt="Logotipo oficial da PROERG" loading="lazy" decoding="async"></span><span class="doc-preview-system">Sistema SIGA Américas</span></div>'+
     '<div class="doc-preview-divider"></div><small>SISTEMA DE GESTÃO DA PROERG EM ITAIPU</small><h3>ORDEM DE SERVIÇO</h3>'+
     '<p>Identificação · Frente operacional · Equipe · Prazo · Atividade da matriz · Descrição da demanda</p>'+
     '<div class="doc-preview-lines"></div><div class="doc-preview-sign">____________________　　____________________<br>Supervisão　　　　　　　Equipe / responsável</div></div>'+
-   '<div class="doc-preview-card"><div class="doc-preview-top">PROERG <span> Sistema SIGA Américas</span></div>'+
+   '<div class="doc-preview-card"><div class="doc-preview-top"><span class="doc-preview-company"><img src="./assets/proerg-official-white.svg?v=1" alt="Logotipo oficial da PROERG" loading="lazy" decoding="async"></span><span class="doc-preview-system">Sistema SIGA Américas</span></div>'+
     '<div class="doc-preview-divider"></div><small>SISTEMA DE GESTÃO DA PROERG EM ITAIPU</small><h3>TERMO DE RESPONSABILIDADE</h3>'+
     '<p>Responsável · Bem designado · Condições · Guarda e devolução · Assinaturas</p>'+
     '<div class="doc-preview-lines"></div><div class="doc-preview-sign">____________________　　____________________<br>Responsável　　　　　　　Representante</div></div>'+
