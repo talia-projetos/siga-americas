@@ -1,3 +1,4 @@
+import {iconMarkup} from "./icons.js?v=4";
 // SIGA Américas · Formulário de campo para técnicos das equipes
 // Reproduz os campos do 05_Execucao e agrega presença, OS, local e itens da matriz 73.
 // O envio de um relatório não encerra ordens de serviço nem gera medições automáticas.
@@ -119,7 +120,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    workers:[...card.querySelectorAll("[data-field-worker]:checked")].map(el=>el.value)
   }));
  }
- const topbar=()=>'<div class="field-header"><div><span class="eyebrow">APONTAMENTO DE CAMPO · PROERG / ITAIPU</span><h2>Relatório semanal de campo</h2><p>Registre as atividades da semana em um só formulário. A supervisão confere os resultados.</p></div><span class="field-secure">✓ Acesso autenticado</span></div><div class="field-view-tabs"><button type="button" data-field-tab="novo" class="'+(tab==="novo"?"active":"")+'">Preencher semana</button><button type="button" data-field-tab="historico" class="'+(tab==="historico"?"active":"")+'">Registros anteriores <small>'+reports.length+'</small></button></div>';
+ const topbar=()=>'<div class="field-header"><div><span class="eyebrow">APONTAMENTO DE CAMPO · PROERG / ITAIPU</span><h2>Relatório semanal de campo</h2><p>Registre as atividades da semana em um só formulário. A supervisão confere os resultados.</p></div><span class="field-secure">'+iconMarkup("lock")+' Acesso autenticado</span></div><div class="field-view-tabs"><button type="button" data-field-tab="novo" class="'+(tab==="novo"?"active":"")+'">Preencher semana</button><button type="button" data-field-tab="historico" class="'+(tab==="historico"?"active":"")+'">Registros anteriores <small>'+reports.length+'</small></button></div>';
  function attendanceHTML(){
   const staff=workersForTeam();
   if(!staff.length)return '<div class="notice warning">Nenhum colaborador ativo vinculado a esta equipe no cadastro. Confira os dados antes de registrar presença.</div>';
@@ -139,13 +140,13 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    '<label class="field-worker-check"><input type="checkbox" data-field-worker value="'+esc(w.id)+'" '+((item.workers||[]).includes(w.id)?"checked":"")+'><span>'+esc(w.name)+'</span></label>'
   ).join(""):'<p class="field-muted">A composição desta equipe ainda precisa ser conferida.</p>';
   return '<section class="field-activity-card field-activity-quick" data-report-item="'+i+'" data-item-id="'+esc(item.id||"")+'">'+
-   '<div class="field-card-heading"><strong>'+(i===0?'O que foi feito?':'Outra atividade · '+(i+1))+'</strong><button type="button" data-remove-field-item="'+i+'" class="field-remove" '+(items.length===1?'disabled':'')+' aria-label="Remover atividade '+(i+1)+'">×</button></div>'+
+   '<div class="field-card-heading"><strong>'+(i===0?'O que foi feito?':'Outra atividade · '+(i+1))+'</strong><button type="button" data-remove-field-item="'+i+'" class="field-remove" '+(items.length===1?'disabled':'')+' aria-label="Remover atividade '+(i+1)+'">'+iconMarkup("close")+'</button></div>'+
    (permitted.length>1?'<label class="field-input wide field-activity-area"><span>Frente atendida *</span><select data-field-area required>'+optList(permitted,"area",activeArea,"Selecione a frente")+'</select></label>':'')+
    '<label class="field-input wide field-activity-picker"><span>Atividade *</span><select data-field-activity required>'+optList(activities,"activity",item.activity_id,"Escolha a atividade")+'</select></label>'+
    '<div class="field-result-choice"><span class="field-choice-label">Resultado informado pela equipe</span><div class="field-result-options">'+[
      ["executada","Feito"],["parcial","Parcial"],["impedida","Impedido"],["nao_aplicavel","Não se aplica"]
    ].map(x=>'<label class="field-result-pill"><input type="radio" name="field-result-'+i+'" data-field-result value="'+x[0]+'" '+(item.result===x[0]?"checked":"")+'><span>'+x[1]+'</span></label>').join("")+'</div><p class="field-result-hint">Feito: concluído conforme observado pela equipe, ainda sujeito à conferência. Parcial: existe serviço pendente; registre o que falta em Detalhes.</p></div>'+
-   '<details class="field-inline-details"><summary>+ OS, quantidade, evidências e pendências <small>abra para detalhar</small></summary><div class="field-inline-details-content">'+
+   '<details class="field-inline-details"><summary>'+iconMarkup("plus")+' OS, quantidade, evidências e pendências <small>abra para detalhar</small></summary><div class="field-inline-details-content">'+
    '<div class="field-form-grid">'+
     '<label class="field-input wide"><span>OS relacionada</span><select data-field-order><option value="">Não informar</option>'+ordersForTeam.map(o=>escOpt(o.id,o.reference+" · "+o.status,item.work_order_id)).join("")+'</select></label>'+
     '<label class="field-input wide"><span>Local específico</span><input data-field-location maxlength="160" placeholder="Ex.: jardim do bloco B" value="'+esc(item.location)+'"></label>'+
@@ -176,8 +177,8 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    '</div>'+
    '<div class="field-section field-quick-section"><div class="field-section-head"><span class="field-step">2</span><div><h3>O que foi feito?</h3><p>Registre o resultado observado. Se parcial ou impedido, descreva a pendência e o motivo nos detalhes.</p></div></div>'+
    '<div class="field-activities">'+items.map(itemCard).join("")+'</div>'+
-   '<button type="button" class="btn btn-secondary field-add-quick" id="field-add-activity">+ Adicionar outra atividade</button></div>'+
-   '<details id="field-day-extras" class="field-optional-section" '+(optionalOpen?'open':'')+'><summary><span class="field-optional-icon">+</span><span><strong>Detalhes adicionais da semana</strong><small>Participantes, equipamentos e observações · opcional</small></span><span class="field-optional-arrow">⌄</span></summary>'+
+   '<button type="button" class="btn btn-secondary field-add-quick" id="field-add-activity">'+iconMarkup("plus")+' Adicionar outra atividade</button></div>'+
+   '<details id="field-day-extras" class="field-optional-section" '+(optionalOpen?'open':'')+'><summary><span class="field-optional-icon">'+iconMarkup("plus")+'</span><span><strong>Detalhes adicionais da semana</strong><small>Participantes, equipamentos e observações · opcional</small></span><span class="field-optional-arrow">'+iconMarkup("chevrondown")+'</span></summary>'+
    '<div class="field-optional-body">'+
     '<div class="field-form-grid">'+
      '<label class="field-input"><span>Turno predominante</span><select name="shift">'+[["manha","Manhã"],["tarde","Tarde"],["integral","Dia inteiro"],["outro","Outro"]].map(([k,v])=>escOpt(k,v,formState.shift)).join("")+'</select></label>'+
@@ -190,7 +191,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
     '</div>'+
     '<div class="field-optional-attendance"><h4>Participação dos trabalhadores</h4>'+attendanceHTML()+'</div>'+
    '</div></details>'+
-   '<div class="field-form-actions"><button class="btn btn-ghost" type="button" id="field-save-draft">Salvar para depois</button><button class="btn btn-primary" type="submit" id="field-submit">Enviar relatório <span aria-hidden="true">→</span></button></div>'+
+   '<div class="field-form-actions"><button class="btn btn-ghost" type="button" id="field-save-draft">Salvar para depois</button><button class="btn btn-primary" type="submit" id="field-submit">Enviar relatório '+iconMarkup("arrow")+'</button></div>'+
    '<p class="field-help">A supervisão fará a conferência. Este registro não substitui ponto, medição nem conclusão formal de uma OS.</p></form>';
   root.querySelectorAll("[data-field-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.fieldTab)));
   root.querySelector("#field-week-start").addEventListener("change",e=>{
@@ -234,7 +235,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   root.innerHTML=topbar()+'<div class="field-history"><div class="field-history-head"><h3>Relatórios por semana</h3><p>Consulte os envios, os rascunhos e a análise da supervisão.</p></div>'+
   (own.length?own.map(r=>{
    const team=teams.find(x=>x.id===r.team_id),area=areas.find(x=>x.id===r.area_id);
-   return '<article class="field-history-item"><div><strong>'+esc(periodLabel(r))+' · '+esc(team?.name||"Equipe")+'</strong><p>'+esc(area?.name||"Frente não identificada")+'</p></div>'+fmtStatus(r.status)+'<div class="field-history-buttons"><button type="button" class="table-action" data-view-report="'+esc(r.id)+'">Detalhes ↗</button>'+
+   return '<article class="field-history-item"><div><strong>'+esc(periodLabel(r))+' · '+esc(team?.name||"Equipe")+'</strong><p>'+esc(area?.name||"Frente não identificada")+'</p></div>'+fmtStatus(r.status)+'<div class="field-history-buttons"><button type="button" class="table-action" data-view-report="'+esc(r.id)+'">Detalhes '+iconMarkup("arrow")+'</button>'+
    (["rascunho","devolvido"].includes(r.status)&&r.reported_by===user.id?'<button type="button" class="table-action" data-resume-report="'+esc(r.id)+'">Retomar</button>':"")+'</div></article>';
   }).join(""):'<div class="empty-state">Ainda não há relatórios de campo cadastrados.</div>')+
   '</div>';
@@ -251,7 +252,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    ]);
    const parts=i.filter(r=>r.report_id===id);const pres=a.filter(x=>x.report_id===id);
    const reportLine=parts.map(x=>{const activity=activities.find(y=>y.id===x.activity_id);return '<li><strong>'+esc(activity?.code||"—")+' · '+esc(activity?.name||"Atividade")+'</strong> — '+esc(results[x.result]||x.result)+(x.quantity!==null?' · '+esc(x.quantity||"")+' '+esc(x.unit||""):"")+' · '+esc((areas.find(a=>a.id===x.area_id)?.name||"Frente não informada")+(x.location?" · "+x.location:""))+'</li>'}).join("");
-   root.innerHTML='<div class="field-history-detail"><button class="btn btn-ghost" id="field-back-history">← Histórico</button><h2>Relatório · '+esc(periodLabel(report))+'</h2><p>'+fmtStatus(report.status)+'</p><h3>Atividades</h3><ul>'+reportLine+'</ul><h3>Trabalhadores</h3><p>'+(pres.length?pres.filter(x=>x.presence_status==="presente").length+' presentes; '+pres.filter(x=>x.presence_status==="ausente").length+' ausentes; '+pres.filter(x=>x.presence_status==="folga").length+' em folga.':'Presença não informada.')+'</p><h3>Impedimentos</h3><p>'+esc(report.impediments||"Não informados")+'</p><h3>Observações</h3><p>'+esc(report.general_notes||"Não informadas")+'</p></div>';
+   root.innerHTML='<div class="field-history-detail"><button class="btn btn-ghost" id="field-back-history">'+iconMarkup("arrow")+' Histórico</button><h2>Relatório · '+esc(periodLabel(report))+'</h2><p>'+fmtStatus(report.status)+'</p><h3>Atividades</h3><ul>'+reportLine+'</ul><h3>Trabalhadores</h3><p>'+(pres.length?pres.filter(x=>x.presence_status==="presente").length+' presentes; '+pres.filter(x=>x.presence_status==="ausente").length+' ausentes; '+pres.filter(x=>x.presence_status==="folga").length+' em folga.':'Presença não informada.')+'</p><h3>Impedimentos</h3><p>'+esc(report.impediments||"Não informados")+'</p><h3>Observações</h3><p>'+esc(report.general_notes||"Não informadas")+'</p></div>';
    root.querySelector("#field-back-history").addEventListener("click",drawHistory);
   }catch(e){notify(e.message,true)}
  }
