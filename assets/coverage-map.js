@@ -116,7 +116,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   '<button class="btn btn-ghost" type="button" data-import-close>Cancelar</button></div></div>'+
  '<div class="coverage-map-footer"><strong>Referências no contrato:</strong> 73 atividades na matriz; postos institucionais e frentes de serviço conforme registros cadastrados. Ciclovia da Vila A: <strong>4,8 km de extensão publicada</strong>, sem traçado georreferenciado validado. Avenida Tancredo Neves: trecho referido nos apontamentos, ainda sem medidas confirmadas. <span data-provider-warning></span></div>'+
  '</section>';
- const q=s=>root.querySelector(s);let layers=[],map=null,engine="leaflet",drawn=[],googleData=[],destroyed=false;
+ const q=s=>root.querySelector(s);let layers=[],map=null,engine="leaflet",drawn=[],googleData=[],destroyed=false,resizeObserver=null,resizeFrame=0;
  const mapDiv=q("[data-map]");
  const defaultPins=[]; // Nenhuma referência nominal recebe coordenadas inventadas.
  const satelliteUrl="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
@@ -125,6 +125,21 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  const maps=window.L;
  if(!maps){mapDiv.innerHTML='<p>Biblioteca de mapas indisponível. Confira sua conexão com a internet.</p>';return ()=>{};}
  map=maps.map(mapDiv,{scrollWheelZoom:false,zoomControl:true}).setView(VIEW,12);
+ // Respeitar o novo tamanho do painel, inclusive quando o menu lateral muda.
+ const syncMapSize=()=>{
+  if(destroyed||!root.isConnected)return;
+  if(resizeFrame)cancelAnimationFrame(resizeFrame);
+  resizeFrame=requestAnimationFrame(()=>{
+   resizeFrame=0;
+   if(engine==="leaflet"&&map)map.invalidateSize({pan:false,animate:false});
+   else if(engine==="google"&&gMap&&window.google?.maps?.event)
+    google.maps.event.trigger(gMap,"resize");
+  });
+ };
+ if(typeof ResizeObserver!=="undefined"){
+  resizeObserver=new ResizeObserver(syncMapSize);
+  resizeObserver.observe(mapDiv);
+ }
  const applyBase=(mode)=>{
   if(tiles){map.removeLayer(tiles);tiles=null;}
   const sat=mode==="satellite";
@@ -276,6 +291,6 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  draw();
  q("[data-provider-warning]").textContent=GOOGLE_MAPS_BROWSER_KEY?"Google Satélite disponível pela API configurada.":
   "Google Satélite integrado exige chave de API autorizada; mapa inicia com satélite Esri.";
- requestAnimationFrame(()=>{if(map&&root.isConnected)map.invalidateSize();});
- return ()=>{destroyed=true;if(map){map.remove();map=null;}for(const g of googleData)g.layer.setMap(null);};
+ syncMapSize();
+ return ()=>{destroyed=true;resizeObserver?.disconnect();if(resizeFrame)cancelAnimationFrame(resizeFrame);if(map){map.remove();map=null;}for(const g of googleData)g.layer.setMap(null);};
 }
