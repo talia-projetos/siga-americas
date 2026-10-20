@@ -1,6 +1,7 @@
 // SIGA Américas · mapa contratual de cobertura de campo.
 // GeoJSON/KML WGS84. Nenhuma geometria ou métrica espacial é inferida de nomes.
 import {GOOGLE_MAPS_BROWSER_KEY} from "./config.js";
+import {iconMarkup} from "./icons.js?v=4";
 const VIEW=[-25.51,-54.56]; // enquadramento urbano aproximado; NÃO É PIN DE SERVIÇO
 const R=6371008.8;
 const METER=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2});
@@ -107,7 +108,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   '<option value="satellite">Satélite · Esri World Imagery</option><option value="street">Mapa viário · OpenStreetMap</option>'+
   (GOOGLE_MAPS_BROWSER_KEY?'<option value="google">Google Satélite (API autorizada)</option>':"")+
   '</select></label>'+
-  '<a class="btn btn-ghost" href="https://www.google.com/maps/@-25.51,-54.56,13z/data=!3m1!1e3" target="_blank" rel="noopener noreferrer">Abrir no Google Satélite ↗</a>'+
+  '<a class="btn btn-ghost" href="https://www.google.com/maps/@-25.51,-54.56,13z/data=!3m1!1e3" target="_blank" rel="noopener noreferrer">Abrir no Google Satélite '+iconMarkup("arrow")+'</a>'+
   (canWrite?'<button type="button" class="btn btn-secondary" data-open-import>Importar KML / KMZ</button>':"")+
  '</div>'+
  '<div class="coverage-map-layout"><div class="coverage-map-canvas" data-map role="region" aria-label="Mapa interativo das frentes operacionais da PROERG em Itaipu"></div>'+
