@@ -359,7 +359,7 @@ function fieldValue(key,value){
     candidata:"Oportunidade",contemplada:"Contemplada",inviavel:"Inviável",cancelada:"Cancelada",
     impedida:"Impedida",impedido:"Impedido",glosada:"Glosada",ativo:"Ativo",encerrado:"Encerrado",
     aberta:"Aberta",em_aberto:"Em aberto",disponivel:"Disponível",atrasada:"Atrasada",
-    normal:"Normal",alta:"Alta",critica:"Crítica",bom:"Bom",requer_atencao:"Requer atenção",
+    normal:"Normal",alta:"Alta",critica:"Crítica",bom:"Bom",conferido:"Conferido",divergente:"Divergente",a_conferir:"A conferir",requer_atencao:"Requer atenção",
     em_manutencao:"Em manutenção",inutilizavel:"Inutilizável"
    };
    const display=v==="executada"&&app.page==="field_plan_items"?"Contemplada":labels[v]||v.replaceAll("_"," ");
@@ -639,7 +639,7 @@ function fieldInput(f,row){
  if(f.type==="select"){
   inp='<select'+attr+'><option value="">Selecione...</option>'+f.options.map(o=>'<option value="'+escapeHTML(o.value)+'"'+(String(o.value)===String(value)?' selected':'')+'>'+escapeHTML(o.label)+'</option>').join("")+'</select>';
  }else if(f.type==="ref"){
-  const options=app.refs[f.table]||[];
+  const options=(app.refs[f.table]||[]).filter(o=>f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"));
   inp='<select'+attr+'><option value="">Selecione...</option>'+options.map(o=>'<option value="'+escapeHTML(o.id)+'"'+(o.id===value?' selected':'')+'>'+escapeHTML(optionLabel(f.table,o.id,f.display))+'</option>').join("")+'</select>';
  }else if(f.type==="textarea"){
   inp='<textarea'+attr+'>'+escapeHTML(value)+'</textarea>';
@@ -723,6 +723,14 @@ async function saveRecord(e){
  }
  if(app.page==="field_routine_records"&&routineEvidence?.hasPending()){
   try{routineEvidence.validate();}catch(error){notify(error.message,true);return;}
+ }
+ if(["vehicles","equipment"].includes(app.page)){
+  if(app.page==="vehicles"&&![payload.plate,payload.chassis,payload.asset_tag].some(v=>String(v||"").trim())){
+   notify("Informe placa, chassi ou outra identificação inequívoca do veículo.",true);return;
+  }
+  if(payload.verification_status!=="a_conferir"&&(!payload.verified_on||!payload.verification_ref)){
+   notify("Para declarar conferência ou divergência, registre data e referência da evidência.",true);return;
+  }
  }
  if(app.page==="purchases"){
   const sectors=payload.sector_team_ids||[];
