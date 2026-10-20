@@ -665,19 +665,37 @@ async function openForm(id=null){
   routineEvidence=initRoutinePhotoField(el("routine-photo-root"),app.db,{recordId:row?.id||null,notify});
  }
  if(app.page==="field_execution_entries"){
+  const fields=el("modal-fields");
+  const activitySelect=fields.querySelector("#fld-activity_id");
+  const description=fields.querySelector("#fld-activity_label");
+  const priceSelect=fields.querySelector("#fld-contract_item_id");
+  const quantityInput=fields.querySelector("#fld-quantity");
+  const quantityWrap=quantityInput?.closest(".field");
+  const unitHint=document.createElement("small");
+  unitHint.className="execution-unit-hint";
+  unitHint.setAttribute("aria-live","polite");
+  quantityWrap?.appendChild(unitHint);
   const calculate=()=>{
-   const productId=el("modal-fields").querySelector("#fld-contract_item_id")?.value;
-   const quantity=Number(el("modal-fields").querySelector("#fld-quantity")?.value);
-   const price=(app.refs.contract_items||[]).find(x=>x.id===productId);
+   const price=(app.refs.contract_items||[]).find(x=>x.id===priceSelect?.value&&x.source_type==="precos");
+   const quantity=Number(quantityInput?.value);
    const preview=el("execution-valuation-preview");
    if(!preview)return;
+   unitHint.textContent=price?"Unidade contratual: "+(price.unit||"un"):"A unidade será definida pela rubrica selecionada.";
    const rate=price&&Number(price.unit_price);
    preview.textContent=price&&Number.isFinite(rate)&&quantity>0?
     "Preço contratual: "+currency(rate)+" / "+(price.unit||"un")+" · Valor potencial: "+currency(rate*quantity)+" · Medição pendente de conferência.":
     "Selecione a rubrica da planilha de preços e informe a quantidade para calcular o valor potencial.";
   };
-  el("modal-fields").querySelector("#fld-contract_item_id")?.addEventListener("change",calculate);
-  el("modal-fields").querySelector("#fld-quantity")?.addEventListener("input",calculate);
+  activitySelect?.addEventListener("change",()=>{
+   const activity=(app.refs.activity_catalog||[]).find(x=>x.id===activitySelect.value);
+   if(activity&&description&&(!description.value.trim()||description.dataset.autofilled==="1")){
+    description.value=[activity.code,activity.name].filter(Boolean).join(" · ");
+    description.dataset.autofilled="1";
+   }
+  });
+  description?.addEventListener("input",()=>{description.dataset.autofilled="0";});
+  priceSelect?.addEventListener("change",calculate);
+  quantityInput?.addEventListener("input",calculate);
   calculate();
  }
  el("modal-root").hidden=false;
