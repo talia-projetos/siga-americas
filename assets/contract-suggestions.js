@@ -147,11 +147,26 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
  function paint(){
   const all=classify(items);
   const list=filtered(all);
-  const top=all.filter(v=>v.profile.situation==="action"&&v.tier!=="blocked").sort(rank).slice(0,6);
+  const eligible=all.filter(v=>v.profile.situation==="action"&&v.tier!=="blocked");
+  // Para a reunião, combinar execução recente com manutenção recorrente:
+  // o corte de gramados deve ser inspecionado mesmo sem apontamento do preposto.
+  const recentTop=eligible.filter(v=>v.days>0).sort(rank).slice(0,3);
+  const recurringTop=eligible.filter(v=>v.profile.recurrence>=3&&v.days===0)
+   .sort((a,b)=>{
+    const focus=x=>/corte de gramados/.test(normalized(x.activity.name))?0:
+     /rocada geral/.test(normalized(x.activity.name))?1:
+     /manutencao de jardins/.test(normalized(x.activity.name))?2:3;
+    return focus(a)-focus(b)||rank(a,b);
+   }).slice(0,3);
+  const top=[...recentTop,...recurringTop,...eligible.sort(rank)].filter((v,i,arr)=>arr.findIndex(x=>x.activity.id===v.activity.id)===i).slice(0,6);
   const blockers=all.filter(v=>v.profile.situation==="action"&&v.tier==="blocked").length;
   const recent=all.filter(v=>v.days>0).length;
   const priced=all.filter(v=>Boolean(v.mapping.price)).length;
-  root.querySelector("#suggest-summary").innerHTML='<div class="suggestion-summary">'+[
+  const critical=state.scenario==="vento"?"Vento forte ou temporal: evite poda, corte de árvores e máquinas expostas até condições seguras.":
+   state.scenario==="chuva"?"Chuva e solo encharcado: reprogramar operações de máquinas, roçadas e cortes condicionados à segurança.":
+   state.scenario==="seco"?"Tempo favorável é apenas cenário informado; confirme condições reais, autorizações e disponibilidade antes da OS.":
+   "Tempo não confirmado: consulte previsão e condições locais antes de liberar roçada, poda e operações com máquinas.";
+  root.querySelector("#suggest-summary").innerHTML='<div class="suggestion-critical"><strong>Bloqueador prioritário · clima e segurança</strong><span>'+text(critical)+'</span></div><div class="suggestion-summary">'+[
     ["Matriz de referência",matrix.length,"Todos os itens preservados"],
     ["Com preço identificado",priced,"Equivalência técnica ou apontamento já vinculado"],
     ["Atividades com execução",recent,"Quantidade de itens distintos"],
