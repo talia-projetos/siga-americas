@@ -85,14 +85,15 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
    return '<tr data-uniform-worker="'+safe(e.id)+'">'+
     '<td><label class="uniform-person-checkbox"><input type="checkbox" data-uniform-select="'+safe(e.id)+'" '+(isSelected?'checked ':'')+(already?'disabled ':'')+' aria-label="Selecionar '+safe(e.name)+'"><span class="uniform-person-name">'+safe(e.name)+'</span></label><small class="uniform-person-team">'+safe(team?team.code+" · "+team.name:"Equipe não informada")+'</small></td>'+
     '<td><input type="text" class="uniform-size" data-uniform-shirt="'+safe(e.id)+'" list="uniform-shirt-sizes" maxlength="12" placeholder="PP, P, M, G…" value="'+safe(sizes.shirt_size)+'" aria-label="Tamanho de camisa de '+safe(e.name)+'"></td>'+
-    '<td><input type="text" class="uniform-size" data-uniform-pants="'+safe(e.id)+'" list="uniform-pants-sizes" maxlength="24" placeholder="Ex.: 42" value="'+safe(sizes.pants_size)+'" aria-label="Tamanho de calça de '+safe(e.name)+'"></td>'+
+    '<td><input type="text" class="uniform-size" data-uniform-pants="'+safe(e.id)+'" list="uniform-pants-sizes" maxlength="24" placeholder="Ex.: 42" value="'+safe(pantsInfo(sizes.pants_size).size)+'" aria-label="Tamanho de calça de '+safe(e.name)+'"></td>'+
     '<td><span class="uniform-extra-size">'+safe(e.shoe_size||"—")+'</span></td>'+
     '<td><span class="uniform-extra-size">'+safe(e.jacket_size||"—")+'</span></td>'+
+    '<td><span class="uniform-observation">'+safe(pantsInfo(sizes.pants_size).note||"—")+'</span></td>'+
     '<td>'+label+'</td></tr>';
   }).join("");
   return '<section class="table-panel uniform-roster"><div class="table-head"><div><h2>Tamanhos por colaborador</h2><span>'+number(people.length)+' exibido(s) · Camisa e calça editáveis aqui; botina e jaqueta editáveis no cadastro de Colaboradores. Salvar tamanhos não registra entrega.</span></div></div>'+
-  '<div class="table-scroll"><table class="data-table"><thead><tr><th>Colaborador</th><th>Camisa</th><th>Calça</th><th>Botina</th><th>Jaqueta</th><th>Situação no ciclo</th></tr></thead><tbody>'+
-   (rows||'<tr><td colspan="6" class="uniform-empty">Nenhum colaborador encontrado.</td></tr>')+'</tbody></table></div></section>';
+  '<div class="table-scroll"><table class="data-table"><thead><tr><th>Colaborador</th><th>Camisa</th><th>Calça</th><th>Botina</th><th>Jaqueta</th><th>Observação</th><th>Situação no ciclo</th></tr></thead><tbody>'+
+   (rows||'<tr><td colspan="7" class="uniform-empty">Nenhum colaborador encontrado.</td></tr>')+'</tbody></table></div></section>';
  }
  function distribution(){
   const {all,ready,incomplete,blocked}=readiness();
