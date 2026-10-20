@@ -656,7 +656,7 @@ async function openForm(id=null){
  app.editing=row?.id??null;
  el("modal-title").textContent=(row?"Editar":"Novo registro · ")+m.title;
  if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}
- el("modal-fields").innerHTML=m.fields.map(f=>fieldInput(f,row)).join("")+
+ el("modal-fields").innerHTML=(app.page==="field_execution_entries"?'<div class="execution-form-section-heading"><strong>Identificação e quantidade</strong><small>Informe a execução; a rubrica determina a referência de valor.</small></div>'+m.fields.slice(0,7).map(f=>fieldInput(f,row)).join("")+'<div class="execution-form-section-heading"><strong>Situação e conferência</strong><small>Resultado informado e conferência são informações distintas.</small></div>'+m.fields.slice(7,9).map(f=>fieldInput(f,row)).join("")+'<details class="execution-form-extras"'+(row?.id?" open":"")+'> <summary>Origem, evidências e observações <span>Complementar</span></summary><div class="execution-form-extras-fields">'+m.fields.slice(9).map(f=>fieldInput(f,row)).join("")+'</div></details>':m.fields.map(f=>fieldInput(f,row)).join(""))+
   (app.page==="field_execution_entries"?'<div class="field wide execution-valuation-preview" id="execution-valuation-preview" role="status"></div>':"")+
   (app.page==="field_routine_records"?'<div class="field wide" id="routine-photo-root"></div>':"");
  if(app.page==="field_routine_records"){
