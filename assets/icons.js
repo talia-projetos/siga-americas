@@ -44,7 +44,7 @@ const paths={
   lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'
 };
 export const moduleIcons={
- inicio:"dashboard",field_report:"clipboard",field_monitor:"people",resource_check:"check",coverage:"target",field_programs:"calendar",field_plan_items:"clipboard",
+ inicio:"dashboard",field_report:"clipboard",field_monitor:"people",resource_check:"check",coverage:"target",contract_suggestions:"target",field_execution_entries:"log",field_programs:"calendar",field_plan_items:"clipboard",
  field_routine_templates:"repeat",field_routine_records:"log",activity_catalog:"catalog",
  work_orders:"list",service_posts:"pin",contracts:"contract",contract_items:"book",obligations:"check",
  contract_resource_requirements:"requirements",areas:"layers",teams:"people",employees:"user",
