@@ -1001,3 +1001,18 @@
  #main .dashboard-metrics{grid-template-columns:minmax(0,1fr)}
  #main .dashboard-quick-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* Ocorrências reais informadas pelos técnicos, exibidas somente quando houver. */
+.dashboard-field-alerts:empty{display:none}
+.dashboard-field-alert-card{display:flex;gap:16px;align-items:center;justify-content:space-between;
+ margin:0 0 18px;padding:14px 18px;border:1px solid #ebd5b5;border-left:4px solid #c38b31;
+ border-radius:12px;background:#fffaf1;box-shadow:0 4px 15px rgba(64,43,13,.04)}
+.dashboard-field-alert-card>div{min-width:0}
+.dashboard-field-alert-card strong{display:block;color:#785321;font-size:13px;margin:5px 0 3px}
+.dashboard-field-alert-card p{margin:0;color:#806b4a;font-size:11.5px;line-height:1.6}
+.dashboard-field-alert-card .btn{min-height:43px;flex:0 0 auto}
+@media(max-width:580px){
+ .dashboard-field-alert-card{align-items:stretch;flex-direction:column;padding:13px}
+ .dashboard-field-alert-card .btn{width:100%;white-space:normal}
+}
