@@ -515,3 +515,8 @@
 
 /* Preço e total derivados do contrato nos formulários de execução. */
 .execution-valuation-preview{background:#f6f8f7;border:1px solid #dce5dd;border-radius:10px;padding:12px 14px;font-size:12px;color:#365646;line-height:1.5}
+
+/* Cobertura da matriz de 73 itens: execução distinta de conferência e faturamento. */
+.execution-finance-detail{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #dce9de;font-size:11.5px;line-height:1.55;color:#617569}
+.execution-finance-detail strong{color:#244f38;font-size:12px}
+.execution-finance-detail span{max-width:100%}
