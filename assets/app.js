@@ -10,6 +10,7 @@ import {mountFieldReport} from "./field-forms.js?v=3";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 import {renderFinancialIndicator,renderExecutionTable} from "./execution-metrics.js?v=3";
 import {initRoutinePhotoField} from "./routine-photos.js?v=2";
+import {mountDocumentCenter} from "./document-center.js?v=1";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=3";
 
 const el=id=>document.getElementById(id);
@@ -389,6 +390,25 @@ async function contractSuggestionsPage(){
   if(app.page==="contract_suggestions")el("contract-suggestions-root").innerHTML=errorBanner(friendlyError(error));
  }
 }
+async function documentCenterPage(){
+ app.page="document_center";app.search="";nav();header("document_center");
+ el("main").innerHTML=title("document_center",modules.document_center.description)+
+  '<div id="document-center-root"></div>';
+ try{
+  await mountDocumentCenter(el("document-center-root"),app.db,{
+   notify,canWrite:privileged(),
+   onCreate:async kind=>{
+    const target=kind==="os"?"work_orders":"responsibility_terms";
+    await navigate(target);await openForm();
+   },
+   onEdit:async(kind,id)=>{
+    const target=kind==="os"?"work_orders":"responsibility_terms";
+    await navigate(target);await openForm(id);
+   }
+  });
+ }catch(error){if(app.page==="document_center")
+   el("document-center-root").innerHTML=errorBanner(friendlyError(error));}
+}
 async function modulePage(key){
  app.page=key;app.search="";app.filters={};app.sort={key:null,descending:false};nav();header(key);
  const m=modules[key];
@@ -480,6 +500,7 @@ async function navigate(key){
  if(next==="inicio")await dashboard();
  else if(next==="coverage")await coveragePage();
  else if(next==="contract_suggestions")await contractSuggestionsPage();
+ else if(next==="document_center")await documentCenterPage();
  else if(next==="uniform_deliveries")await uniformPage();
  else if(["field_report","field_monitor","resource_check"].includes(next)){
    nav();header(next);
