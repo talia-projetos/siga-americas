@@ -18,6 +18,35 @@ const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const app={db:null,user:null,role:null,teamId:null,page:"inicio",rows:[],refs:{},editing:null,search:"",filters:{},sort:{key:null,descending:false},busy:false,pendingPage:null,prefillActivity:null};
 const privileged=()=>["admin","gestao","supervisao"].includes(app.role);
+// Estado de consulta por módulo, mantido apenas durante a sessão na interface.
+// Não afeta dados contratuais nem filtros usados em outras telas.
+const listViews=new Map();
+function rememberListView(key=app.page){
+ if(!modules[key]?.table||key==="uniform_deliveries"||key!==app.page||!el("list-search"))return;
+ const main=el("main"),workspace=document.querySelector(".workspace");
+ listViews.set(key,{
+  search:app.search,
+  filters:{...app.filters},
+  sort:{...app.sort},
+  windowScroll:window.scrollY,
+  workspaceScroll:workspace?.scrollTop||0,
+  mainScroll:main?.scrollTop||0,
+  tableScroll:main?.querySelector(".catalog-table .table-scroll")?.scrollLeft||0
+ });
+}
+function restoreListViewPosition(key){
+ const saved=listViews.get(key);
+ if(!saved)return;
+ requestAnimationFrame(()=>{
+  if(app.page!==key)return;
+  const main=el("main"),workspace=document.querySelector(".workspace");
+  if(workspace)workspace.scrollTop=saved.workspaceScroll;
+  if(main)main.scrollTop=saved.mainScroll;
+  const table=main?.querySelector(".catalog-table .table-scroll");
+  if(table)table.scrollLeft=saved.tableScroll;
+  window.scrollTo(0,saved.windowScroll);
+ });
+}
 const currency=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n||0));
 const dateBR=s=>s?new Date(String(s).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
 const nameFor=key=>modules[key]?.title||key;
@@ -539,7 +568,12 @@ async function fleetContractPanel(vehicles){
   '<p class="fleet-contract-foot">Valores informados não comprovam entrega, disponibilidade ou vistoria. Não foram criadas placas ou veículos fictícios. A tabela individual abaixo exibirá apenas bens efetivamente identificados.</p></section>';
 }
 async function modulePage(key){
- app.page=key;app.search="";app.filters={};app.sort={key:null,descending:false};nav();header(key);
+ const saved=listViews.get(key);
+ app.page=key;
+ app.search=saved?.search??"";
+ app.filters={...(saved?.filters||{})};
+ app.sort={key:saved?.sort?.key??null,descending:Boolean(saved?.sort?.descending)};
+ nav();header(key);
  const m=modules[key];
  el("main").innerHTML=title(key,m.description)+'<div class="loading-page"><div class="loader"></div><p>Consultando registros...</p></div>';
  try{
@@ -593,6 +627,11 @@ async function modulePage(key){
     const field=el("modal-fields").querySelector("#fld-contract_resource_requirement_id");
     if(field)field.value=button.dataset.fleetAdd;
   }));
+  // Repõe os controles visuais antes de instalar eventos; não apenas o predicado da lista.
+  el("list-search").value=app.search;
+  el("main").querySelectorAll("[data-list-filter]").forEach(filter=>{
+   filter.value=app.filters[filter.dataset.listFilter]??"";
+  });
   el("list-search").addEventListener("input",event=>{app.search=event.target.value;renderRows()});
   el("main").querySelectorAll("[data-sort-col]").forEach(button=>button.addEventListener("click",()=>{
    const key=button.dataset.sortCol;
@@ -608,6 +647,7 @@ async function modulePage(key){
   });
   el("main").querySelectorAll("[data-list-filter]").forEach(filter=>filter.addEventListener("change",event=>{app.filters[event.target.dataset.listFilter]=event.target.value;renderRows()}));
   renderRows();
+  restoreListViewPosition(key);
  }catch(e){el("main").innerHTML=title(key,m.description)+errorBanner(friendlyError(e))}
 }
 async function uniformPage(){
@@ -628,6 +668,8 @@ async function uniformPage(){
  }
 }
 async function navigate(key){
+ // Guardar a consulta da página de origem antes de mudar de módulo.
+ rememberListView();
  const requested=modules[key]?key:"inicio";
  if(!app.role){
   app.pendingPage=requested!=="inicio"?requested:null;
@@ -851,6 +893,7 @@ async function saveRecord(e){
     return;
    }
   }
+  rememberListView();
   closeForm(true);app.prefillActivity=null;notify("Registro salvo com sucesso.");app.refs={};if(app.page==="uniform_deliveries")await uniformPage();else await modulePage(app.page);
  }catch(e){notify(friendlyError(e),true)}finally{app.busy=false;btn.disabled=false;btn.textContent="Salvar registro";}
 }
