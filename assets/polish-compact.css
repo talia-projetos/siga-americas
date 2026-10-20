@@ -611,3 +611,39 @@
 .coverage-status--inviavel.tag{color:#9a3643;background:#fff0f2;border-color:#f1cbd1}
 .coverage-status--nao_aplicavel.tag{color:#576a70;background:#edf2f3;border-color:#d9e3e5}
 .coverage-status--sem_programacao.tag{color:#67717d;background:#f2f4f6;border-color:#e1e5e9}
+
+
+/* Evidências fotográficas georreferenciadas · registros das rotinas dos postos fixos. */
+.routine-photo-fieldset{width:100%;min-width:0;border:1px solid #dce7db;border-radius:12px;padding:15px 16px;margin:8px 0 0;display:grid;gap:13px;background:#fbfdfb}
+.routine-photo-fieldset legend{padding:0 7px;color:#284d36;font-size:13px;font-weight:700}
+.routine-photo-guide{font-size:11.5px;color:#536e60;line-height:1.6;margin:0}
+.routine-photo-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.routine-photo-picker{display:inline-flex;justify-content:center;align-items:center;position:relative;cursor:pointer}
+.routine-photo-picker input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;left:50%;bottom:0;pointer-events:none}
+.routine-photo-picker:focus-within{outline:2px solid #2e8251;outline-offset:2px}
+.routine-photo-message{font-size:11px;line-height:1.55;color:#657c6b;margin:0}
+.routine-photo-list{display:grid;gap:11px;min-width:0}
+.routine-photo-entry{background:#fff;border:1px solid #dfebdd;padding:12px;border-radius:10px;min-width:0;display:grid;gap:12px}
+.routine-photo-entry-head{display:flex;align-items:center;gap:11px;min-width:0}
+.routine-photo-entry-head>div{min-width:0;flex:1}
+.routine-photo-entry-head strong,.routine-saved-photo strong{display:block;color:#31523b;font-size:12px;overflow-wrap:anywhere}
+.routine-photo-entry-head small{display:block;color:#778976;font-size:10.5px;margin-top:4px}
+.routine-photo-thumb{width:69px;height:64px;object-fit:cover;border:1px solid #e0e8de;border-radius:7px;flex:none}
+.routine-photo-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;min-width:0}
+.routine-photo-fields label{display:grid;gap:6px;min-width:0;font-size:10.5px;color:#5c7662;font-weight:650}
+.routine-photo-fields input{width:100%;box-sizing:border-box;min-width:0;font-size:12px;min-height:39px;border:1px solid #cfded1;border-radius:7px;background:#fff;color:#294c36;padding:8px 9px}
+.routine-photo-origin{color:#647b69;font-size:10.5px;line-height:1.5}
+.routine-photo-existing{border-top:1px solid #e3ece1;padding-top:13px;display:grid;gap:10px;font-size:11px;color:#718174}
+.routine-photo-existing>strong{font-size:12px;color:#31513b}
+.routine-photo-existing [data-routine-saved]{display:grid;gap:9px;min-width:0}
+.routine-saved-photo{display:flex;gap:12px;align-items:center;min-width:0;padding:10px;border:1px solid #e2ece0;border-radius:9px;background:#fff}
+.routine-saved-photo img{width:85px;height:70px;object-fit:cover;flex:none;border-radius:6px;border:1px solid #e6ece4}
+.routine-saved-photo>div{display:grid;gap:4px;min-width:0}
+.routine-saved-photo small{display:block;color:#647e68;font-size:10.5px;overflow-wrap:anywhere}
+@media(max-width:700px){
+ .routine-photo-fieldset{padding:12px}
+ .routine-photo-fields{grid-template-columns:minmax(0,1fr)}
+ .routine-photo-actions .btn{max-width:100%;white-space:normal}
+ .routine-photo-entry-head{flex-wrap:wrap}
+ .routine-photo-entry-head .btn{margin-left:auto}
+}
