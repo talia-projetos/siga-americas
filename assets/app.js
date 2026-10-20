@@ -149,10 +149,7 @@ async function dashboard(){
  const quick=shortcuts.map(key=>
   '<button type="button" data-nav="'+key+'" class="quick-link"><span class="quick-link-label">'+iconMarkup(key)+escapeHTML(nameFor(key))+'</span><span class="quick-link-arrow" aria-hidden="true">'+iconMarkup("arrow")+'</span></button>'
  ).join("");
- const hero=title("inicio","Supervisão da execução contratual, programação, equipes e recursos, em uma única visão.",
-   '<button type="button" class="btn btn-secondary" data-nav="document_center">'+iconMarkup("file")+' Documentos em lote</button>'+
-   '<button type="button" class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Programar serviços</button>'+
-   '<button type="button" class="btn btn-primary" data-nav="field_monitor">'+iconMarkup("field_monitor")+' Acompanhar equipes</button>');
+ const hero=title("inicio","Painel de supervisão da PROERG em Itaipu: acompanhe pendências, equipes e programação.");
  const body=
   hero+
   '<section class="dashboard-overview" aria-label="Situação da operação">'+
@@ -164,12 +161,23 @@ async function dashboard(){
     '<section class="panel dashboard-workspace-panel"><div class="panel-inner"><span class="eyebrow">ROTINA DE GESTÃO</span><h2>Continuar de onde você precisa</h2><p>Acesse rapidamente as funções usadas na supervisão e no planejamento.</p><div class="quick-grid dashboard-quick-grid">'+quick+'</div></div></section>'+
     '<section class="panel dashboard-activity-panel"><div class="panel-inner"><span class="eyebrow">ACOMPANHAMENTO</span><div class="dashboard-recent-head"><h2>Ordens de serviço recentes</h2><button class="table-action" type="button" data-nav="work_orders">Ver todas '+iconMarkup("arrow")+'</button></div><div id="dashboard-recent-orders" class="dashboard-recent-orders"><p class="dashboard-subtle">Buscando movimentações...</p></div></div></section>'+
   '</div>'+
-  '<div id="dashboard-execution-finance"></div>'+
-  '<div id="dashboard-coverage-map"></div>'+
-  '<section id="dashboard-analytics" class="dashboard-analytics" aria-label="Indicadores por área"></section>';
+  '<section class="dashboard-insights" aria-label="Visões complementares da operação">'+
+   '<div class="dashboard-insights-heading"><div><span class="eyebrow">ANÁLISE GERENCIAL</span>'+
+   '<h2>Aprofundar a operação</h2><p>Consulte uma visão por vez. Os dados e módulos continuam disponíveis.</p></div></div>'+
+   '<div class="dashboard-insights-frame">'+
+    '<div class="dashboard-insights-tabs" role="tablist" aria-label="Visões gerenciais">'+
+     '<button type="button" role="tab" id="dashboard-tab-finance" aria-controls="dashboard-execution-finance" aria-selected="true" tabindex="0" data-dashboard-insight="finance">'+iconMarkup("assets")+' Produção e meta</button>'+
+     '<button type="button" role="tab" id="dashboard-tab-map" aria-controls="dashboard-coverage-map" aria-selected="false" tabindex="-1" data-dashboard-insight="map">'+iconMarkup("layers")+' Mapa de cobertura</button>'+
+     '<button type="button" role="tab" id="dashboard-tab-analytics" aria-controls="dashboard-analytics" aria-selected="false" tabindex="-1" data-dashboard-insight="analytics">'+iconMarkup("dashboard")+' Indicadores por área</button>'+
+    '</div>'+
+    '<div id="dashboard-execution-finance" class="dashboard-insight-panel" data-insight-panel="finance" role="tabpanel" aria-labelledby="dashboard-tab-finance"></div>'+
+    '<div id="dashboard-coverage-map" class="dashboard-insight-panel" data-insight-panel="map" role="tabpanel" aria-labelledby="dashboard-tab-map" hidden></div>'+
+    '<section id="dashboard-analytics" class="dashboard-insight-panel dashboard-analytics" data-insight-panel="analytics" role="tabpanel" aria-labelledby="dashboard-tab-analytics" hidden></section>'+
+   '</div>'+
+  '</section>';
  el("main").innerHTML=body;
  const metrics=el("main").querySelector(".dashboard-metrics");
- const orders=el("dashboard-recent-orders"),charts=el("dashboard-analytics");
+ const orders=el("dashboard-recent-orders");
  // Atualiza cada bloco sem impedir que os demais funcionem.
  Promise.all(defs.map(d=>getCount(d.table,d.filter).catch(()=> "—"))).then(values=>{
   if(app.page==="inicio"&&metrics)metrics.innerHTML=metricsHTML(values);
@@ -206,27 +214,72 @@ async function dashboard(){
    '<p>'+escapeHTML(partial)+' atividades informadas como parciais · '+escapeHTML(impeded)+' impedidas. Confira pendências e evidências antes de considerar qualquer entrega.</p></div>'+
    '<button class="btn btn-secondary" type="button" data-nav="field_monitor">Revisar relatórios '+iconMarkup("arrow")+'</button></div>';
  }).catch(()=>{if(app.page==="inicio")fieldAlerts.innerHTML=""});
- const mapHolder=el("dashboard-coverage-map");
- if(mapHolder)mountCoverageMap(mapHolder,app.db,{canWrite:privileged(),notify}).catch(error=>{
-  if(app.page==="inicio")mapHolder.innerHTML='<div class="notice">Mapa de cobertura indisponível: '+escapeHTML(friendlyError(error))+'</div>';
+ const insightTabs=[...el("main").querySelectorAll("[data-dashboard-insight]")];
+ const panels=[...el("main").querySelectorAll("[data-insight-panel]")];
+ const loaded={finance:false,map:false,analytics:false};
+ const selectInsight=name=>{
+  if(app.page!=="inicio")return;
+  insightTabs.forEach(button=>{
+   const active=button.dataset.dashboardInsight===name;
+   button.setAttribute("aria-selected",String(active));
+   button.setAttribute("tabindex",active?"0":"-1");
+  });
+  panels.forEach(panel=>{panel.hidden=panel.dataset.insightPanel!==name;});
+  if(name==="finance"&&!loaded.finance){
+   loaded.finance=true;
+   const finance=el("dashboard-execution-finance");
+   finance.innerHTML='<p class="dashboard-insight-loading">Consultando produção informada e meta mensal...</p>';
+   (async()=>{
+    const month=new Date().toISOString().slice(0,7);
+    try{
+     const [executions,goals,matrix]=await Promise.all([
+      app.db.from("field_execution_entries").select("activity_id,performed_on,estimated_amount,validation_status,execution_status")
+       .gte("performed_on",month+"-01")
+       .lt("performed_on",new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),1)).toISOString().slice(0,10)).limit(1200),
+      app.db.from("finance_goals").select("period_month,target_amount").eq("period_month",month+"-01"),
+      app.db.from("activity_catalog").select("id").limit(100)
+     ]);
+     for(const item of [executions,goals,matrix])if(item.error)throw item.error;
+     if(app.page==="inicio"&&finance.isConnected)finance.innerHTML=
+      renderFinancialIndicator(executions.data||[],goals.data||[],month,true,matrix.data||[])+
+      '<p class="execution-dashboard-link"><button class="table-action" type="button" data-nav="coverage">Conferir lançamentos na Cobertura '+iconMarkup("arrow")+'</button></p>';
+    }catch(error){
+     if(app.page==="inicio"&&finance.isConnected)finance.innerHTML=
+      '<p class="dashboard-insight-loading">Métricas financeiras indisponíveis neste momento.</p>';
+    }
+   })();
+  }
+  if(name==="map"&&!loaded.map){
+   loaded.map=true;
+   const mapHolder=el("dashboard-coverage-map");
+   mapHolder.innerHTML='<p class="dashboard-insight-loading">Carregando áreas georreferenciadas...</p>';
+   mountCoverageMap(mapHolder,app.db,{canWrite:privileged(),notify}).catch(error=>{
+    if(app.page==="inicio"&&mapHolder.isConnected)mapHolder.innerHTML=
+     '<div class="notice">Mapa indisponível: '+escapeHTML(friendlyError(error))+'</div>';
+   });
+  }
+  if(name==="analytics"&&!loaded.analytics){
+   loaded.analytics=true;
+   const charts=el("dashboard-analytics");
+   renderDashboardAnalytics(charts,app.db,{privileged:privileged()}).catch(error=>{
+    if(app.page==="inicio"&&charts.isConnected)charts.innerHTML=
+     '<div class="notice">Indicadores detalhados indisponíveis neste momento.</div>';
+   });
+  }
+ };
+ insightTabs.forEach((button,index)=>{
+  button.addEventListener("click",()=>selectInsight(button.dataset.dashboardInsight));
+  button.addEventListener("keydown",event=>{
+   const keys=["ArrowLeft","ArrowRight","Home","End"];
+   if(!keys.includes(event.key))return;
+   event.preventDefault();
+   const to=event.key==="Home"?0:event.key==="End"?insightTabs.length-1:
+    (index+(event.key==="ArrowLeft"?-1:1)+insightTabs.length)%insightTabs.length;
+   insightTabs[to].focus();
+   selectInsight(insightTabs[to].dataset.dashboardInsight);
+  });
  });
- const finance=el("dashboard-execution-finance");
- if(finance)(async()=>{
-  const month=new Date().toISOString().slice(0,7);
-  try{
-   const [executions,goals,matrix]=await Promise.all([
-    app.db.from("field_execution_entries").select("activity_id,performed_on,estimated_amount,validation_status,execution_status").gte("performed_on",month+"-01").lt("performed_on",new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),1)).toISOString().slice(0,10)).limit(1200),
-    app.db.from("finance_goals").select("period_month,target_amount").eq("period_month",month+"-01"),
-    app.db.from("activity_catalog").select("id").limit(100)
-   ]);
-   for(const item of [executions,goals,matrix])if(item.error)throw item.error;
-   if(app.page==="inicio")finance.innerHTML=renderFinancialIndicator(executions.data||[],goals.data||[],month,true,matrix.data||[])+
-    '<p class="execution-dashboard-link"><button class="table-action" type="button" data-nav="coverage">Conferir lançamentos e preços na Cobertura '+iconMarkup("arrow")+'</button></p>';
-  }catch(error){if(app.page==="inicio")finance.innerHTML='<p class="muted">Métricas de produção financeira indisponíveis neste momento.</p>';}
- })();
- if(charts)renderDashboardAnalytics(charts,app.db,{privileged:privileged()}).catch(error=>{
-  if(app.page==="inicio")charts.innerHTML='<div class="notice">Os gráficos não puderam ser atualizados neste momento. Os demais módulos continuam disponíveis.</div>';
- });
+ selectInsight("finance");
 }
 async function ensureRefs(key){
  const mod=modules[key];if(!mod?.fields)return;
