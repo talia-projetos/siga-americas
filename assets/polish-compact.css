@@ -1269,3 +1269,49 @@
 #modal-fields .execution-form-extras-fields{padding:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
 #modal-fields .execution-form-extras-fields .field.wide{grid-column:1/-1}
 @media(max-width:600px){#modal-fields .execution-form-extras-fields{grid-template-columns:1fr}}
+
+
+/* SIGA · navegação independente e tratamento cromático dos gráficos. */
+.sidebar .nav-home:not(.nav-standalone){margin-bottom:2px!important}
+.sidebar .nav-standalone{
+ margin-bottom:13px!important;
+ border-bottom:1px solid #e2eadf;
+ border-radius:9px;
+ min-height:44px;
+ font-weight:720;
+}
+.sidebar .nav-standalone .nav-home-icon{color:#647d72!important}
+.sidebar .nav-standalone.active{
+ background:#e8efeb!important;
+ color:#354f44!important;
+ border-color:#d5e1da!important;
+ box-shadow:inset 3px 0 0 #60796e!important;
+}
+.sidebar .nav-standalone.active .nav-home-icon{color:#526e62!important}
+:root{
+ --chart-sage:#60796e;
+ --chart-slate:#7d9097;
+ --chart-clay:#a3988b;
+ --chart-track:#edf0eb;
+}
+#main .analytics-bar-track,
+#main .catalog-chart-track{background:var(--chart-track)}
+#main .catalog-chart-fill{background:var(--chart-sage);background-image:none}
+#main .execution-progress-track{background:var(--chart-track)}
+#main .execution-progress-track span{background:var(--chart-sage)}
+#main .analytics-panel-action{
+ background:#eff2ee;
+ border-color:#e0e7df;
+ color:#5e786b;
+}
+#main .analytics-panel-action:hover{background:#e5ebe5;color:#415f52}
+#main .analytics-kicker{color:#668173}
+#main .analytics-panel-foot{background:#f9faf8}
+#main .analytics-bar-value,#main .analytics-legend-row strong{color:#344d42}
+#modal-fields .execution-unit-hint{
+ display:block;
+ margin:2px 1px 0;
+ font-size:11px;
+ line-height:1.5;
+ color:#6b8177;
+}
