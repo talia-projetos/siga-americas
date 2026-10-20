@@ -8,6 +8,12 @@ const sixMonths=start=>{const [y,m]=String(start).slice(0,7).split("-").map(Numb
 const oneDay=date=>{const d=new Date(date+"T12:00:00Z");d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10)};
 const number=n=>new Intl.NumberFormat("pt-BR").format(Number(n||0));
 const validSize=value=>/^[\p{L}\p{N}./ +\-]{1,24}$/u.test(String(value||"").trim());
+// Ajuste de barra registrado junto ao tamanho na base de setembro.
+function pantsInfo(value){
+ const raw=String(value||"").trim();
+ const match=raw.match(/^(.*?)\\s*\\+\\s*(\\d+)\\s*cm\\s*barra\\s*$/i);
+ return match?{size:match[1].trim(),note:"Calça: +"+match[2]+" cm na barra",suffix:" + "+match[2]+" CM BARRA"}:{size:raw,note:"",suffix:""};
+}
 const opt=(value,label,active)=>'<option value="'+safe(value)+'"'+(String(value)===String(active)?' selected':'')+'>'+safe(label)+'</option>';
 const kitItems=[["Camisas UV manga longa",4],["Camisa polo",1],["Calças táticas",4]];
 export async function mountUniformManager(root,db,{notify,onSingle}={}){
