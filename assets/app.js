@@ -556,12 +556,11 @@ async function fleetContractPanel(vehicles){
    '<div><span>Unidades previstas</span><strong>'+quant(projected)+'</strong><small>Em '+rows.length+' categorias contratuais</small></div>'+
    '<div><span>Quantidades informadas</span><strong>'+quant(declared)+'</strong><small>Soma parcial de '+informed.length+' categorias, sem identificação individual</small></div>'+
    '<div><span>Veículos identificados</span><strong>'+quant(vehicles.length)+'</strong><small>'+quant(linked.length)+' vinculados às categorias contratuais</small></div></div>'+
-  '<div class="table-scroll fleet-contract-scroll"><table class="fleet-contract-table"><thead><tr><th>Tipo previsto no contrato</th><th>Previsto</th><th>Informado</th><th>Identificados</th><th>Anotações</th><th>Ação</th></tr></thead><tbody>'+
+  '<div class="table-scroll fleet-contract-scroll"><table class="fleet-contract-table"><thead><tr><th>Tipo previsto no contrato</th><th>Previsto</th><th>Informado</th><th>Anotações</th><th>Ação</th></tr></thead><tbody>'+
    rows.map(r=>{
-    const identified=vehicles.filter(v=>v.contract_resource_requirement_id===r.id).length;
     const reported=r.observed_quantity===null||r.observed_quantity===undefined?'A conferir':quant(r.observed_quantity);
     return '<tr><td><strong>'+escapeHTML(r.item_name)+'</strong><small>'+escapeHTML(r.source_ref||"")+'</small></td>'+
-     '<td class="fleet-number">'+quant(r.required_quantity)+'</td><td class="fleet-number">'+reported+'</td><td class="fleet-number">'+identified+'</td>'+
+     '<td class="fleet-number">'+quant(r.required_quantity)+'</td><td class="fleet-number">'+reported+'</td>'+
      '<td class="fleet-note">'+(r.inventory_note?escapeHTML(r.inventory_note)+'<small>Referência informada, não validada</small>':'<span class="muted">—</span>')+'</td>'+
      '<td>'+(privileged()?'<button type="button" class="table-action fleet-add" data-fleet-add="'+escapeHTML(r.id)+'">Identificar veículo</button>':'<span class="muted">Consulta</span>')+'</td></tr>';
    }).join("")+
