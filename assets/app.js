@@ -159,6 +159,7 @@ async function dashboard(){
    '<div class="dashboard-section-head"><div><span class="eyebrow">PAINEL OPERACIONAL</span><h2>O que precisa de atenção</h2><p>Indicadores atualizados com os registros disponíveis no sistema.</p></div></div>'+
    '<div class="metric-grid dashboard-metrics">'+metricsHTML(["—","—","—","—"])+'</div>'+
   '</section>'+
+  '<div id="dashboard-field-alerts" class="dashboard-field-alerts" aria-live="polite"></div>'+
   '<div class="panel-grid dashboard-utility-grid">'+
     '<section class="panel dashboard-workspace-panel"><div class="panel-inner"><span class="eyebrow">ROTINA DE GESTÃO</span><h2>Continuar de onde você precisa</h2><p>Acesse rapidamente as funções usadas na supervisão e no planejamento.</p><div class="quick-grid dashboard-quick-grid">'+quick+'</div></div></section>'+
     '<section class="panel dashboard-activity-panel"><div class="panel-inner"><span class="eyebrow">ACOMPANHAMENTO</span><div class="dashboard-recent-head"><h2>Ordens de serviço recentes</h2><button class="table-action" type="button" data-nav="work_orders">Ver todas '+iconMarkup("arrow")+'</button></div><div id="dashboard-recent-orders" class="dashboard-recent-orders"><p class="dashboard-subtle">Buscando movimentações...</p></div></div></section>'+
@@ -191,6 +192,20 @@ async function dashboard(){
     if(orders&&app.page==="inicio")orders.innerHTML='<p class="dashboard-subtle">As ordens não puderam ser consultadas agora.</p>';
   }
  })();
+ // Pendências reportadas pelas equipes, ainda sem inferir entrega ou aceite.
+ const fieldAlerts=el("dashboard-field-alerts");
+ if(fieldAlerts)Promise.all([
+  getCount("field_daily_report_items",{result:"parcial"}),
+  getCount("field_daily_report_items",{result:"impedida"})
+ ]).then(([partial,impeded])=>{
+  if(app.page!=="inicio"||!fieldAlerts)return;
+  if(!partial&&!impeded){fieldAlerts.innerHTML="";return;}
+  fieldAlerts.innerHTML='<div class="dashboard-field-alert-card">'+
+   '<div><span class="eyebrow">ATENÇÃO NA EXECUÇÃO</span>'+
+   '<strong>Ocorrências que exigem acompanhamento</strong>'+
+   '<p>'+escapeHTML(partial)+' atividades informadas como parciais · '+escapeHTML(impeded)+' impedidas. Confira pendências e evidências antes de considerar qualquer entrega.</p></div>'+
+   '<button class="btn btn-secondary" type="button" data-nav="field_monitor">Revisar relatórios ↗</button></div>';
+ }).catch(()=>{if(app.page==="inicio")fieldAlerts.innerHTML=""});
  const mapHolder=el("dashboard-coverage-map");
  if(mapHolder)mountCoverageMap(mapHolder,app.db,{canWrite:privileged(),notify}).catch(error=>{
   if(app.page==="inicio")mapHolder.innerHTML='<div class="notice">Mapa de cobertura indisponível: '+escapeHTML(friendlyError(error))+'</div>';
