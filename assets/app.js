@@ -558,7 +558,7 @@ async function openForm(id=null){
  el("modal-root").hidden=false;
  el("modal-fields").querySelector("input,select,textarea")?.focus();
 }
-function closeForm(){if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}el("modal-root").hidden=true;app.editing=null}
+function closeForm(force=false){if(app.busy&&!force)return;if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}el("modal-root").hidden=true;app.editing=null}
 async function saveRecord(e){
  e.preventDefault();if(app.busy)return;
  const m=modules[app.page],fd=new FormData(e.target),payload={};
@@ -617,7 +617,7 @@ async function saveRecord(e){
     return;
    }
   }
-  closeForm();app.prefillActivity=null;notify("Registro salvo com sucesso.");app.refs={};if(app.page==="uniform_deliveries")await uniformPage();else await modulePage(app.page);
+  closeForm(true);app.prefillActivity=null;notify("Registro salvo com sucesso.");app.refs={};if(app.page==="uniform_deliveries")await uniformPage();else await modulePage(app.page);
  }catch(e){notify(friendlyError(e),true)}finally{app.busy=false;btn.disabled=false;btn.textContent="Salvar registro";}
 }
 function exportCSV(){
