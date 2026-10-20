@@ -2,7 +2,7 @@
 // Gera PDF, Word e lotes diretamente dos cadastros existentes.
 // O log comprova emissão de arquivo, NUNCA impressão física ou assinatura.
 import {buildOperationalDocument,generateWord,generatePDF,generateBatchWordZip,
- generateCompletePack,downloadDocument,safeFilename} from "./document-output.js?v=1";
+ generateCompletePack,downloadDocument,safeFilename} from "./document-output.js?v=2";
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=d=>d?new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
 const labelKind=k=>k==="os"?"Ordem de serviço":"Termo de responsabilidade";
