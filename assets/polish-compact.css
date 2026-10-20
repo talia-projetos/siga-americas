@@ -1038,3 +1038,54 @@
  #dashboard-coverage-map .coverage-map-canvas,
  #dashboard-coverage-map .coverage-map-canvas.leaflet-container{height:245px!important;max-height:245px!important}
 }
+
+
+/* Legenda flutuante do mapa: corresponde exclusivamente às geometrias cadastradas.
+   Polígonos desenhados com traçado colorido e preenchimento 0%. */
+#dashboard-coverage-map .coverage-map-layout{position:relative!important;isolation:isolate}
+#dashboard-coverage-map .coverage-map-legend{
+ position:absolute;top:12px;right:12px;z-index:1200;
+ box-sizing:border-box;width:min(244px,calc(100% - 68px));max-height:calc(100% - 24px);
+ background:rgba(255,255,255,.96);border:1px solid rgba(211,226,214,.95);
+ border-radius:11px;box-shadow:0 8px 25px rgba(9,32,20,.22);
+ overflow:hidden;color:#274a36;
+}
+#dashboard-coverage-map .coverage-map-legend[hidden]{display:none!important}
+#dashboard-coverage-map .coverage-map-legend summary{
+ display:flex;align-items:center;gap:7px;list-style:none;
+ cursor:pointer;min-height:39px;padding:9px 11px;box-sizing:border-box;
+ font-size:11px;font-weight:750;line-height:1.35;user-select:none;
+}
+#dashboard-coverage-map .coverage-map-legend summary::-webkit-details-marker{display:none}
+#dashboard-coverage-map .coverage-map-legend summary:focus-visible{
+ outline:2px solid #288855;outline-offset:-3px;border-radius:10px;
+}
+#dashboard-coverage-map .coverage-map-legend summary .ui-icon{width:15px;height:15px;flex-shrink:0}
+#dashboard-coverage-map .coverage-map-legend summary span{color:#657e6e;font-size:10px;margin-left:auto;font-weight:600}
+#dashboard-coverage-map .coverage-map-legend summary .ui-icon:last-child{
+ transition:transform .16s ease
+}
+#dashboard-coverage-map .coverage-map-legend[open] summary .ui-icon:last-child{transform:rotate(180deg)}
+#dashboard-coverage-map .coverage-map-legend[open] summary{border-bottom:1px solid #e6eee7}
+#dashboard-coverage-map .coverage-map-legend-items{
+ padding:8px 10px 10px;display:grid;gap:8px;
+ overflow-y:auto;overscroll-behavior:contain;
+ max-height:227px;min-width:0;
+}
+#dashboard-coverage-map .coverage-map-legend-entry{
+ display:grid;grid-template-columns:22px minmax(0,1fr);
+ align-items:center;column-gap:8px;min-width:0;
+ font-size:10.5px;line-height:1.4;font-weight:550;color:#304e3b;
+}
+#dashboard-coverage-map .coverage-map-legend-line{
+ display:block;width:22px;height:0;
+ border-top:3px solid var(--legend-color);
+ border-radius:2px;box-shadow:0 1px 1px rgba(0,0,0,.22);
+}
+@media(max-width:600px){
+ #dashboard-coverage-map .coverage-map-legend{
+  top:9px;right:9px;width:min(204px,calc(100% - 65px));max-height:calc(100% - 18px);
+ }
+ #dashboard-coverage-map .coverage-map-legend summary{min-height:41px;font-size:11px}
+ #dashboard-coverage-map .coverage-map-legend-items{max-height:145px}
+}
