@@ -219,6 +219,11 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
    const workers=changed.map(e=>({employee_id:e.id,shirt_size:itemSizes(e).shirt_size.trim().toUpperCase(),pants_size:itemSizes(e).pants_size.trim().toUpperCase()}));
    const {data,error}=await db.rpc("save_uniform_sizes",{p_workers:workers});
    if(error)throw error;
+   for(const e of changed){
+    const size=itemSizes(e);
+    const result=await db.from("employees").update({shoe_size:size.shoe_size||null,jacket_size:size.jacket_size||null}).eq("id",e.id);
+    if(result.error)throw result.error;
+   }
    changed.forEach(e=>state.dirty.delete(e.id));
    notify("Tamanhos de "+number(data??changed.length)+" colaborador(es) atualizados. Nenhuma entrega foi registrada.");
    await refresh();
