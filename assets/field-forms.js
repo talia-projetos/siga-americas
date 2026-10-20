@@ -25,6 +25,19 @@ const weekHint=date=>"De "+dateBR(weekStart(date))+" a "+dateBR(weekEnd(weekStar
 const statuses={rascunho:"Rascunho",enviado:"Aguardando validação",validado:"Validado",devolvido:"Devolvido para ajuste"};
 const results={executada:"Executada",parcial:"Parcial",impedida:"Impedida",nao_aplicavel:"Não aplicável"};
 const escOpt=(value,text,active)=>'<option value="'+esc(value)+'"'+(String(value)===String(active)?" selected":"")+'>'+esc(text)+'</option>';
+const UNIT_OPTIONS=[
+ ["un","un · unidade"],["m","m · metro"],["m²","m² · metro quadrado"],
+ ["m³","m³ · metro cúbico"],["km","km · quilômetro"],["ha","ha · hectare"],
+ ["kg","kg · quilograma"],["h/m","h/m · hora de máquina"],
+ ["H/h","H/h · hora de trabalho"],["mês","mês · mensalidade"]
+];
+const acceptedUnits=new Set(UNIT_OPTIONS.map(([code])=>code));
+const normalizeUnit=value=>String(value??"").trim()==="Kg"?"kg":String(value??"").trim();
+const normalizeActivity=value=>String(value??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+ .toLowerCase().replace(/[–—]/g,"-").replace(/[^\p{L}\p{N} ]/gu," ").replace(/\s+/g," ").trim();
+const optionsForUnit=selected=>'<option value="">Selecione a unidade</option>'+
+ UNIT_OPTIONS.map(([code,title])=>escOpt(code,title,selected)).join("");
+
 async function list(db,table,cols="*",limit=600){
  const {data,error}=await db.from(table).select(cols).limit(limit);if(error)throw error;return data||[];
 }
@@ -34,9 +47,9 @@ function optList(items,kind,chosen="",empty="Selecione…"){
 export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Preparando formulário de campo…</p></div>';
  const isTech=role==="tecnico";
- let teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks;
+ let teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks,priceItems,executionRefs;
  try{
-  [teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks]=await Promise.all([
+  [teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks,priceItems,executionRefs]=await Promise.all([
    list(db,"teams","id,code,name,active"),
    list(db,"operational_areas","id,code,name,active"),
    list(db,"activity_catalog","id,code,name"),
@@ -45,9 +58,28 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    list(db,"field_daily_reports","id,team_id,area_id,report_date,report_period,period_start,period_end,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",200),
    list(db,"field_programs","id,area_id,period_month,status",150),
    list(db,"field_plan_items","id,program_id,activity_id",500),
-   list(db,"team_operational_areas","team_id,area_id,active",70)
+   list(db,"team_operational_areas","team_id,area_id,active",70),
+   list(db,"contract_items","id,name,unit,source_type",120),
+   list(db,"field_execution_entries","activity_id,contract_item_id",600)
   ]);
  }catch(e){root.innerHTML='<div class="notice danger">Falha ao consultar dados do formulário: '+esc(e.message)+'</div>';return;}
+ const unitsByActivity=new Map();
+ const byPriceId=new Map(priceItems.filter(x=>x.source_type==="precos").map(x=>[x.id,normalizeUnit(x.unit)]));
+ const byPriceName=new Map();
+ for(const item of priceItems.filter(x=>x.source_type==="precos")){
+  const key=normalizeActivity(item.name),unit=normalizeUnit(item.unit);
+  if(!byPriceName.has(key))byPriceName.set(key,new Set());
+  if(acceptedUnits.has(unit))byPriceName.get(key).add(unit);
+ }
+ for(const activity of activities){
+  const units=new Set(byPriceName.get(normalizeActivity(activity.name))||[]);
+  for(const match of executionRefs.filter(row=>row.activity_id===activity.id)){
+   const unit=byPriceId.get(match.contract_item_id);
+   if(acceptedUnits.has(unit))units.add(unit);
+  }
+  if(units.size===1)unitsByActivity.set(activity.id,[...units][0]);
+ }
+ const suggestedUnit=activityId=>unitsByActivity.get(activityId)||"";
  activities.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
  teams=teams.filter(t=>t.active!==false);areas=areas.filter(x=>x.active!==false);
  workers=workers.filter(w=>w.active!==false);
@@ -118,7 +150,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
     '<label class="field-input wide"><span>OS relacionada</span><select data-field-order><option value="">Não informar</option>'+ordersForTeam.map(o=>escOpt(o.id,o.reference+" · "+o.status,item.work_order_id)).join("")+'</select></label>'+
     '<label class="field-input wide"><span>Local específico</span><input data-field-location maxlength="160" placeholder="Ex.: jardim do bloco B" value="'+esc(item.location)+'"></label>'+
     '<label class="field-input"><span>Quantidade realizada</span><input data-field-quantity type="number" min="0" step="0.001" placeholder="Ex.: 200" value="'+esc(item.quantity)+'"></label>'+
-    '<label class="field-input"><span>Unidade</span><input data-field-unit maxlength="30" placeholder="m², un, h…" value="'+esc(item.unit)+'"></label>'+
+    '<label class="field-input"><span>Unidade de medida</span><select data-field-unit aria-label="Unidade da atividade '+(i+1)+'">'+optionsForUnit(normalizeUnit(item.unit)||suggestedUnit(item.activity_id))+'</select></label>'+
     '<label class="field-input"><span>Horas acumuladas na semana</span><input data-field-hours type="number" min="0" max="168" step="0.25" placeholder="Ex.: 16" value="'+esc(item.hours_worked)+'"></label>'+
     '<label class="field-input"><span>Evidência</span><input data-field-evidence maxlength="250" placeholder="Foto, arquivo ou protocolo" value="'+esc(item.evidence_ref)+'"></label>'+
     '<label class="field-input wide"><span>Observação / motivo do impedimento</span><textarea data-field-notes rows="2" placeholder="Se for necessário explicar algo">'+esc(item.notes)+'</textarea></label>'+
@@ -173,6 +205,11 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    capture();selectedTeam=e.target.value;formState.team_id=selectedTeam;formState.area_id="";attendance={};
    items=items.map(x=>({...x,area_id:"",workers:[]}));drawForm();
   });
+  root.querySelectorAll("[data-field-activity]").forEach(select=>select.addEventListener("change",()=>{
+   const card=select.closest("[data-report-item]");
+   const unit=card?.querySelector("[data-field-unit]");
+   if(unit)unit.value=suggestedUnit(select.value);
+  }));
   root.querySelector("#field-add-activity").addEventListener("click",()=>{
    capture();items.push(newItem());drawForm();
    root.querySelectorAll("[data-report-item]")[items.length-1]?.scrollIntoView({behavior:"smooth",block:"center"});
@@ -249,6 +286,12 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   if(isTech&&selectedTeam!==teamId){notify("Este usuário só pode informar a própria equipe.",true);return}
   if(!items.length||items.some(x=>!x.activity_id)){notify("Selecione uma atividade da matriz de 73 itens em cada registro.",true);return}
   if(items.some(x=>(x.quantity!==""&&(!Number.isFinite(Number(x.quantity))||Number(x.quantity)<0))||(x.hours_worked!==""&&(!Number.isFinite(Number(x.hours_worked))||Number(x.hours_worked)<0||Number(x.hours_worked)>168)))){notify("Confira as quantidades e horas informadas.",true);return}
+  if(items.some(x=>x.unit&&!acceptedUnits.has(normalizeUnit(x.unit)))){
+   notify("Selecione uma unidade da lista padronizada para cada atividade.",true);return;
+  }
+  if(send&&items.some(x=>x.quantity!==""&&!acceptedUnits.has(normalizeUnit(x.unit)))){
+   notify("Informe a unidade de medida de cada quantidade realizada antes de enviar.",true);return;
+  }
   const buttons=[root.querySelector("#field-save-draft"),root.querySelector("#field-submit")].filter(Boolean);
   buttons.forEach(x=>x.disabled=true);
   try{
