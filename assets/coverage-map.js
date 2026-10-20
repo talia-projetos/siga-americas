@@ -186,11 +186,10 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   googleData.push({id:l.id,layer:mapData});
  }
  function draw(){
-  q("[data-count]").textContent=layers.filter(l=>l.geometry).length+" camada(s) com geometria";
-  const geo=layers.filter(l=>l.geometry),stats=geo.reduce((acc,l)=>{
-   const m=measure(l.geometry);
-   acc.meters+=m.meters;acc.area+=m.squareMeters;acc.points+=m.points;return acc;
-  },{meters:0,area:0,points:0});
+  const geo=layers.filter(l=>l.geometry);
+  const polygons=geo.reduce((total,l)=>total+(l.geometry.features||[]).reduce((count,f)=>
+   count+(f.geometry?.type==="Polygon"?1:f.geometry?.type==="MultiPolygon"?f.geometry.coordinates.length:0),0),0);
+  q("[data-count]").textContent=polygons?polygons+" áreas georreferenciadas":geo.length+" camada(s) com geometria";
   if(engine==="leaflet"){
    for(const item of drawn)map.removeLayer(item.layer);
    drawn=[];geo.forEach(addGeoToLeaflet);
