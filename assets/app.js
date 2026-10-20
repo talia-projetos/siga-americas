@@ -508,7 +508,24 @@ async function openForm(id=null){
  const row=id?app.rows.find(x=>x.id===id):null;
  app.editing=row?.id??null;
  el("modal-title").textContent=(row?"Editar":"Novo registro · ")+m.title;
- el("modal-fields").innerHTML=m.fields.map(f=>fieldInput(f,row)).join("");
+ el("modal-fields").innerHTML=m.fields.map(f=>fieldInput(f,row)).join("")+
+  (app.page==="field_execution_entries"?'<div class="field wide execution-valuation-preview" id="execution-valuation-preview" role="status"></div>':"");
+ if(app.page==="field_execution_entries"){
+  const calculate=()=>{
+   const productId=el("modal-fields").querySelector("#fld-contract_item_id")?.value;
+   const quantity=Number(el("modal-fields").querySelector("#fld-quantity")?.value);
+   const price=(app.refs.contract_items||[]).find(x=>x.id===productId);
+   const preview=el("execution-valuation-preview");
+   if(!preview)return;
+   const rate=price&&Number(price.unit_price);
+   preview.textContent=price&&Number.isFinite(rate)&&quantity>0?
+    "Preço contratual: "+currency(rate)+" / "+(price.unit||"un")+" · Valor potencial: "+currency(rate*quantity)+" · Medição pendente de conferência.":
+    "Selecione a rubrica da planilha de preços e informe a quantidade para calcular o valor potencial.";
+  };
+  el("modal-fields").querySelector("#fld-contract_item_id")?.addEventListener("change",calculate);
+  el("modal-fields").querySelector("#fld-quantity")?.addEventListener("input",calculate);
+  calculate();
+ }
  el("modal-root").hidden=false;
  el("modal-fields").querySelector("input,select,textarea")?.focus();
 }
