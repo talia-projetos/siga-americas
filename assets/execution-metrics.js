@@ -34,7 +34,7 @@ export function renderFinancialIndicator(entries,goals,month,compact=false,matri
     '<div class="metric"><div class="metric-header">'+escape(name)+'</div><strong>'+escape(value)+'</strong><small>'+escape(hint)+'</small></div>').join('')+'</div>'+
   '<div class="execution-goal-progress"><div><strong>Meta-base: '+escape(money(m.target))+'</strong><span>'+escape(numeric(m.pct))+'% do valor potencial registrado</span></div>'+
   '<div class="execution-progress-track"><span style="width:'+pct.toFixed(2)+'%"></span></div>'+
-  ''<div class="execution-finance-detail"><strong>'+m.executionCount+' execuções registradas</strong>'+
+  '<div class="execution-finance-detail"><strong>'+m.executionCount+' execuções registradas</strong>'+
   '<span>'+m.executedActivities+' de '+m.matrixTotal+' itens da matriz de atividades com execução neste mês</span>'+
   '<span>'+m.pending+' registros aguardam conferência documental</span>'+
   (m.validated>0?'<span>Valor tecnicamente validado: '+money(m.validated)+'</span>':'<span>Validação técnica ainda não concluída</span>')+
