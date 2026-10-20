@@ -204,7 +204,7 @@ async function dashboard(){
    '<div><span class="eyebrow">ATENÇÃO NA EXECUÇÃO</span>'+
    '<strong>Ocorrências que exigem acompanhamento</strong>'+
    '<p>'+escapeHTML(partial)+' atividades informadas como parciais · '+escapeHTML(impeded)+' impedidas. Confira pendências e evidências antes de considerar qualquer entrega.</p></div>'+
-   '<button class="btn btn-secondary" type="button" data-nav="field_monitor">Revisar relatórios ↗</button></div>';
+   '<button class="btn btn-secondary" type="button" data-nav="field_monitor">Revisar relatórios '+iconMarkup("arrow")+'</button></div>';
  }).catch(()=>{if(app.page==="inicio")fieldAlerts.innerHTML=""});
  const mapHolder=el("dashboard-coverage-map");
  if(mapHolder)mountCoverageMap(mapHolder,app.db,{canWrite:privileged(),notify}).catch(error=>{
@@ -221,7 +221,7 @@ async function dashboard(){
    ]);
    for(const item of [executions,goals,matrix])if(item.error)throw item.error;
    if(app.page==="inicio")finance.innerHTML=renderFinancialIndicator(executions.data||[],goals.data||[],month,true,matrix.data||[])+
-    '<p class="execution-dashboard-link"><button class="table-action" type="button" data-nav="coverage">Conferir lançamentos e preços na Cobertura ↗</button></p>';
+    '<p class="execution-dashboard-link"><button class="table-action" type="button" data-nav="coverage">Conferir lançamentos e preços na Cobertura '+iconMarkup("arrow")+'</button></p>';
   }catch(error){if(app.page==="inicio")finance.innerHTML='<p class="muted">Métricas de produção financeira indisponíveis neste momento.</p>';}
  })();
  if(charts)renderDashboardAnalytics(charts,app.db,{privileged:privileged()}).catch(error=>{
@@ -341,10 +341,10 @@ function renderRows(){
    button.closest("th")?.setAttribute("aria-sort",direction);
    button.classList.toggle("active",active);
    const marker=button.querySelector(".sort-arrow");
-   if(marker)marker.textContent=active?(app.sort.descending?"↓":"↑"):"↕";
+   if(marker){marker.innerHTML=iconMarkup("arrow");marker.style.transform=active?(app.sort.descending?"rotate(90deg)":"rotate(-90deg)"):"rotate(0deg)";}
  });
  if(!rows.length){
-  table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'"><div class="empty-state"><div class="empty-symbol">◌</div><strong>Nenhum registro encontrado</strong>Revise a pesquisa ou os filtros.</div></td></tr>';
+  table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'"><div class="empty-state"><div class="empty-symbol">'+iconMarkup("search")+'</div><strong>Nenhum registro encontrado</strong>Revise a pesquisa ou os filtros.</div></td></tr>';
   return;
  }
  table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>{
@@ -489,7 +489,7 @@ async function modulePage(key){
   '<div class="table-scroll"><table class="data-table"><thead><tr>'+m.columns.map(col=>{
     const numeric=["unit_price","estimated_quantity","estimated_total","required_quantity","observed_quantity"].includes(col);
     const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)"}[col]||col;
-    return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'">'+escapeHTML(label)+' <span class="sort-arrow" aria-hidden="true">↕</span></button></th>';
+    return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'">'+escapeHTML(label)+' <span class="sort-arrow" aria-hidden="true">'+iconMarkup("arrows")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>';
   el("list-search").addEventListener("input",event=>{app.search=event.target.value;renderRows()});
@@ -710,7 +710,7 @@ document.addEventListener("click",async e=>{
 // Identifica cada campo em telas estreitas, sem criar barras de rolagem.
 function labelResponsiveTables(){
  el("main").querySelectorAll("table.data-table,table.inventory-table").forEach(table=>{
-  const labels=[...table.querySelectorAll("thead th")].map(th=>th.textContent.replace(/[↕↑↓]/g,"").trim());
+  const labels=[...table.querySelectorAll("thead th")].map(th=>th.textContent.trim());
   table.querySelectorAll("tbody tr").forEach(tr=>{
    [...tr.children].forEach((td,i)=>{if(td.tagName==="TD"&&!td.dataset.label)td.dataset.label=labels[i]||"";});
   });
