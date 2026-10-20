@@ -1,3 +1,4 @@
+import {iconMarkup} from "./icons.js?v=4";
 // SIGA Américas · conferência de tamanhos e entrega semestral de fardamentos em lote.
 // Dados somente após autenticação; operações transacionais via RPC com validação RLS/perfil.
 const safe=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -109,7 +110,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
    (blocked.length?'<div class="notice warning">'+blocked.length+' colaborador(es) já possui(em) entrega neste ciclo. Retire-os da seleção.</div>':'')+
    (incomplete.length?'<div class="notice warning">'+incomplete.length+' selecionado(s) estão sem tamanho completo. Informe camisa e calça antes de registrar o kit.</div>':'')+
    '<div class="uniform-distribution-actions"><span>'+number(ready.length)+' kits aptos · <strong>'+number(ready.length*9)+' peças</strong></span>'+
-   '<button type="button" class="btn btn-primary" data-uniform-action="review" '+(!all.length||incomplete.length||blocked.length||state.busy?'disabled':'')+'>Revisar entrega →</button></div>'+
+   '<button type="button" class="btn btn-primary" data-uniform-action="review" '+(!all.length||incomplete.length||blocked.length||state.busy?'disabled':'')+'>Revisar entrega '+iconMarkup("arrow")+'</button></div>'+
   '</section>';
  }
  function history(){
