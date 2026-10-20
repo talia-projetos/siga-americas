@@ -9,6 +9,7 @@ import {mountUniformManager} from "./uniform-bulk.js?v=8";
 import {mountFieldReport} from "./field-forms.js?v=3";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 import {renderFinancialIndicator,renderExecutionTable} from "./execution-metrics.js?v=3";
+import {mountContractSuggestions} from "./contract-suggestions.js?v=1";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -368,6 +369,24 @@ async function coveragePage(){
   renderMonth(new Date().toISOString().slice(0,7));
  }catch(e){el("main").innerHTML=title("coverage","Matriz de cobertura")+errorBanner(friendlyError(e))}
 }
+async function contractSuggestionsPage(){
+ app.page="contract_suggestions";app.search="";nav();header("contract_suggestions");
+ el("main").innerHTML=title("contract_suggestions",modules.contract_suggestions.description)+
+  '<div id="contract-suggestions-root"></div>';
+ try{
+  await mountContractSuggestions(el("contract-suggestions-root"),app.db,{
+   notify,
+   onPlan:async activityId=>{
+    if(!privileged()){notify("Sua conta não possui permissão para programar atividades.",true);return;}
+    app.prefillActivity=activityId;
+    await navigate("field_plan_items");
+    await openForm();
+   }
+  });
+ }catch(error){
+  if(app.page==="contract_suggestions")el("contract-suggestions-root").innerHTML=errorBanner(friendlyError(error));
+ }
+}
 async function modulePage(key){
  app.page=key;app.search="";app.filters={};app.sort={key:null,descending:false};nav();header(key);
  const m=modules[key];
@@ -402,7 +421,7 @@ async function modulePage(key){
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
   '<div class="table-scroll"><table class="data-table"><thead><tr>'+m.columns.map(col=>{
     const numeric=["unit_price","estimated_quantity","estimated_total","required_quantity","observed_quantity"].includes(col);
-    const label=m.fields.find(f=>f.key===col)?.label||col;
+    const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)"}[col]||col;
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'">'+escapeHTML(label)+' <span class="sort-arrow" aria-hidden="true">↕</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>';
@@ -457,6 +476,7 @@ async function navigate(key){
  closeSidebar();
  if(next==="inicio")await dashboard();
  else if(next==="coverage")await coveragePage();
+ else if(next==="contract_suggestions")await contractSuggestionsPage();
  else if(next==="uniform_deliveries")await uniformPage();
  else if(["field_report","field_monitor","resource_check"].includes(next)){
    nav();header(next);
