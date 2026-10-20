@@ -1557,3 +1557,32 @@
 @media(prefers-reduced-motion:reduce){
  #document-center-root .doc-models-chevron::after{transition:none}
 }
+
+
+/* Apontamentos do caderno: evidência independente de execução valorada. */
+#main .execution-sources-panel{margin:15px 0 20px;border:1px solid #dfe8df;background:#fff;border-radius:13px;overflow:hidden}
+#main .execution-sources-details>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:78px;padding:16px 20px;cursor:pointer;list-style:none}
+#main .execution-sources-details>summary::-webkit-details-marker{display:none}
+#main .execution-sources-details>summary::marker{content:""}
+#main .execution-sources-details>summary>span:first-child{display:flex;flex-direction:column;gap:4px}
+#main .execution-sources-details>summary strong{color:#345646;font-size:15px}
+#main .execution-sources-details>summary small{color:#728679;font-size:11px}
+#main .execution-sources-details>summary:hover{background:#f8faf8}
+#main .execution-sources-chevron{border:solid #698473;border-width:0 1.7px 1.7px 0;padding:4px;transform:rotate(-135deg);flex-shrink:0}
+#main .execution-sources-details:not([open]) .execution-sources-chevron{transform:rotate(45deg)}
+#main .execution-sources-details[open]>summary{border-bottom:1px solid #e6ece7}
+#main .execution-sources-content{padding:15px 20px 20px}
+#main .execution-sources-content>p{color:#627b6c;line-height:1.6;font-size:11.5px;margin:0 0 15px}
+#main .execution-sources-content>.table-scroll{max-height:510px;overflow:auto;border:1px solid #e4ebe5;border-radius:8px}
+#main .execution-sources-table{width:100%;border-collapse:collapse;min-width:900px}
+#main .execution-sources-table th{position:sticky;top:0;background:#f3f6f2;color:#556f60;text-align:left;font-size:10px;padding:10px 12px;border-bottom:1px solid #dde6de;z-index:1}
+#main .execution-sources-table th:nth-child(1){width:105px}
+#main .execution-sources-table th:nth-child(2){width:27%}
+#main .execution-sources-table th:nth-child(3){width:25%}
+#main .execution-sources-table th:nth-child(4){width:21%}
+#main .execution-sources-table td{padding:10px 12px;vertical-align:top;border-bottom:1px solid #ecf0eb;line-height:1.5;font-size:11px;color:#476050}
+#main .execution-sources-table td strong{font-weight:690}
+#main .execution-sources-table td small{display:block;margin-top:4px;color:#849389;font-size:10px;overflow-wrap:anywhere}
+#main .execution-sources-table td details summary{cursor:pointer;color:#557c63;font-weight:650}
+#main .execution-sources-table td details p{font-size:11px;color:#617b6b;line-height:1.6;margin:9px 0 0;max-width:320px}
+@media(max-width:700px){#main .execution-sources-details>summary{min-height:66px;padding:14px}#main .execution-sources-content{padding:12px}}
