@@ -90,8 +90,8 @@ body.auth-locked .auth-company img{
  width:100%;height:auto;max-height:none;
  object-fit:contain;object-position:center;
  transform:translate(-50%,-50%);
- filter:brightness(0);
- opacity:.40;
+ filter:brightness(0) invert(60%);
+ opacity:.50;
 }
 body.auth-locked .auth-brand{
  width:100%;
