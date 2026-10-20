@@ -92,7 +92,7 @@ function loadGoogle(key){
 }
 export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}){
  root.innerHTML='<section class="coverage-map-shell">'+
- '<div class="coverage-map-header"><div><span class="eyebrow">GEOGRAFIA CONTRATUAL · PROERG / ITAIPU</span><h2>Mapa das áreas de cobertura</h2>'+
+ '<div class="coverage-map-header"><div><span class="eyebrow">COBERTURA OPERACIONAL · PROERG EM ITAIPU</span><h2>Mapa das áreas de cobertura</h2>'+
  '<p>Camadas georreferenciadas de trechos, áreas e pontos de atendimento. Medições espaciais calculadas a partir do KML/GeoJSON, sem presumir execução ou aprovação.</p></div>'+
  '<span class="coverage-map-count" data-count>— camadas</span></div>'+
  '<div class="coverage-map-toolbar"><label>Imagem de fundo<select data-basemap>'+
@@ -102,7 +102,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   '<a class="btn btn-ghost" href="https://www.google.com/maps/@-25.51,-54.56,13z/data=!3m1!1e3" target="_blank" rel="noopener noreferrer">Abrir no Google Satélite ↗</a>'+
   (canWrite?'<button type="button" class="btn btn-secondary" data-open-import>Importar KML / GeoJSON</button>':"")+
  '</div>'+
- '<div class="coverage-map-layout"><div class="coverage-map-canvas" data-map role="region" aria-label="Mapa interativo de cobertura PROERG/Itaipu em Foz do Iguaçu"></div>'+
+ '<div class="coverage-map-layout"><div class="coverage-map-canvas" data-map role="region" aria-label="Mapa interativo das frentes operacionais da PROERG em Itaipu"></div>'+
  '<aside class="coverage-map-sidebar"><div class="coverage-map-summary" data-summary><strong>Camadas contratuais</strong><p>Aguardando a base.</p></div><div class="coverage-map-layer-list" data-layers></div></aside></div>'+
  '<div class="coverage-map-import" data-import-panel hidden>'+
   '<h3>Importar geometria para conferência contratual</h3>'+
@@ -114,7 +114,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    '<label>Arquivo KML/GeoJSON<input type="file" data-layer-file accept=".kml,.json,.geojson"></label></div>'+
   '<div class="coverage-map-import-actions"><button class="btn btn-primary" type="button" data-layer-save>Salvar camada georreferenciada</button>'+
   '<button class="btn btn-ghost" type="button" data-import-close>Cancelar</button></div></div>'+
- '<div class="coverage-map-footer"><strong>Referências no contrato:</strong> 73 atividades na matriz; postas institucionais e frentes de serviço conforme registros cadastrados. Ciclovia da Vila A: <strong>4,8 km de extensão publicada</strong>, sem traçado georreferenciado validado. Avenida Tancredo Neves: trecho referido nos apontamentos, ainda sem medidas confirmadas. <span data-provider-warning></span></div>'+
+ '<div class="coverage-map-footer"><strong>Referências no contrato:</strong> 73 atividades na matriz; postos institucionais e frentes de serviço conforme registros cadastrados. Ciclovia da Vila A: <strong>4,8 km de extensão publicada</strong>, sem traçado georreferenciado validado. Avenida Tancredo Neves: trecho referido nos apontamentos, ainda sem medidas confirmadas. <span data-provider-warning></span></div>'+
  '</section>';
  const q=s=>root.querySelector(s);let layers=[],map=null,engine="leaflet",drawn=[],googleData=[],destroyed=false;
  const mapDiv=q("[data-map]");
