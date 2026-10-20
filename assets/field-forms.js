@@ -110,10 +110,10 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    '<div class="field-card-heading"><strong>'+(i===0?'O que foi feito?':'Outra atividade · '+(i+1))+'</strong><button type="button" data-remove-field-item="'+i+'" class="field-remove" '+(items.length===1?'disabled':'')+' aria-label="Remover atividade '+(i+1)+'">×</button></div>'+
    (permitted.length>1?'<label class="field-input wide field-activity-area"><span>Frente atendida *</span><select data-field-area required>'+optList(permitted,"area",activeArea,"Selecione a frente")+'</select></label>':'')+
    '<label class="field-input wide field-activity-picker"><span>Atividade *</span><select data-field-activity required>'+optList(activities,"activity",item.activity_id,"Escolha a atividade")+'</select></label>'+
-   '<div class="field-result-choice"><span class="field-choice-label">Resultado</span><div class="field-result-options">'+[
+   '<div class="field-result-choice"><span class="field-choice-label">Resultado informado pela equipe</span><div class="field-result-options">'+[
      ["executada","Feito"],["parcial","Parcial"],["impedida","Impedido"],["nao_aplicavel","Não se aplica"]
-   ].map(x=>'<label class="field-result-pill"><input type="radio" name="field-result-'+i+'" data-field-result value="'+x[0]+'" '+(item.result===x[0]?"checked":"")+'><span>'+x[1]+'</span></label>').join("")+'</div></div>'+
-   '<details class="field-inline-details"><summary>+ Detalhes desta atividade <small>opcional</small></summary><div class="field-inline-details-content">'+
+   ].map(x=>'<label class="field-result-pill"><input type="radio" name="field-result-'+i+'" data-field-result value="'+x[0]+'" '+(item.result===x[0]?"checked":"")+'><span>'+x[1]+'</span></label>').join("")+'</div><p class="field-result-hint">Feito: concluído conforme observado pela equipe, ainda sujeito à conferência. Parcial: existe serviço pendente; registre o que falta em Detalhes.</p></div>'+
+   '<details class="field-inline-details"><summary>+ OS, quantidade, evidências e pendências <small>abra para detalhar</small></summary><div class="field-inline-details-content">'+
    '<div class="field-form-grid">'+
     '<label class="field-input wide"><span>OS relacionada</span><select data-field-order><option value="">Não informar</option>'+ordersForTeam.map(o=>escOpt(o.id,o.reference+" · "+o.status,item.work_order_id)).join("")+'</select></label>'+
     '<label class="field-input wide"><span>Local específico</span><input data-field-location maxlength="160" placeholder="Ex.: jardim do bloco B" value="'+esc(item.location)+'"></label>'+
@@ -142,7 +142,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    '</div><div class="field-week-summary" id="field-week-summary">'+weekHint(formState.report_date)+' · segunda a domingo</div>'+
    (permitted.length>1?'<p class="field-area-assignment-info">Sua equipe atende várias frentes. Selecione a frente de cada atividade abaixo.</p>':'')+
    '</div>'+
-   '<div class="field-section field-quick-section"><div class="field-section-head"><span class="field-step">2</span><div><h3>O que foi feito?</h3><p>Escolha a atividade e o resultado. Os detalhes são opcionais.</p></div></div>'+
+   '<div class="field-section field-quick-section"><div class="field-section-head"><span class="field-step">2</span><div><h3>O que foi feito?</h3><p>Registre o resultado observado. Se parcial ou impedido, descreva a pendência e o motivo nos detalhes.</p></div></div>'+
    '<div class="field-activities">'+items.map(itemCard).join("")+'</div>'+
    '<button type="button" class="btn btn-secondary field-add-quick" id="field-add-activity">+ Adicionar outra atividade</button></div>'+
    '<details id="field-day-extras" class="field-optional-section" '+(optionalOpen?'open':'')+'><summary><span class="field-optional-icon">+</span><span><strong>Detalhes adicionais da semana</strong><small>Participantes, equipamentos e observações · opcional</small></span><span class="field-optional-arrow">⌄</span></summary>'+
