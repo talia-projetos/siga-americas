@@ -266,15 +266,22 @@ function fieldValue(key,value){
  if(["party_responsible","provider_party"].includes(key))return '<span class="tag">'+escapeHTML(partyLabels[value]||value)+'</span>';
  if(key==="domain")return escapeHTML(domainLabels[value]||value);
  if(key==="category")return escapeHTML(categoryLabels[value]||String(value).replaceAll("_"," "));
- if(["status","priority","condition","validation_status","review_status","action_status"].includes(key)){
+ if(["status","priority","condition","validation_status","review_status","action_status","execution_status"].includes(key)){
    const v=String(value);
-   const labels={a_conferir:"A conferir",em_execucao:"Em execução",nao_aplicavel:"Não aplicável",em_revisao:"Em revisão",em_adequacao:"Em adequação",em_analise:"Em análise",sem_programacao:"Sem programação",devolvido:"Devolvido",validado:"Validado",pendente:"Pendente de conferência",programada:"Programada",concluida:"Concluída",executada:"Executada",inviavel:"Inviável"};
-   const positive=/^(validado|concluida|concluido|executada|realizada|conforme|aprovado|ativa|ativo)$/.test(v);
-   const danger=/^(cancelada|inutilizavel|atrasada|atrasado)$/.test(v);
-   const warning=/^(impedida|impedido|devolvido|em_adequacao|critica|indisponivel)$/.test(v);
-   const info=/^(em_execucao|em_analise|programada|candidata)$/.test(v);
-   const style=positive?"positive":danger?"negative":warning?"warning":info?"info":"neutral";
-   return '<span class="tag status-chip '+style+'">'+escapeHTML(labels[v]||v.replaceAll("_"," "))+'</span>';
+   const labels={
+    a_conferir:"A conferir",a_validar:"A validar",pendente:"Pendente",pendente_assinatura:"Aguardando assinatura",
+    em_execucao:"Em execução",em_analise:"Em análise",em_revisao:"Em revisão",em_adequacao:"Em adequação",
+    sem_programacao:"Sem programação",nao_aplicavel:"Não aplicável",devolvido:"Devolvido",
+    validado:"Validado",validada:"Validada",conforme:"Conforme",aprovado:"Aprovado",aprovada:"Aprovada",
+    programada:"Programada",concluida:"Concluída",concluido:"Concluído",executada:"Execução registrada",
+    candidata:"Oportunidade",contemplada:"Contemplada",inviavel:"Inviável",cancelada:"Cancelada",
+    impedida:"Impedida",impedido:"Impedido",glosada:"Glosada",ativo:"Ativo",encerrado:"Encerrado",
+    aberta:"Aberta",em_aberto:"Em aberto",disponivel:"Disponível",atrasada:"Atrasada",
+    normal:"Normal",alta:"Alta",critica:"Crítica",bom:"Bom",requer_atencao:"Requer atenção",
+    em_manutencao:"Em manutenção",inutilizavel:"Inutilizável"
+   };
+   const display=v==="executada"&&app.page==="field_plan_items"?"Contemplada":labels[v]||v.replaceAll("_"," ");
+   return '<span class="tag status-chip" data-status="'+escapeHTML(v)+'">'+escapeHTML(display)+'</span>';
  }
  return '<span class="truncate" title="'+escapeHTML(value)+'">'+escapeHTML(value)+'</span>';
 }
