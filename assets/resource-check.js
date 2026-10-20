@@ -18,7 +18,7 @@ function classification(row){
  const delta=Number(row.observed_quantity)-Number(row.required_quantity||0);
  if(delta<0)return {label:"Faltam "+pt(-delta),kind:"missing",difference:delta};
  if(delta>0)return {label:"+"+pt(delta)+" excedentes",kind:"extra",difference:delta};
- return {label:"Quantidade conferida",kind:"match",difference:0};
+ return {label:"Igual à referência",kind:"match",difference:0};
 }
 export async function mountInventoryCheck(root,db,{notify}){
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Consultando quantitativos previstos...</p></div>';
@@ -52,12 +52,12 @@ export async function mountInventoryCheck(root,db,{notify}){
   root.innerHTML='<div class="inventory-intro"><div><span class="eyebrow">INVENTÁRIO · CONFERÊNCIA INICIAL</span><h2>Quantitativos previstos × encontrados</h2><p>Valores contratuais e quantitativos declarados. Registre separadamente a identificação de cada veículo ou máquina e sua conferência física.</p></div></div>'+
   '<div class="inventory-tabs">'+tabsHTML+'</div>'+
   '<div class="catalog-stats inventory-kpis">'+
-  '<div class="catalog-stat"><span>Tipos previstos</span><strong>'+types+'</strong><small>'+checked+' conferidos</small></div>'+
+  '<div class="catalog-stat"><span>Tipos previstos</span><strong>'+types+'</strong><small>'+checked+' com quantidade informada</small></div>'+
   '<div class="catalog-stat"><span>Unidades previstas</span><strong>'+pt(expected)+'</strong><small>Indicativo contratual</small></div>'+
   '<div class="catalog-stat"><span>Unidades contabilizadas</span><strong>'+pt(observed)+'</strong><small>Valores declarados até agora</small></div>'+
   '<div class="catalog-stat"><span>Tipos com quantidade inferior</span><strong>'+missing+'</strong><small>Somente entre os já conferidos</small></div></div>'+
-  '<div class="inventory-progress" role="meter" aria-label="Tipos conferidos" aria-valuemin="0" aria-valuemax="'+types+'" aria-valuenow="'+checked+'"><div class="inventory-progress-bar" style="width:'+(types?100*checked/types:0).toFixed(1)+'%"></div></div>'+
-  '<div class="notice inventory-note">A coluna <strong>quantidade contratual</strong> não pode ser alterada nesta tela. A checagem numérica <strong>não comprova funcionamento, regularidade documental ou conformidade técnica</strong>. Estes aspectos permanecem na inspeção qualitativa.</div>'+
+  '<div class="inventory-progress" role="meter" aria-label="Tipos com quantidade informada" aria-valuemin="0" aria-valuemax="'+types+'" aria-valuenow="'+checked+'"><div class="inventory-progress-bar" style="width:'+(types?100*checked/types:0).toFixed(1)+'%"></div></div>'+
+  '<div class="notice inventory-note">A coluna <strong>quantidade contratual</strong> não pode ser alterada nesta tela. Quantidades declaradas não comprovam vistoria, funcionamento, regularidade documental ou conformidade técnica. Faça a conferência individual em Veículos e Frota ou Ferramentas e Máquinas.</div>'+
   '<div class="inventory-controls"><input id="inventory-search" class="searchbox" type="search" placeholder="Buscar item da relação…" value="'+html(query)+'" aria-label="Buscar recurso"><label>Fornecimento <select id="inventory-provider"><option value="all"'+(provider==="all"?" selected":"")+'>Todos</option><option value="proerg"'+(provider==="proerg"?" selected":"")+'>PROERG</option><option value="itaipu"'+(provider==="itaipu"?" selected":"")+'>Itaipu</option></select></label><span class="muted">'+visible.length+' item(ns)</span></div>'+
   '<div class="table-panel inventory-table-wrap"><div class="table-scroll"><table class="data-table inventory-table"><thead><tr><th>Nº / item</th><th>Descrição</th><th>Exigido</th><th>Encontrado</th><th>Diferença</th><th>Notas da conferência</th><th>Ação</th></tr></thead><tbody>'+
   (visible.length?visible.map(r=>{
