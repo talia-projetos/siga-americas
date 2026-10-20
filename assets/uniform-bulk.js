@@ -196,7 +196,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
    table("uniform_delivery_batch_recipients","id,batch_id,employee_id,cycle_start",1800),
    table("uniform_deliveries","id,employee_id,item_type,size,quantity,delivered_on,batch_id",1800)
   ]);
-  state.employees=employees.filter(e=>e.active!==false).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
+  state.employees=employees.filter(e=>e.active===true).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
   state.teams=teams.filter(t=>t.active!==false).sort((a,b)=>String(a.code).localeCompare(String(b.code),"pt-BR"));
   state.batches=batches;state.recipients=recipients;state.deliveries=deliveries;
   for(const employee of state.employees){if(!state.dirty.has(employee.id))state.sizes.set(employee.id,{shirt_size:employee.shirt_size||"",pants_size:employee.pants_size||"",shoe_size:employee.shoe_size||"",jacket_size:employee.jacket_size||""})}
