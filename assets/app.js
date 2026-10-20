@@ -350,14 +350,6 @@ async function coveragePage(){
     '<button class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento mensal</button><button class="btn btn-primary" data-nav="field_plan_items">'+iconMarkup("clipboard")+' Ações programadas</button>')+
     '<div class="metric-grid">'+cards+'</div>'+
     '<p class="catalog-context-note">'+iconMarkup("check")+' Cobertura identifica o alcance da matriz de 73 itens. <strong>Contemplada</strong> indica registro de execução, sem significar encerramento do serviço ou aprovação da medição.</p>'+
-    '<div class="coverage-status-legend" aria-label="Legenda de cores dos estados">'+
-     '<span class="tag coverage-status coverage-status--candidata">Oportunidade</span>'+
-     '<span class="tag coverage-status coverage-status--programada">Programada</span>'+
-     '<span class="tag coverage-status coverage-status--em_execucao">Em execução</span>'+
-     '<span class="tag coverage-status coverage-status--executada">Contemplada</span>'+
-     '<span class="tag coverage-status coverage-status--inviavel">Inviável</span>'+
-     '<span class="tag coverage-status coverage-status--a_validar">A validar</span>'+
-    '</div>'+
     '<div id="coverage-execution-metrics"></div>'+
     '<section class="table-panel"><div class="table-head"><div><h2>Diagnóstico das 73 atividades</h2><span>Atividades, responsáveis e situação de planejamento</span></div><div class="table-toolbar"><input type="search" id="coverage-search" class="searchbox" placeholder="Buscar atividade ou responsável..." aria-label="Pesquisar catálogo"></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Item</th><th>Atividade</th><th>PROERG</th><th>Itaipu</th><th>Planejamento</th><th>Ação</th></tr></thead><tbody id="coverage-body"></tbody></table></div></section>';
   const tbody=el("coverage-body");
