@@ -149,7 +149,7 @@ async function dashboard(){
  const quick=shortcuts.map(key=>
   '<button type="button" data-nav="'+key+'" class="quick-link"><span class="quick-link-label">'+iconMarkup(key)+escapeHTML(nameFor(key))+'</span><span class="quick-link-arrow" aria-hidden="true">'+iconMarkup("arrow")+'</span></button>'
  ).join("");
- const hero=title("inicio","Painel de supervisão da PROERG em Itaipu: acompanhe pendências, equipes e programação.");
+ const hero='<div class="page-heading dashboard-page-heading"><h1>'+escapeHTML(nameFor("inicio"))+'</h1></div>';
  const body=
   hero+
   '<section class="dashboard-overview" aria-label="Situação da operação">'+
