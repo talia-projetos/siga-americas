@@ -1,6 +1,6 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=12";
+import {groups,modules} from "./modules.js?v=13";
 import {iconMarkup} from "./icons.js?v=3";
 import {renderDashboardAnalytics} from "./analytics.js?v=4";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
@@ -9,7 +9,7 @@ import {mountUniformManager} from "./uniform-bulk.js?v=9";
 import {mountFieldReport} from "./field-forms.js?v=3";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 import {renderFinancialIndicator,renderExecutionTable} from "./execution-metrics.js?v=3";
-import {initRoutinePhotoField} from "./routine-photos.js?v=1";
+import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=3";
 
 const el=id=>document.getElementById(id);
