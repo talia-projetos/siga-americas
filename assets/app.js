@@ -8,10 +8,10 @@ import {mountInventoryCheck} from "./resource-check.js?v=2";
 import {mountUniformManager} from "./uniform-bulk.js?v=10";
 import {mountFieldReport} from "./field-forms.js?v=6";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
-import {renderFinancialIndicator,renderExecutionTable} from "./execution-metrics.js?v=4";
+import {renderFinancialIndicator,renderExecutionTable} from "./execution-metrics.js?v=5";
 import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=3";
-import {mountCoverageMap} from "./coverage-map.js?v=5";
+import {mountCoverageMap} from "./coverage-map.js?v=6";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=3";
 
 const el=id=>document.getElementById(id);
