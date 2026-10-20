@@ -8,6 +8,7 @@ import {mountInventoryCheck} from "./resource-check.js?v=2";
 import {mountUniformManager} from "./uniform-bulk.js?v=6";
 import {mountFieldReport} from "./field-forms.js?v=3";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
+import {renderApontamentosPreposto} from "./preposto-outubro-2026.js?v=1";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
