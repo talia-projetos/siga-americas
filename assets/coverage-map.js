@@ -69,10 +69,18 @@ const fmtMetric=m=>[
 ].join(" · ")||"Sem dimensão espacial calculável";
 async function readGeoFile(file){
  if(file.size>8*1024*1024)throw Error("Arquivo acima de 8 MB. Simplifique antes de importar.");
- const text=await file.text();
- if(/\.geojson$|\.json$/i.test(file.name))return validateCoverageGeoJSON(JSON.parse(text));
- if(!/\.kml$/i.test(file.name))throw Error("Escolha um arquivo KML ou GeoJSON.");
- const doc=new DOMParser().parseFromString(text,"application/xml");
+ if(!/\.(?:kml|kmz|geojson|json)$/i.test(file.name))throw Error("Escolha um arquivo KML, KMZ ou GeoJSON.");
+ let content;
+ if(/\.kmz$/i.test(file.name)){
+  const module=await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm");
+  const zip=await (module.default||module).loadAsync(await file.arrayBuffer());
+  const entry=Object.values(zip.files).find(f=>!f.dir&&/\.kml$/i.test(f.name));
+  if(!entry)throw Error("KMZ sem arquivo KML interno.");
+  content=await entry.async("string");
+  if(content.length>8*1024*1024)throw Error("KML interno muito grande.");
+ }else content=await file.text();
+ if(/\.geojson$|\.json$/i.test(file.name))return validateCoverageGeoJSON(JSON.parse(content));
+ const doc=new DOMParser().parseFromString(content,"application/xml");
  if(doc.querySelector("parsererror"))throw Error("KML com XML inválido.");
  const converter=await import("https://cdn.jsdelivr.net/npm/@tmcw/togeojson@7.1.2/+esm");
  const geo=converter.kml(doc);
@@ -93,28 +101,28 @@ function loadGoogle(key){
 export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}){
  root.innerHTML='<section class="coverage-map-shell">'+
  '<div class="coverage-map-header"><div><span class="eyebrow">COBERTURA OPERACIONAL · PROERG EM ITAIPU</span><h2>Mapa das áreas de cobertura</h2>'+
- '<p>Camadas georreferenciadas de trechos, áreas e pontos de atendimento. Medições espaciais calculadas a partir do KML/GeoJSON, sem presumir execução ou aprovação.</p></div>'+
+ '<p>Camadas georreferenciadas de trechos, áreas e pontos de atendimento. Medições espaciais calculadas a partir do KML/KMZ/GeoJSON, sem presumir execução ou aprovação.</p></div>'+
  '<span class="coverage-map-count" data-count>— camadas</span></div>'+
  '<div class="coverage-map-toolbar"><label>Imagem de fundo<select data-basemap>'+
   '<option value="satellite">Satélite · Esri World Imagery</option><option value="street">Mapa viário · OpenStreetMap</option>'+
   (GOOGLE_MAPS_BROWSER_KEY?'<option value="google">Google Satélite (API autorizada)</option>':"")+
   '</select></label>'+
   '<a class="btn btn-ghost" href="https://www.google.com/maps/@-25.51,-54.56,13z/data=!3m1!1e3" target="_blank" rel="noopener noreferrer">Abrir no Google Satélite ↗</a>'+
-  (canWrite?'<button type="button" class="btn btn-secondary" data-open-import>Importar KML / GeoJSON</button>':"")+
+  (canWrite?'<button type="button" class="btn btn-secondary" data-open-import>Importar KML / KMZ</button>':"")+
  '</div>'+
  '<div class="coverage-map-layout"><div class="coverage-map-canvas" data-map role="region" aria-label="Mapa interativo das frentes operacionais da PROERG em Itaipu"></div>'+
- '<aside class="coverage-map-sidebar"><div class="coverage-map-summary" data-summary><strong>Camadas contratuais</strong><p>Aguardando a base.</p></div><div class="coverage-map-layer-list" data-layers></div></aside></div>'+
+ '</div>'+
  '<div class="coverage-map-import" data-import-panel hidden>'+
   '<h3>Importar geometria para conferência contratual</h3>'+
-  '<p>Formato KML ou GeoJSON em WGS84 · EPSG:4326. Indique a fonte e o vínculo à matriz de 73 atividades. A geometria será armazenada e poderá ser consultada por outras contas autorizadas.</p>'+
+  '<p>Formato KML, KMZ ou GeoJSON em WGS84 · EPSG:4326. Indique a fonte e o vínculo à matriz de 73 atividades. A geometria será armazenada e poderá ser consultada por outras contas autorizadas.</p>'+
   '<div class="coverage-map-inputs"><label>Nome da área/trecho/ponto<input data-layer-name maxlength="140" placeholder="Ex.: Ciclovia Vila A · trecho leste"></label>'+
    '<label>Categoria<select data-layer-category><option value="trecho">Trecho linear</option><option value="area">Área de cobertura</option><option value="ponto">Ponto externo</option></select></label>'+
    '<label>Referência do contrato / matriz<input data-layer-contract maxlength="220" placeholder="Ex.: 3.35 · Corte de gramados"></label>'+
    '<label>Fonte da geometria<input data-layer-source maxlength="220" placeholder="Ex.: levantamento QGIS / vistoria de campo"></label>'+
-   '<label>Arquivo KML/GeoJSON<input type="file" data-layer-file accept=".kml,.json,.geojson"></label></div>'+
+   '<label>Arquivo KML/KMZ/GeoJSON<input type="file" data-layer-file accept=".kml,.kmz,.json,.geojson"></label></div>'+
   '<div class="coverage-map-import-actions"><button class="btn btn-primary" type="button" data-layer-save>Salvar camada georreferenciada</button>'+
   '<button class="btn btn-ghost" type="button" data-import-close>Cancelar</button></div></div>'+
- '<div class="coverage-map-footer"><strong>Referências no contrato:</strong> 73 atividades na matriz; postos institucionais e frentes de serviço conforme registros cadastrados. Ciclovia da Vila A: <strong>4,8 km de extensão publicada</strong>, sem traçado georreferenciado validado. Avenida Tancredo Neves: trecho referido nos apontamentos, ainda sem medidas confirmadas. <span data-provider-warning></span></div>'+
+ '<div class="coverage-map-footer"><strong>Referências no contrato:</strong> 73 atividades na matriz; postos institucionais e frentes de serviço conforme registros cadastrados. As áreas institucionais do KML são referências geográficas, não confirmação de cobertura contratual. Ciclovia: 4,8 km publicados; linha ainda sem levantamento validado. <span data-provider-warning></span></div>'+
  '</section>';
  const q=s=>root.querySelector(s);let layers=[],map=null,engine="leaflet",drawn=[],googleData=[],destroyed=false,resizeObserver=null,resizeFrame=0;
  const mapDiv=q("[data-map]");
@@ -150,30 +158,17 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  };
  applyBase("satellite");
  maps.control.scale({metric:true,imperial:false}).addTo(map);
- const rowHtml=l=>{
-  const valid=!!l.geometry,metric=valid?fmtMetric(measure(l.geometry)):null;
-  const name=esc(l.name),src=esc(l.source_name||"Fonte não cadastrada");
-  return '<div class="coverage-layer-row"><label class="coverage-layer-check">'+
-   '<input type="checkbox" data-layer-toggle="'+esc(l.id)+'" '+(valid?"checked":"disabled")+'>'+
-   '<span><strong>'+name+'</strong><small>'+esc(l.contract_reference||"Vínculo à matriz a conferir")+'</small></span></label>'+
-   '<div class="coverage-layer-detail">'+(valid?
-     '<span class="coverage-map-status is-georeferenced">Geometria importada · conferir contrato</span>'+
-     '<small>Métrica calculada: '+esc(metric)+'</small>':
-     '<span class="coverage-map-status is-pending">Geometria pendente</span>')+
-   (Number(l.reported_length_m)>0?'<small>Extensão informada: '+n(l.reported_length_m/1000)+' km (não é medição SIG)</small>':"")+
-   '<small>Fonte: '+src+'</small>'+
-   (valid?'<button type="button" class="table-action" data-zoom-layer="'+esc(l.id)+'">Localizar camada</button>':"")+
-   '</div></div>';
- };
  const colorFor=l=>l.category==="ponto"?"#f1ba62":l.category==="trecho"?"#22ac81":"#4c8ae5";
  function addGeoToLeaflet(l){
   if(!l.geometry)return;
   const layer=maps.geoJSON(l.geometry,{
    style:()=>({color:colorFor(l),weight:4,fillColor:"#25a779",fillOpacity:.24}),
-   pointToLayer:(feature,latlng)=>maps.circleMarker(latlng,{radius:7,color:"#fff",weight:2,fillColor:colorFor(l),fillOpacity:.95})
-  }).bindPopup('<strong>'+esc(l.name)+'</strong><br>'+esc(l.contract_reference||"Sem item contratual")+
-  '<br>'+esc(fmtMetric(measure(l.geometry)))+
-  '<br>Geometria importada, ainda não validada pelo contrato.').addTo(map);
+   pointToLayer:(feature,latlng)=>maps.circleMarker(latlng,{radius:7,color:"#fff",weight:2,fillColor:colorFor(l),fillOpacity:.95}),
+   onEachFeature:(feature,item)=>{
+    item.bindPopup('<strong>'+esc(feature.properties?.name||l.name)+'</strong><br>'+
+      esc(l.source_name||"KML fornecido")+'<br>Geometria ainda não validada pelo contrato.');
+   }
+  }).addTo(map);
   drawn.push({id:l.id,layer});
  }
  let gMap=null;
@@ -191,17 +186,10 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  }
  function draw(){
   q("[data-count]").textContent=layers.filter(l=>l.geometry).length+" camada(s) com geometria";
-  q("[data-layers]").innerHTML=layers.map(rowHtml).join("");
   const geo=layers.filter(l=>l.geometry),stats=geo.reduce((acc,l)=>{
    const m=measure(l.geometry);
    acc.meters+=m.meters;acc.area+=m.squareMeters;acc.points+=m.points;return acc;
   },{meters:0,area:0,points:0});
-  q("[data-summary]").innerHTML='<strong>Geometrias importadas</strong>'+
-   '<div class="coverage-map-stats"><span>'+geo.length+'<small>camadas</small></span>'+
-   '<span>'+n(stats.meters/1000)+' km<small>linhas medidas</small></span>'+
-   '<span>'+n(stats.area/10000)+' ha<small>áreas medidas</small></span>'+
-   '<span>'+stats.points+'<small>pontos</small></span></div>'+
-   '<p>Valores derivados da geometria fornecida. Se houver sobreposição entre camadas, os totais não representam área territorial líquida.</p>';
   if(engine==="leaflet"){
    for(const item of drawn)map.removeLayer(item.layer);
    drawn=[];geo.forEach(addGeoToLeaflet);
@@ -225,20 +213,10 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    if(!b.isEmpty())gMap.fitBounds(b);
   }
  }
- root.addEventListener("change",e=>{
-  const check=e.target.closest("[data-layer-toggle]");
-  if(check){
-   if(engine==="leaflet"){
-    const g=drawn.find(x=>x.id===check.dataset.layerToggle);if(g){if(check.checked)g.layer.addTo(map);else map.removeLayer(g.layer);}
-   }else{const g=googleData.find(x=>x.id===check.dataset.layerToggle);if(g)g.layer.setMap(check.checked?gMap:null);}
-  }
- });
  root.addEventListener("click",async e=>{
   const open=e.target.closest("[data-open-import]");
   if(open){q("[data-import-panel]").hidden=false;return;}
   if(e.target.closest("[data-import-close]")){q("[data-import-panel]").hidden=true;return;}
-  const z=e.target.closest("[data-zoom-layer]");
-  if(z){showLayer(z.dataset.zoomLayer);return;}
   const button=e.target.closest("[data-layer-save]");
   if(!button||!canWrite)return;
   const name=q("[data-layer-name]").value.trim(),
@@ -258,7 +236,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    const duplicate=layers.find(l=>l.name.toLocaleLowerCase("pt-BR")===name.toLocaleLowerCase("pt-BR")&&!l.geometry);
    const payload={
     name,category:cat,contract_reference:contract,source_name:source,source_filename:file.name,
-    source_type:/\.kml$/i.test(file.name)?"kml":"geojson",verification_status:"geometria_importada",geometry:geo
+    source_type:/\.(?:kml|kmz)$/i.test(file.name)?"kml":"geojson",verification_status:"geometria_importada",geometry:geo
    };
    const write=duplicate?db.from("coverage_map_layers").update(payload).eq("id",duplicate.id).select().single():
     db.from("coverage_map_layers").insert(payload).select().single();
