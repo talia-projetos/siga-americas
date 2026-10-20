@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-20T03:04:10.330Z",
+  "generated_at": "2026-10-20T03:05:10.083Z",
   "source": "PROERG",
   "script_url": "https://script.google.com/macros/s/AKfycby2TiQTR4Ripo2w8RIC9tjniCv2LJc14OHoUyQMLbAN91_XydoxUg4zl4kt6xh9IVpS/exec",
   "teams": [
@@ -34326,16 +34326,16 @@
       },
       {
         "data": "2026-10-21",
-        "chuva_mm": 6.2,
+        "chuva_mm": 5,
         "prob_chuva": 84,
         "tmax": 28.1,
-        "tmin": 19.6,
+        "tmin": 19.7,
         "codigo": 80,
         "condicao": "Aguaceiro"
       },
       {
         "data": "2026-10-22",
-        "chuva_mm": 61,
+        "chuva_mm": 62,
         "prob_chuva": 86,
         "tmax": 25.4,
         "tmin": 18.9,
@@ -34344,9 +34344,9 @@
       },
       {
         "data": "2026-10-23",
-        "chuva_mm": 11.7,
+        "chuva_mm": 10.9,
         "prob_chuva": 92,
-        "tmax": 29.5,
+        "tmax": 28.9,
         "tmin": 20.5,
         "codigo": 95,
         "condicao": "Tempestade"
