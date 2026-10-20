@@ -254,7 +254,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
  }
  function updateSize(id,kind,value){
   const old=state.sizes.get(id)||{shirt_size:"",pants_size:"",shoe_size:"",jacket_size:""};
-  state.sizes.set(id,{...old,[kind]:value.trim().toUpperCase()});
+  state.sizes.set(id,{...old,[kind]:value.trim().toUpperCase()+(kind==="pants_size"?pantsInfo(old.pants_size).suffix:"")});
   state.dirty.add(id);state.preview=false;
  }
  root.addEventListener("input",event=>{
