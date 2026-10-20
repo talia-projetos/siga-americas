@@ -1256,3 +1256,16 @@
   padding-left:11px!important;font-size:9.5px!important;
  }
 }
+
+
+/* Execuções registradas: hierarquia estável e detalhes opcionais */
+#modal-fields .execution-form-section-heading{grid-column:1/-1;display:flex;flex-direction:column;gap:4px;padding:10px 0 8px;border-bottom:1px solid #dbe8dd}
+#modal-fields .execution-form-section-heading strong{color:#1b4a37;font-size:13px;font-weight:760}
+#modal-fields .execution-form-section-heading small{color:#6b8474;font-size:11px;line-height:1.45}
+#modal-fields .execution-form-extras{grid-column:1/-1;border:1px solid #dbe8df;border-radius:11px;background:#f8fbf9;overflow:hidden}
+#modal-fields .execution-form-extras>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;padding:14px 16px;color:#2b6348;font-size:12px;font-weight:740}
+#modal-fields .execution-form-extras>summary span{color:#779383;font-size:10px;font-weight:550}
+#modal-fields .execution-form-extras[open]>summary{border-bottom:1px solid #dce9df}
+#modal-fields .execution-form-extras-fields{padding:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+#modal-fields .execution-form-extras-fields .field.wide{grid-column:1/-1}
+@media(max-width:600px){#modal-fields .execution-form-extras-fields{grid-template-columns:1fr}}
