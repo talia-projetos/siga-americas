@@ -44,6 +44,8 @@ function nav(){
  const query=norm(el("nav-search")?.value?.trim());
  const homeVisible=!query||norm(nameFor("inicio")).includes(query);
  const home=homeVisible?'<button type="button" class="nav-home '+(app.page==="inicio"?'active':'')+'" data-nav="inicio" title="Visão geral" '+(app.page==="inicio"?'aria-current="page"':'')+'><span class="nav-home-icon">'+iconMarkup("inicio")+'</span><span>'+escapeHTML(nameFor("inicio"))+'</span></button>':"";
+ const docsVisible=canView("document_center")&&(!query||norm(nameFor("document_center")).includes(query)||norm("documentos").includes(query));
+ const docsShortcut=docsVisible?'<button type="button" class="nav-home nav-standalone '+(app.page==="document_center"?"active":"")+'" data-nav="document_center" title="Central de documentos" '+(app.page==="document_center"?'aria-current="page"':"")+'><span class="nav-home-icon">'+iconMarkup("file")+'</span><span>Central de documentos</span></button>':"";
  const sections=groups.map((group,i)=>{
   const all=group.items.filter(canView);
   const groupMatch=norm(group.label).includes(query);
@@ -54,7 +56,7 @@ function nav(){
   const entries=items.map(key=>'<button type="button" class="nav-link '+(app.page===key?'active':'')+'" data-nav="'+key+'" '+(app.page===key?'aria-current="page"':'')+' title="'+escapeHTML(nameFor(key))+'"><span class="nav-icon">'+iconMarkup(key)+'</span><span class="nav-link-text">'+escapeHTML(nameFor(key))+'</span></button>').join("");
   return '<details class="nav-section '+(active?'contains-active':'')+'" data-nav-group="'+i+'" '+(open?'open':'')+'><summary class="nav-section-toggle" title="'+escapeHTML(group.label)+'" aria-label="'+escapeHTML(group.label)+'"><span class="nav-section-icon">'+iconMarkup(group.icon)+'</span><span class="nav-section-title">'+escapeHTML(group.label)+'</span><span class="nav-chevron">'+iconMarkup("chevron")+'</span></summary><div class="nav-section-items">'+entries+'</div></details>';
  }).join("");
- root.innerHTML=home+sections||'<p class="nav-no-results">Nenhum módulo encontrado.</p>';
+ root.innerHTML=home+docsShortcut+sections||'<p class="nav-no-results">Nenhum módulo encontrado.</p>';
 }
 function mobileSidebar(){return window.matchMedia("(max-width: 800px)").matches}
 function syncSidebarToggle(){
@@ -90,7 +92,7 @@ function header(key){
  el("logout").hidden=!user;
  el("login").hidden=!!user;
 }
-function title(key,subtitle,actions=""){return '<div class="page-heading"><div><span class="eyebrow">'+escapeHTML(groupFor(key)?.label||"GESTÃO INTEGRADA")+' · PROERG EM ITAIPU</span><h1>'+escapeHTML(nameFor(key))+'</h1><p>'+escapeHTML(subtitle)+'</p></div><div class="heading-actions">'+actions+'</div></div>'}
+function title(key,subtitle,actions=""){return '<div class="page-heading"><div><span class="eyebrow">'+escapeHTML(groupFor(key)?.label||(key==="document_center"?"DOCUMENTAÇÃO":"GESTÃO INTEGRADA"))+' · PROERG EM ITAIPU</span><h1>'+escapeHTML(nameFor(key))+'</h1><p>'+escapeHTML(subtitle)+'</p></div><div class="heading-actions">'+actions+'</div></div>'}
 function errorBanner(message){return '<div class="notice danger">'+escapeHTML(message)+'</div>'}
 function friendlyError(e){const msg=String(e?.message||e||"Erro inesperado.");if(/permission denied|row-level security|policy/i.test(msg))return "Acesso não autorizado. Confira o perfil e as políticas RLS do Supabase.";return msg}
 function setup(){nav();header("inicio");el("main").innerHTML='<section class="auth-wrap"><div class="auth-card"><span class="eyebrow">CONFIGURAÇÃO INICIAL</span><h1>Conecte seu projeto Supabase</h1><p>A interface foi reconstruída e ainda não possui credenciais públicas de conexão. Execute a migração SQL e configure <code>assets/config.js</code> com o <strong>Project URL</strong> e a <strong>publishable key</strong> do seu projeto.</p><div class="notice warning">Não publique senhas, service_role, secret keys ou dados de trabalhadores no repositório. O acesso aos dados exige autenticação e políticas RLS.</div><p>Leia o <a href="https://github.com/talia-projetos/siga-americas#configuracao-inicial" target="_blank" rel="noopener noreferrer"><strong>README de implantação ↗</strong></a>.</p></div></section>'}
