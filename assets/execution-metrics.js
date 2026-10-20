@@ -47,7 +47,7 @@ export function renderExecutionTable(entries,month){
   '<div class="table-head"><div><h2>Com execução registrada · '+escape(monthBR(month))+'</h2>'+
   '<span>'+rows.length+' formulários individuais · registros do preposto e demais fontes cadastradas</span></div>'+
   '<button class="btn btn-secondary" type="button" data-nav="field_execution_entries">Abrir formulários de execução</button></div>'+
-  '<div class="catalog-context-note">SE significa <strong>serviço eventual</strong>. O total potencial inclui apontamentos a conferir: quantidades com rasura, horas de trator/equipamento e regime das horas de SE exigem validação antes da medição.</div>'+
+
   '<div class="table-scroll"><table class="data-table"><thead><tr><th>Data</th><th>Atividade / local</th><th>Quantidade</th><th>Preço unitário</th><th>Valor estimado</th><th>Conferência</th><th>Formulário</th></tr></thead><tbody>'+
   (rows.map(r=>'<tr><td>'+escape(dateBR(r.performed_on))+'</td>'+
    '<td><strong>'+escape(r.activity_label)+'</strong><small class="execution-location">'+escape(r.location||"Local a conferir")+'</small></td>'+
