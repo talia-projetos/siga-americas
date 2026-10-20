@@ -17,10 +17,10 @@ export const modules={
   field_monitor:{title:"Acompanhamento das equipes",icon:"◫",virtual:true,description:"Painel da supervisão para acompanhar, validar e devolver relatórios de campo."},
   resource_check:{title:"Conferência de quantitativos",icon:"▧",virtual:true,description:"Tabela 05, veículos e equipamentos previstos: informe apenas a quantidade efetivamente encontrada."},
   coverage:{title:"Cobertura",icon:"◉",virtual:true,description:"Exploração técnica de 73 atividades: identificar oportunidades e distinguir programação, execução e inviabilidade."},
-  field_execution_entries:{title:"Execuções registradas",icon:"▤",table:"field_execution_entries",description:"Execuções informadas com data, quantidades e valores calculados por item da planilha de preços. Conferência não equivale a faturamento aprovado.",columns:["performed_on","activity_label","quantity","unit","unit_price","estimated_amount","validation_status"],fields:[
+  field_execution_entries:{title:"Execuções registradas",icon:"▤",table:"field_execution_entries",description:"Execuções informadas com data, quantidades e valores calculados por item da planilha de preços. Conferência não equivale a faturamento aprovado.",columns:["performed_on","activity_id","activity_label","quantity","unit","estimated_amount","validation_status"],fields:[
     f("performed_on","Data de execução","date",{required:true}),
     f("activity_label","Serviço executado / descrição","text",{required:true}),
-    ref("activity_id","Atividade da matriz","activity_catalog","code_name"),
+    ref("activity_id","Atividade da matriz · 73 itens","activity_catalog","code_name",{required:true}),
     ref("contract_item_id","Rubrica da planilha de preços","contract_items","code_name",{required:true}),
     ref("area_id","Frente operacional","operational_areas","code_name"),
     f("location","Local / trecho executado"),
