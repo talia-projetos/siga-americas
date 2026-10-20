@@ -1089,3 +1089,111 @@
  #dashboard-coverage-map .coverage-map-legend summary{min-height:41px;font-size:11px}
  #dashboard-coverage-map .coverage-map-legend-items{max-height:145px}
 }
+
+
+/* Ordenação das tabelas: ícone vertical, dimensionado de forma fixa, sem setas deslocadas. */
+#main .data-table th .table-sort{
+ display:inline-flex!important;align-items:center!important;justify-content:flex-start;
+ gap:6px!important;min-width:0;max-width:100%;width:100%;
+ text-align:left!important;white-space:normal!important;line-height:1.35;
+ padding:5px 0!important;
+}
+#main .data-table th .table-sort .sort-label{
+ display:inline-block;min-width:0;max-width:calc(100% - 21px);
+ white-space:normal;overflow-wrap:normal;word-break:normal;hyphens:auto;
+}
+#main .data-table th .table-sort .sort-arrow{
+ flex:0 0 16px;display:inline-flex;align-items:center;justify-content:center;
+ width:16px;height:20px;margin:0;line-height:0;color:#839d8a;
+ transform:none!important;vertical-align:middle;
+}
+#main .data-table th .table-sort .sort-arrow .ui-icon{
+ width:15px;height:15px;min-width:15px;min-height:15px;
+}
+#main .data-table th .table-sort.active .sort-arrow{color:#17754c}
+#main .data-table th[aria-sort="ascending"],
+#main .data-table th[aria-sort="descending"]{background:#e5f1e7}
+#main .data-table th.numeric-cell .table-sort{justify-content:flex-end;text-align:right!important}
+@media(max-width:1100px){
+ #main .data-table th .table-sort{gap:4px!important}
+ #main .data-table th .table-sort .sort-arrow{flex-basis:15px;width:15px}
+}
+
+/* Visão geral em camadas: decisões na abertura, análises sob demanda. */
+#main .dashboard-overview{margin-bottom:14px}
+#main .dashboard-section-head{margin-bottom:12px}
+#main .dashboard-section-head h2{font-size:19px;letter-spacing:-.4px}
+#main .dashboard-metrics{gap:12px!important;margin-bottom:0}
+#main .dashboard-metric{min-height:125px;padding:15px 16px 13px}
+#main .dashboard-metric strong{font-size:29px;margin-top:7px}
+#main .dashboard-metric .metric-icon{flex:0 0 27px}
+#main .dashboard-metric .metric-open{bottom:12px;right:13px}
+#main .dashboard-utility-grid{margin:0 0 21px;gap:16px!important}
+#main .dashboard-utility-grid .panel-inner{padding:20px}
+#main .dashboard-workspace-panel .panel-inner p{margin-bottom:0}
+#main .dashboard-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px!important;margin-top:14px}
+#main .dashboard-quick-grid .quick-link{min-height:49px;padding:9px 11px}
+#main .dashboard-recent-orders{margin-top:12px}
+#main .dashboard-recent-list li{min-height:54px}
+#main .dashboard-insights{display:grid;gap:12px;min-width:0;margin:23px 0 26px}
+#main .dashboard-insights-heading{display:flex;align-items:end;justify-content:space-between;gap:14px}
+#main .dashboard-insights-heading h2{font-size:19px;letter-spacing:-.45px;color:#234632;margin:5px 0 4px}
+#main .dashboard-insights-heading p{font-size:11.5px;color:#70897a;line-height:1.5;margin:0}
+#main .dashboard-insights-frame{
+ min-width:0;background:#fff;border:1px solid #dce9df;
+ border-radius:14px;overflow:hidden;box-shadow:0 7px 25px rgba(31,64,40,.05);
+}
+#main .dashboard-insights-tabs{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:0;min-width:0;padding:6px;background:#f4f8f4;
+ border-bottom:1px solid #dfeae1;
+}
+#main .dashboard-insights-tabs button{
+ appearance:none;border:0;background:transparent;border-radius:9px;
+ display:flex;align-items:center;justify-content:center;gap:8px;
+ min-height:46px;min-width:0;padding:10px 9px;
+ color:#637b6b;font-family:inherit;font-weight:640;font-size:11.5px;
+ line-height:1.35;text-align:center;white-space:normal;cursor:pointer;
+}
+#main .dashboard-insights-tabs button .ui-icon{width:16px;height:16px;flex:none}
+#main .dashboard-insights-tabs button[aria-selected="true"]{
+ background:#fff;color:#176c45;box-shadow:0 1px 7px rgba(36,78,47,.1);
+}
+#main .dashboard-insights-tabs button:not([aria-selected="true"]):hover{background:#eaf3ec;color:#345f45}
+#main .dashboard-insights-tabs button:focus-visible{outline:2px solid #37a268;outline-offset:-2px}
+#main .dashboard-insight-panel{min-width:0;padding:16px 18px}
+#main .dashboard-insight-panel[hidden]{display:none!important}
+#main .dashboard-insight-loading{margin:0;padding:22px 10px;text-align:center;color:#708a7a;font-size:12px}
+#main #dashboard-execution-finance{margin:0;max-width:100%}
+#main #dashboard-execution-finance .execution-finance{margin:0;box-shadow:none}
+#main #dashboard-execution-finance .execution-dashboard-link{margin:12px 2px 0}
+#main #dashboard-coverage-map{margin:0!important;padding:0!important;width:100%;max-width:100%}
+#main #dashboard-coverage-map .coverage-map-shell{
+ border:none;border-radius:0;box-shadow:none;
+}
+#main #dashboard-coverage-map .coverage-map-header{padding-top:15px}
+#main #dashboard-analytics{margin:0!important;padding:15px 18px 18px}
+#main #dashboard-analytics .analytics-intro{margin-bottom:12px}
+#main #dashboard-analytics .analytics-grid{gap:13px!important}
+#main #dashboard-analytics .analytics-panel{min-height:250px}
+@media(max-width:800px){
+ #main .dashboard-overview{margin-bottom:12px}
+ #main .dashboard-metric{padding:13px 12px;min-height:118px}
+ #main .dashboard-metric strong{font-size:27px}
+ #main .dashboard-utility-grid{margin-bottom:19px}
+ #main .dashboard-insights{margin-top:18px}
+ #main .dashboard-insight-panel{padding:13px}
+ #main #dashboard-coverage-map{padding:0!important}
+ #main #dashboard-analytics{padding:13px}
+ #main .dashboard-insights-tabs button{min-height:50px;font-size:11px;padding:9px 6px;gap:5px}
+}
+@media(max-width:520px){
+ #main .dashboard-insights-tabs{padding:4px}
+ #main .dashboard-insights-tabs button{flex-direction:column;min-height:62px;font-size:10.6px;gap:5px;padding:8px 4px}
+ #main .dashboard-insights-tabs button .ui-icon{width:16px;height:16px}
+ #main .dashboard-insights-heading h2{font-size:17px}
+ #main .dashboard-insight-panel{padding:11px}
+ #main #dashboard-execution-finance .execution-dashboard-link{text-align:center}
+ #main .dashboard-metric{min-height:112px}
+ #main .dashboard-metric strong{font-size:25px}
+}
