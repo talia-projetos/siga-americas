@@ -1,6 +1,6 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=18";
+import {groups,modules} from "./modules.js?v=19";
 import {iconMarkup} from "./icons.js?v=5";
 import {renderDashboardAnalytics} from "./analytics.js?v=6";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
@@ -541,7 +541,11 @@ async function modulePage(key){
     :"")+
    '<button class="btn btn-ghost" data-action="export">'+iconMarkup("download")+' Baixar CSV</button>';
   const special=isCatalogPage(key);
-  const overview=special?catalogOverview(key,app.rows):"";
+  const assetOverview=key==="equipment"?
+   '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos de responsabilidade históricos; não representa inventário de bens disponíveis. Os responsáveis citados nos termos não foram definidos como guardiões atuais.</small></div>':
+   key==="vehicles"?
+   '<div class="asset-data-summary"><strong>'+app.rows.length+' veículo(s) individualizados</strong><span>Cadastre placa, chassi ou patrimônio para identificar cada veículo.</span><small>Quantidades previstas ou declaradas no contrato não são registros individuais. Consulte a conferência de quantitativos para comparação de frota.</small></div>':"";
+  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview;
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
   '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
