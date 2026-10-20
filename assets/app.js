@@ -300,18 +300,22 @@ async function coveragePage(){
  app.page="coverage";app.search="";nav();header("coverage");
  el("main").innerHTML=title("coverage",modules.coverage.description)+'<div class="loading-page"><div class="loader"></div><p>Calculando cobertura das 73 atividades...</p></div>';
  try{
-  const [a,b]=await Promise.all([
+  const [a,b,executions,goals]=await Promise.all([
    app.db.from("activity_catalog").select("id,code,name,technical_lead,itaipu_technical_contact,contact_validation").order("code"),
-   app.db.from("field_plan_items").select("activity_id,action_status,planned_quantity,executed_quantity").limit(1000)
+   app.db.from("field_plan_items").select("activity_id,action_status,planned_quantity,executed_quantity").limit(1000),
+   app.db.from("field_execution_entries").select("*").order("performed_on",{ascending:false}).limit(1000),
+   app.db.from("finance_goals").select("period_month,target_amount").limit(100)
   ]);
-  if(a.error)throw a.error;if(b.error)throw b.error;
+  for(const result of [a,b,executions,goals])if(result.error)throw result.error;
+  const recorded=executions.data||[],monthlyGoals=goals.data||[];
+  const actual=new Set(recorded.filter(item=>item.execution_status==="executada"&&item.validation_status!=="glosada").map(item=>item.activity_id).filter(Boolean));
   const sorted=(a.data||[]).sort((x,y)=>Number(x.code.split(".")[1])-Number(y.code.split(".")[1]));
   const mapped=new Map();
   for(const item of b.data||[]){if(!item.activity_id)continue;const group=mapped.get(item.activity_id)||[];group.push(item);mapped.set(item.activity_id,group);}
   const prio=["executada","em_execucao","programada","a_validar","candidata","inviavel","nao_aplicavel"];
   const records=sorted.map(activity=>{
    const list=mapped.get(activity.id)||[];
-   const status=prio.find(s=>list.some(x=>x.action_status===s))||"sem_programacao";
+   const status=actual.has(activity.id)?"executada":prio.find(s=>list.some(x=>x.action_status===s))||"sem_programacao";
    return {...activity,status,entries:list.length};
   });
   const covered=records.filter(x=>["programada","em_execucao","executada","inviavel","nao_aplicavel"].includes(x.status)).length;
@@ -324,7 +328,7 @@ async function coveragePage(){
    ["Atividades no catálogo",records.length,candidates+" oportunidades aguardam análise"],
    ["Com decisão registrada",covered,pct+"% da matriz triada"],
    ["Em programação / execução",scheduled,"Atividades distintas"],
-   ["Com execução registrada",completed,"Depende de evidência validada"]
+   ["Com execução registrada",completed,recorded.filter(x=>x.execution_status==="executada").length+" lançamentos individuais; conferência documental pendente"]
   ].map(d=>'<div class="metric"><div class="metric-header">'+d[0]+'<span class="metric-icon">'+iconMarkup("coverage")+'</span></div><strong>'+d[1]+'</strong><small>'+d[2]+'</small></div>').join("");
   el("main").innerHTML=title("coverage","O objetivo é analisar o aproveitamento tecnicamente aplicável de cada atividade, sem forçar execução de serviços desnecessários.",
     '<button class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento mensal</button><button class="btn btn-primary" data-nav="field_plan_items">'+iconMarkup("clipboard")+' Ações programadas</button>')+
