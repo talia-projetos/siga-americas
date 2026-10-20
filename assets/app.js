@@ -343,7 +343,7 @@ async function coveragePage(){
    ["Atividades no catálogo",records.length,candidates+" oportunidades aguardam análise"],
    ["Com decisão registrada",covered,pct+"% da matriz triada"],
    ["Em programação / execução",scheduled,"Atividades distintas"],
-   ["Com execução registrada",completed,recorded.filter(x=>x.execution_status==="executada").length+" lançamentos individuais; conferência documental pendente"]
+   ["Com execução registrada",recorded.filter(x=>x.execution_status==="executada").length,completed+" atividades distintas · conferência documental pendente"]
   ].map(d=>'<div class="metric"><div class="metric-header">'+d[0]+'<span class="metric-icon">'+iconMarkup("coverage")+'</span></div><strong>'+d[1]+'</strong><small>'+d[2]+'</small></div>').join("");
   el("main").innerHTML=title("coverage","O objetivo é analisar o aproveitamento tecnicamente aplicável de cada atividade, sem forçar execução de serviços desnecessários.",
     '<button class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento mensal</button><button class="btn btn-primary" data-nav="field_plan_items">'+iconMarkup("clipboard")+' Ações programadas</button>')+
