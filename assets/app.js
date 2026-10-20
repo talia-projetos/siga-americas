@@ -224,6 +224,15 @@ function fieldValue(key,value){
    const label=String(value).toLocaleLowerCase("pt-BR").replace(/(^|\s)\p{L}/gu,s=>s.toLocaleUpperCase("pt-BR"));
    return '<span class="employee-role">'+escapeHTML(label)+'</span>';
  }
+ if(app.page==="purchases"&&key==="sector_team_ids"){
+  const ids=Array.isArray(value)?value:[];
+  if(!ids.length)return '<span class="muted">Não informado</span>';
+  const active=(app.refs.teams||[]).filter(t=>t.active!==false);
+  if(active.length&&active.every(t=>ids.includes(t.id))&&ids.length===active.length)
+    return '<span class="tag positive">Todos os setores ('+active.length+')</span>';
+  return '<span class="truncate" title="'+escapeHTML(ids.map(id=>optionLabel("teams",id,"name")).join(", "))+'">'+
+   escapeHTML(ids.map(id=>optionLabel("teams",id,"name")).join(", "))+'</span>';
+ }
  if(f?.type==="ref")return escapeHTML(optionLabel(f.table,value,f.display));
  if(f?.type==="boolean")return value?'<span class="tag">Sim</span>':'<span class="tag gray">Não</span>';
  if(f?.type==="date")return escapeHTML(dateBR(value));
