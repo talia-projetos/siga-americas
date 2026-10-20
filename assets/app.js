@@ -11,6 +11,7 @@ import {mountFieldMonitor} from "./field-monitor.js?v=3";
 import {renderFinancialIndicator,renderExecutionTable} from "./execution-metrics.js?v=3";
 import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=1";
+import {mountCoverageMap} from "./coverage-map.js?v=1";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=3";
 
 const el=id=>document.getElementById(id);
@@ -157,7 +158,8 @@ async function dashboard(){
    '<div class="dashboard-section-head"><div><span class="eyebrow">PAINEL OPERACIONAL</span><h2>O que precisa de atenção</h2><p>Indicadores atualizados com os registros disponíveis no sistema.</p></div></div>'+
    '<div class="metric-grid dashboard-metrics">'+metricsHTML(["—","—","—","—"])+'</div>'+
   '</section>'+
-  '<div id="dashboard-execution-finance"></div>'+
+  '<div id="dashboard-execution-finance"></div>'+ 
+  '<div id="dashboard-coverage-map"></div>'+ 
   '<div class="panel-grid dashboard-utility-grid">'+
     '<section class="panel dashboard-workspace-panel"><div class="panel-inner"><span class="eyebrow">ROTINA DE GESTÃO</span><h2>Continuar de onde você precisa</h2><p>Acesse rapidamente as funções usadas na supervisão e no planejamento.</p><div class="quick-grid dashboard-quick-grid">'+quick+'</div></div></section>'+
     '<section class="panel dashboard-activity-panel"><div class="panel-inner"><span class="eyebrow">ACOMPANHAMENTO</span><div class="dashboard-recent-head"><h2>Ordens de serviço recentes</h2><button class="table-action" type="button" data-nav="work_orders">Ver todas '+iconMarkup("arrow")+'</button></div><div id="dashboard-recent-orders" class="dashboard-recent-orders"><p class="dashboard-subtle">Buscando movimentações...</p></div></div></section>'+
@@ -188,6 +190,10 @@ async function dashboard(){
     if(orders&&app.page==="inicio")orders.innerHTML='<p class="dashboard-subtle">As ordens não puderam ser consultadas agora.</p>';
   }
  })();
+ const mapHolder=el("dashboard-coverage-map");
+ if(mapHolder)mountCoverageMap(mapHolder,app.db,{canWrite:privileged(),notify}).catch(error=>{
+  if(app.page==="inicio")mapHolder.innerHTML='<div class="notice">Mapa de cobertura indisponível: '+escapeHTML(friendlyError(error))+'</div>';
+ });
  const finance=el("dashboard-execution-finance");
  if(finance)(async()=>{
   const month=new Date().toISOString().slice(0,7);
