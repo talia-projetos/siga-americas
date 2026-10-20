@@ -337,25 +337,33 @@ async function coveragePage(){
   const covered=records.filter(x=>["programada","em_execucao","executada","inviavel","nao_aplicavel"].includes(x.status)).length;
   const candidates=records.filter(x=>x.status==="candidata"||x.status==="a_validar").length;
   const scheduled=records.filter(x=>["programada","em_execucao","executada"].includes(x.status)).length;
-  const completed=records.filter(x=>x.status==="executada").length;
-  const label=x=>({sem_programacao:"Sem avaliação",candidata:"Oportunidade",a_validar:"A validar",programada:"Programada",em_execucao:"Em execução",executada:"Executada",inviavel:"Inviável",nao_aplicavel:"Não aplicável"})[x]||x;
+  const contemplated=records.filter(x=>x.status==="executada").length;
+  const label=x=>({sem_programacao:"Sem avaliação",candidata:"Oportunidade",a_validar:"A validar",programada:"Programada",em_execucao:"Em execução",executada:"Contemplada",inviavel:"Inviável",nao_aplicavel:"Não aplicável"})[x]||x;
   const pct=records.length?Math.round(covered/records.length*100):0;
   const cards=[
    ["Atividades no catálogo",records.length,candidates+" oportunidades aguardam análise"],
    ["Com decisão registrada",covered,pct+"% da matriz triada"],
    ["Em programação / execução",scheduled,"Atividades distintas"],
-   ["Com execução registrada",completed+" / "+records.length,recorded.filter(x=>x.execution_status==="executada").length+" lançamentos individuais · sem confundir com validação"]
+   ["Atividades contempladas",contemplated+" / "+records.length,recorded.filter(x=>x.execution_status==="executada").length+" registros de execução · não significa encerramento"]
   ].map(d=>'<div class="metric"><div class="metric-header">'+d[0]+'<span class="metric-icon">'+iconMarkup("coverage")+'</span></div><strong>'+d[1]+'</strong><small>'+d[2]+'</small></div>').join("");
   el("main").innerHTML=title("coverage","O objetivo é analisar o aproveitamento tecnicamente aplicável de cada atividade, sem forçar execução de serviços desnecessários.",
     '<button class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento mensal</button><button class="btn btn-primary" data-nav="field_plan_items">'+iconMarkup("clipboard")+' Ações programadas</button>')+
     '<div class="metric-grid">'+cards+'</div>'+
-    '<p class="catalog-context-note">'+iconMarkup("check")+' Cobertura significa analisar e classificar cada atividade. Serviços só são executados quando necessários e autorizados.</p>'+
+    '<p class="catalog-context-note">'+iconMarkup("check")+' Cobertura identifica o alcance da matriz de 73 itens. <strong>Contemplada</strong> indica registro de execução, sem significar encerramento do serviço ou aprovação da medição.</p>'+
+    '<div class="coverage-status-legend" aria-label="Legenda de cores dos estados">'+
+     '<span class="tag coverage-status coverage-status--candidata">Oportunidade</span>'+
+     '<span class="tag coverage-status coverage-status--programada">Programada</span>'+
+     '<span class="tag coverage-status coverage-status--em_execucao">Em execução</span>'+
+     '<span class="tag coverage-status coverage-status--executada">Contemplada</span>'+
+     '<span class="tag coverage-status coverage-status--inviavel">Inviável</span>'+
+     '<span class="tag coverage-status coverage-status--a_validar">A validar</span>'+
+    '</div>'+
     '<div id="coverage-execution-metrics"></div>'+
     '<section class="table-panel"><div class="table-head"><div><h2>Diagnóstico das 73 atividades</h2><span>Atividades, responsáveis e situação de planejamento</span></div><div class="table-toolbar"><input type="search" id="coverage-search" class="searchbox" placeholder="Buscar atividade ou responsável..." aria-label="Pesquisar catálogo"></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Item</th><th>Atividade</th><th>PROERG</th><th>Itaipu</th><th>Planejamento</th><th>Ação</th></tr></thead><tbody id="coverage-body"></tbody></table></div></section>';
   const tbody=el("coverage-body");
   const draw=(term="")=>{
    const found=records.filter(x=>[x.code,x.name,x.technical_lead,x.itaipu_technical_contact].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(term.toLocaleLowerCase("pt-BR"))));
-   tbody.innerHTML=found.length?found.map(r=>'<tr><td><strong>'+escapeHTML(r.code)+'</strong></td><td><span class="truncate" title="'+escapeHTML(r.name)+'">'+escapeHTML(r.name)+'</span></td><td>'+escapeHTML(r.technical_lead||"A confirmar")+'</td><td>'+escapeHTML(r.itaipu_technical_contact||"A confirmar")+'</td><td><span class="tag '+(r.status==="sem_programacao"?"warn":"")+'">'+label(r.status)+'</span></td><td>'+(isProgrammableAction(r.code)?'<button class="table-action" data-action="planActivity" data-activity-id="'+escapeHTML(r.id)+'">Programar ↗</button>':'<span class="muted">Rubrica contratual</span>')+'</td></tr>').join(""):'<tr><td colspan="6"><div class="empty-state">Nenhuma atividade localizada.</div></td></tr>';
+   tbody.innerHTML=found.length?found.map(r=>'<tr><td><strong>'+escapeHTML(r.code)+'</strong></td><td><span class="truncate" title="'+escapeHTML(r.name)+'">'+escapeHTML(r.name)+'</span></td><td>'+escapeHTML(r.technical_lead||"A confirmar")+'</td><td>'+escapeHTML(r.itaipu_technical_contact||"A confirmar")+'</td><td><span class="tag coverage-status coverage-status--'+escapeHTML(r.status)+'" title="'+escapeHTML(r.status==="executada"?"Existe registro de execução. Não significa serviço encerrado nem medição aprovada.":label(r.status))+'">'+label(r.status)+'</span></td><td>'+(isProgrammableAction(r.code)?'<button class="table-action" data-action="planActivity" data-activity-id="'+escapeHTML(r.id)+'">Programar ↗</button>':'<span class="muted">Rubrica contratual</span>')+'</td></tr>').join(""):'<tr><td colspan="6"><div class="empty-state">Nenhuma atividade localizada.</div></td></tr>';
   };
   draw();el("coverage-search").addEventListener("input",e=>draw(e.target.value));
   const metricsRoot=el("coverage-execution-metrics");
