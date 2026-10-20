@@ -1,6 +1,6 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=16";
+import {groups,modules} from "./modules.js?v=17";
 import {iconMarkup} from "./icons.js?v=5";
 import {renderDashboardAnalytics} from "./analytics.js?v=6";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
@@ -532,6 +532,7 @@ async function modulePage(key){
    app.rows=app.rows.filter(row=>allowed.has(row.activity_id));
   }
   if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
+  if(key==="service_posts")app.rows.sort((a,b)=>String(a.code||"").localeCompare(String(b.code||""),"pt-BR",{numeric:true}));
   const buttons=(privileged()
     ?key==="uniform_deliveries"
       ?'<button class="btn btn-primary" data-action="uniformBatch">'+iconMarkup("people")+' Registrar em lote</button>'+
