@@ -8,7 +8,7 @@ const monthBR=m=>new Date(m+"-01T12:00:00").toLocaleDateString("pt-BR",{month:"l
 const counted=r=>r.execution_status!=="cancelada"&&r.validation_status!=="glosada";
 export function monthlyExecution(entries,goals,month,matrix=[]){
  const rows=(entries||[]).filter(r=>String(r.performed_on||"").slice(0,7)===month);
- const target=Number((goals||[]).find(g=>String(g.period_month||"").slice(0,7)===month)?.target_amount??500000);
+ const target=Number((goals||[]).find(g=>String(g.period_month||"").slice(0,7)===month)?.target_amount??919000);
  const included=rows.filter(counted);
  const executed=included.filter(r=>r.execution_status==="executada");
  const matrixIds=new Set((matrix||[]).map(r=>r.id));

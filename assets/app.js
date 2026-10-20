@@ -1,14 +1,14 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=15";
+import {groups,modules} from "./modules.js?v=16";
 import {iconMarkup} from "./icons.js?v=5";
-import {renderDashboardAnalytics} from "./analytics.js?v=5";
+import {renderDashboardAnalytics} from "./analytics.js?v=6";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
-import {mountInventoryCheck} from "./resource-check.js?v=2";
+import {mountInventoryCheck} from "./resource-check.js?v=3";
 import {mountUniformManager} from "./uniform-bulk.js?v=10";
 import {mountFieldReport} from "./field-forms.js?v=6";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
-import {renderFinancialIndicator} from "./execution-metrics.js?v=5";
+import {renderFinancialIndicator} from "./execution-metrics.js?v=6";
 import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=4";
 import {mountCoverageMap} from "./coverage-map.js?v=6";
@@ -44,6 +44,8 @@ function nav(){
  const query=norm(el("nav-search")?.value?.trim());
  const homeVisible=!query||norm(nameFor("inicio")).includes(query);
  const home=homeVisible?'<button type="button" class="nav-home '+(app.page==="inicio"?'active':'')+'" data-nav="inicio" title="Visão geral" '+(app.page==="inicio"?'aria-current="page"':'')+'><span class="nav-home-icon">'+iconMarkup("inicio")+'</span><span>'+escapeHTML(nameFor("inicio"))+'</span></button>':"";
+ const docsVisible=canView("document_center")&&(!query||norm(nameFor("document_center")).includes(query)||norm("documentos").includes(query));
+ const docsShortcut=docsVisible?'<button type="button" class="nav-home nav-standalone '+(app.page==="document_center"?"active":"")+'" data-nav="document_center" title="Central de documentos" '+(app.page==="document_center"?'aria-current="page"':"")+'><span class="nav-home-icon">'+iconMarkup("file")+'</span><span>Central de documentos</span></button>':"";
  const sections=groups.map((group,i)=>{
   const all=group.items.filter(canView);
   const groupMatch=norm(group.label).includes(query);
@@ -54,7 +56,7 @@ function nav(){
   const entries=items.map(key=>'<button type="button" class="nav-link '+(app.page===key?'active':'')+'" data-nav="'+key+'" '+(app.page===key?'aria-current="page"':'')+' title="'+escapeHTML(nameFor(key))+'"><span class="nav-icon">'+iconMarkup(key)+'</span><span class="nav-link-text">'+escapeHTML(nameFor(key))+'</span></button>').join("");
   return '<details class="nav-section '+(active?'contains-active':'')+'" data-nav-group="'+i+'" '+(open?'open':'')+'><summary class="nav-section-toggle" title="'+escapeHTML(group.label)+'" aria-label="'+escapeHTML(group.label)+'"><span class="nav-section-icon">'+iconMarkup(group.icon)+'</span><span class="nav-section-title">'+escapeHTML(group.label)+'</span><span class="nav-chevron">'+iconMarkup("chevron")+'</span></summary><div class="nav-section-items">'+entries+'</div></details>';
  }).join("");
- root.innerHTML=home+sections||'<p class="nav-no-results">Nenhum módulo encontrado.</p>';
+ root.innerHTML=home+docsShortcut+sections||'<p class="nav-no-results">Nenhum módulo encontrado.</p>';
 }
 function mobileSidebar(){return window.matchMedia("(max-width: 800px)").matches}
 function syncSidebarToggle(){
@@ -90,7 +92,7 @@ function header(key){
  el("logout").hidden=!user;
  el("login").hidden=!!user;
 }
-function title(key,subtitle,actions=""){return '<div class="page-heading"><div><span class="eyebrow">'+escapeHTML(groupFor(key)?.label||"GESTÃO INTEGRADA")+' · PROERG EM ITAIPU</span><h1>'+escapeHTML(nameFor(key))+'</h1><p>'+escapeHTML(subtitle)+'</p></div><div class="heading-actions">'+actions+'</div></div>'}
+function title(key,subtitle,actions=""){return '<div class="page-heading"><div><span class="eyebrow">'+escapeHTML(groupFor(key)?.label||(key==="document_center"?"DOCUMENTAÇÃO":"GESTÃO INTEGRADA"))+' · PROERG EM ITAIPU</span><h1>'+escapeHTML(nameFor(key))+'</h1><p>'+escapeHTML(subtitle)+'</p></div><div class="heading-actions">'+actions+'</div></div>'}
 function errorBanner(message){return '<div class="notice danger">'+escapeHTML(message)+'</div>'}
 function friendlyError(e){const msg=String(e?.message||e||"Erro inesperado.");if(/permission denied|row-level security|policy/i.test(msg))return "Acesso não autorizado. Confira o perfil e as políticas RLS do Supabase.";return msg}
 function setup(){nav();header("inicio");el("main").innerHTML='<section class="auth-wrap"><div class="auth-card"><span class="eyebrow">CONFIGURAÇÃO INICIAL</span><h1>Conecte seu projeto Supabase</h1><p>A interface foi reconstruída e ainda não possui credenciais públicas de conexão. Execute a migração SQL e configure <code>assets/config.js</code> com o <strong>Project URL</strong> e a <strong>publishable key</strong> do seu projeto.</p><div class="notice warning">Não publique senhas, service_role, secret keys ou dados de trabalhadores no repositório. O acesso aos dados exige autenticação e políticas RLS.</div><p>Leia o <a href="https://github.com/talia-projetos/siga-americas#configuracao-inicial" target="_blank" rel="noopener noreferrer"><strong>README de implantação ↗</strong></a>.</p></div></section>'}
@@ -357,7 +359,7 @@ function fieldValue(key,value){
     candidata:"Oportunidade",contemplada:"Contemplada",inviavel:"Inviável",cancelada:"Cancelada",
     impedida:"Impedida",impedido:"Impedido",glosada:"Glosada",ativo:"Ativo",encerrado:"Encerrado",
     aberta:"Aberta",em_aberto:"Em aberto",disponivel:"Disponível",atrasada:"Atrasada",
-    normal:"Normal",alta:"Alta",critica:"Crítica",bom:"Bom",requer_atencao:"Requer atenção",
+    normal:"Normal",alta:"Alta",critica:"Crítica",bom:"Bom",conferido:"Conferido",divergente:"Divergente",a_conferir:"A conferir",requer_atencao:"Requer atenção",
     em_manutencao:"Em manutenção",inutilizavel:"Inutilizável"
    };
    const display=v==="executada"&&app.page==="field_plan_items"?"Contemplada":labels[v]||v.replaceAll("_"," ");
@@ -637,7 +639,7 @@ function fieldInput(f,row){
  if(f.type==="select"){
   inp='<select'+attr+'><option value="">Selecione...</option>'+f.options.map(o=>'<option value="'+escapeHTML(o.value)+'"'+(String(o.value)===String(value)?' selected':'')+'>'+escapeHTML(o.label)+'</option>').join("")+'</select>';
  }else if(f.type==="ref"){
-  const options=app.refs[f.table]||[];
+  const options=(app.refs[f.table]||[]).filter(o=>f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"));
   inp='<select'+attr+'><option value="">Selecione...</option>'+options.map(o=>'<option value="'+escapeHTML(o.id)+'"'+(o.id===value?' selected':'')+'>'+escapeHTML(optionLabel(f.table,o.id,f.display))+'</option>').join("")+'</select>';
  }else if(f.type==="textarea"){
   inp='<textarea'+attr+'>'+escapeHTML(value)+'</textarea>';
@@ -656,26 +658,44 @@ async function openForm(id=null){
  app.editing=row?.id??null;
  el("modal-title").textContent=(row?"Editar":"Novo registro · ")+m.title;
  if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}
- el("modal-fields").innerHTML=m.fields.map(f=>fieldInput(f,row)).join("")+
+ el("modal-fields").innerHTML=(app.page==="field_execution_entries"?'<div class="execution-form-section-heading"><strong>Identificação e quantidade</strong><small>Informe a execução; a rubrica determina a referência de valor.</small></div>'+m.fields.slice(0,7).map(f=>fieldInput(f,row)).join("")+'<div class="execution-form-section-heading"><strong>Situação e conferência</strong><small>Resultado informado e conferência são informações distintas.</small></div>'+m.fields.slice(7,9).map(f=>fieldInput(f,row)).join("")+'<details class="execution-form-extras"'+(row?.id?" open":"")+'> <summary>Origem, evidências e observações <span>Complementar</span></summary><div class="execution-form-extras-fields">'+m.fields.slice(9).map(f=>fieldInput(f,row)).join("")+'</div></details>':m.fields.map(f=>fieldInput(f,row)).join(""))+
   (app.page==="field_execution_entries"?'<div class="field wide execution-valuation-preview" id="execution-valuation-preview" role="status"></div>':"")+
   (app.page==="field_routine_records"?'<div class="field wide" id="routine-photo-root"></div>':"");
  if(app.page==="field_routine_records"){
   routineEvidence=initRoutinePhotoField(el("routine-photo-root"),app.db,{recordId:row?.id||null,notify});
  }
  if(app.page==="field_execution_entries"){
+  const fields=el("modal-fields");
+  const activitySelect=fields.querySelector("#fld-activity_id");
+  const description=fields.querySelector("#fld-activity_label");
+  const priceSelect=fields.querySelector("#fld-contract_item_id");
+  const quantityInput=fields.querySelector("#fld-quantity");
+  const quantityWrap=quantityInput?.closest(".field");
+  const unitHint=document.createElement("small");
+  unitHint.className="execution-unit-hint";
+  unitHint.setAttribute("aria-live","polite");
+  quantityWrap?.appendChild(unitHint);
   const calculate=()=>{
-   const productId=el("modal-fields").querySelector("#fld-contract_item_id")?.value;
-   const quantity=Number(el("modal-fields").querySelector("#fld-quantity")?.value);
-   const price=(app.refs.contract_items||[]).find(x=>x.id===productId);
+   const price=(app.refs.contract_items||[]).find(x=>x.id===priceSelect?.value&&x.source_type==="precos");
+   const quantity=Number(quantityInput?.value);
    const preview=el("execution-valuation-preview");
    if(!preview)return;
+   unitHint.textContent=price?"Unidade contratual: "+(price.unit||"un"):"A unidade será definida pela rubrica selecionada.";
    const rate=price&&Number(price.unit_price);
    preview.textContent=price&&Number.isFinite(rate)&&quantity>0?
     "Preço contratual: "+currency(rate)+" / "+(price.unit||"un")+" · Valor potencial: "+currency(rate*quantity)+" · Medição pendente de conferência.":
     "Selecione a rubrica da planilha de preços e informe a quantidade para calcular o valor potencial.";
   };
-  el("modal-fields").querySelector("#fld-contract_item_id")?.addEventListener("change",calculate);
-  el("modal-fields").querySelector("#fld-quantity")?.addEventListener("input",calculate);
+  activitySelect?.addEventListener("change",()=>{
+   const activity=(app.refs.activity_catalog||[]).find(x=>x.id===activitySelect.value);
+   if(activity&&description&&(!description.value.trim()||description.dataset.autofilled==="1")){
+    description.value=[activity.code,activity.name].filter(Boolean).join(" · ");
+    description.dataset.autofilled="1";
+   }
+  });
+  description?.addEventListener("input",()=>{description.dataset.autofilled="0";});
+  priceSelect?.addEventListener("change",calculate);
+  quantityInput?.addEventListener("input",calculate);
   calculate();
  }
  el("modal-root").hidden=false;
@@ -703,6 +723,14 @@ async function saveRecord(e){
  }
  if(app.page==="field_routine_records"&&routineEvidence?.hasPending()){
   try{routineEvidence.validate();}catch(error){notify(error.message,true);return;}
+ }
+ if(["vehicles","equipment"].includes(app.page)){
+  if(app.page==="vehicles"&&![payload.plate,payload.chassis,payload.asset_tag].some(v=>String(v||"").trim())){
+   notify("Informe placa, chassi ou outra identificação inequívoca do veículo.",true);return;
+  }
+  if(payload.verification_status!=="a_conferir"&&(!payload.verified_on||!payload.verification_ref)){
+   notify("Para declarar conferência ou divergência, registre data e referência da evidência.",true);return;
+  }
  }
  if(app.page==="purchases"){
   const sectors=payload.sector_team_ids||[];

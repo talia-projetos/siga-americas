@@ -1256,3 +1256,74 @@
   padding-left:11px!important;font-size:9.5px!important;
  }
 }
+
+
+/* Execuções registradas: hierarquia estável e detalhes opcionais */
+#modal-fields .execution-form-section-heading{grid-column:1/-1;display:flex;flex-direction:column;gap:4px;padding:10px 0 8px;border-bottom:1px solid #dbe8dd}
+#modal-fields .execution-form-section-heading strong{color:#1b4a37;font-size:13px;font-weight:760}
+#modal-fields .execution-form-section-heading small{color:#6b8474;font-size:11px;line-height:1.45}
+#modal-fields .execution-form-extras{grid-column:1/-1;border:1px solid #dbe8df;border-radius:11px;background:#f8fbf9;overflow:hidden}
+#modal-fields .execution-form-extras>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;padding:14px 16px;color:#2b6348;font-size:12px;font-weight:740}
+#modal-fields .execution-form-extras>summary span{color:#779383;font-size:10px;font-weight:550}
+#modal-fields .execution-form-extras[open]>summary{border-bottom:1px solid #dce9df}
+#modal-fields .execution-form-extras-fields{padding:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+#modal-fields .execution-form-extras-fields .field.wide{grid-column:1/-1}
+@media(max-width:600px){#modal-fields .execution-form-extras-fields{grid-template-columns:1fr}}
+
+
+/* SIGA · navegação independente e tratamento cromático dos gráficos. */
+.sidebar .nav-home:not(.nav-standalone){margin-bottom:2px!important}
+.sidebar .nav-standalone{
+ margin-bottom:13px!important;
+ border-bottom:1px solid #e2eadf;
+ border-radius:9px;
+ min-height:44px;
+ font-weight:720;
+}
+.sidebar .nav-standalone .nav-home-icon{color:#647d72!important}
+.sidebar .nav-standalone.active{
+ background:#e8efeb!important;
+ color:#354f44!important;
+ border-color:#d5e1da!important;
+ box-shadow:inset 3px 0 0 #60796e!important;
+}
+.sidebar .nav-standalone.active .nav-home-icon{color:#526e62!important}
+:root{
+ --chart-sage:#60796e;
+ --chart-slate:#7d9097;
+ --chart-clay:#a3988b;
+ --chart-track:#edf0eb;
+}
+#main .analytics-bar-track,
+#main .catalog-chart-track{background:var(--chart-track)}
+#main .catalog-chart-fill{background:var(--chart-sage);background-image:none}
+#main .execution-progress-track{background:var(--chart-track)}
+#main .execution-progress-track span{background:var(--chart-sage)}
+#main .analytics-panel-action{
+ background:#eff2ee;
+ border-color:#e0e7df;
+ color:#5e786b;
+}
+#main .analytics-panel-action:hover{background:#e5ebe5;color:#415f52}
+#main .analytics-kicker{color:#668173}
+#main .analytics-panel-foot{background:#f9faf8}
+#main .analytics-bar-value,#main .analytics-legend-row strong{color:#344d42}
+#modal-fields .execution-unit-hint{
+ display:block;
+ margin:2px 1px 0;
+ font-size:11px;
+ line-height:1.5;
+ color:#6b8177;
+}
+
+
+/* Patrimônio: hierarquia de quantidades e identificação individual. */
+.inventory-asset-section{margin-top:18px;border:1px solid #dfe7e0;border-radius:13px;background:#fff;overflow:hidden}
+.inventory-asset-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 20px;border-bottom:1px solid #e8eee9}
+.inventory-asset-heading h3{margin:5px 0 4px;font-size:15px;color:#344d42}
+.inventory-asset-heading p{max-width:650px;margin:0;font-size:12px;line-height:1.55;color:#6b8176}
+.inventory-asset-heading .btn{min-height:39px;white-space:normal}
+.inventory-asset-empty{padding:20px;margin:0;font-size:12px;color:#6a7f71;line-height:1.6}
+.inventory-asset-section .data-table th{background:#f4f7f3}
+.inventory-asset-section .table-scroll{max-width:100%;overflow-x:auto}
+@media(max-width:680px){.inventory-asset-heading{padding:16px}.inventory-asset-heading .btn{width:100%;justify-content:center}.inventory-asset-section .data-table{min-width:650px}}
