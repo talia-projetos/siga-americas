@@ -488,11 +488,26 @@ function closeForm(){el("modal-root").hidden=true;app.editing=null}
 async function saveRecord(e){
  e.preventDefault();if(app.busy)return;
  const m=modules[app.page],fd=new FormData(e.target),payload={};
- for(const f of m.fields){if(f.type==="boolean"){payload[f.key]=Boolean(e.target.elements[f.key].checked);continue;}
+ for(const f of m.fields){
+  if(f.type==="multi_ref"){
+   const ids=fd.getAll(f.key).map(String);
+   const valid=(app.refs[f.table]||[]).map(t=>t.id);
+   if(ids.length!==new Set(ids).size||ids.some(id=>!valid.includes(id))){
+    notify("Seleção de setores inválida. Confira os setores cadastrados.",true);return;
+   }
+   payload[f.key]=ids;
+   continue;
+  }
+  if(f.type==="boolean"){payload[f.key]=Boolean(e.target.elements[f.key].checked);continue;}
   let value=String(fd.get(f.key)??"").trim();if(f.required&&!value){notify("Preencha o campo: "+f.label,true);return;}
   if(value===""){payload[f.key]=null;continue;}
   payload[f.key]=f.type==="number"?Number(value):value;
   if(f.type==="number"&&!Number.isFinite(payload[f.key])){notify("Valor numérico inválido: "+f.label,true);return;}
+ }
+ if(app.page==="purchases"){
+  const sectors=payload.sector_team_ids||[];
+  // Compatibilidade: mantém team_id apenas quando um único setor foi selecionado.
+  payload.team_id=sectors.length===1?sectors[0]:null;
  }
  if(app.page==="contract_items"&&payload.source_type!=="precos"){notify("Use exclusivamente a planilha de preços neste módulo.",true);return;}
  if(app.page==="field_plan_items"&&!(app.refs.activity_catalog||[]).some(item=>item.id===payload.activity_id&&isProgrammableAction(item.code))){
