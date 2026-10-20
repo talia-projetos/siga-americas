@@ -5,7 +5,7 @@ import {iconMarkup} from "./icons.js?v=2";
 import {renderDashboardAnalytics} from "./analytics.js?v=4";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
 import {mountInventoryCheck} from "./resource-check.js?v=2";
-import {mountUniformManager} from "./uniform-bulk.js?v=5";
+import {mountUniformManager} from "./uniform-bulk.js?v=6";
 import {mountFieldReport} from "./field-forms.js?v=3";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 
