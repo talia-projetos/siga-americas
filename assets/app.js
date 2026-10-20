@@ -190,7 +190,7 @@ async function dashboard(){
 }
 async function ensureRefs(key){
  const mod=modules[key];if(!mod?.fields)return;
- const tables=[...new Set([...mod.fields.filter(f=>f.type==="ref").map(f=>f.table),...(key==="field_plan_items"?["operational_areas"]:[]),...(key==="field_routine_records"?["service_posts"]:[])])];
+ const tables=[...new Set([...mod.fields.filter(f=>["ref","multi_ref"].includes(f.type)).map(f=>f.table),...(key==="field_plan_items"?["operational_areas"]:[]),...(key==="field_routine_records"?["service_posts"]:[])])];
  const fetches=tables.filter(table=>!app.refs[table]).map(async table=>{
   let lookup=app.db.from(table).select("*").order("created_at",{ascending:false});
   if(table==="contract_items")lookup=lookup.eq("source_type","precos");
