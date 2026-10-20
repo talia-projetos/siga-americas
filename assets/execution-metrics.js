@@ -8,7 +8,7 @@ const monthBR=m=>new Date(m+"-01T12:00:00").toLocaleDateString("pt-BR",{month:"l
 const counted=r=>r.execution_status!=="cancelada"&&r.validation_status!=="glosada";
 export function monthlyExecution(entries,goals,month,matrix=[]){
  const rows=(entries||[]).filter(r=>String(r.performed_on||"").slice(0,7)===month);
- const target=Number((goals||[]).find(g=>String(g.period_month||"").slice(0,7)===month)?.target_amount??700000);
+ const target=Number((goals||[]).find(g=>String(g.period_month||"").slice(0,7)===month)?.target_amount??500000);
  const included=rows.filter(counted);
  const executed=included.filter(r=>r.execution_status==="executada");
  const matrixIds=new Set((matrix||[]).map(r=>r.id));
@@ -23,7 +23,7 @@ export function renderFinancialIndicator(entries,goals,month,compact=false,matri
  const boxes=[
   ["Valor potencial registrado",money(m.estimated),"Execução informada, ainda sujeita à conferência"],
   ["Meta-base mensal",money(m.target),"Referência gerencial, não receita garantida"],
-  ["Atingimento estimado",numeric(m.pct)+"%","Do objetivo gerencial do mês"],
+  ["Relação potencial / meta",numeric(m.pct)+"%","Não representa faturamento efetivo"],
   ["Diferença para a meta",money(m.remaining),"Sem projetar dias ainda não registrados"]
  ];
  return '<section class="execution-finance" aria-label="Métricas financeiras da produção registrada">'+
@@ -34,11 +34,11 @@ export function renderFinancialIndicator(entries,goals,month,compact=false,matri
     '<div class="metric"><div class="metric-header">'+escape(name)+'</div><strong>'+escape(value)+'</strong><small>'+escape(hint)+'</small></div>').join('')+'</div>'+
   '<div class="execution-goal-progress"><div><strong>Meta-base: '+escape(money(m.target))+'</strong><span>'+escape(numeric(m.pct))+'% do valor potencial registrado</span></div>'+
   '<div class="execution-progress-track"><span style="width:'+pct.toFixed(2)+'%"></span></div>'+
-  '<div class="execution-finance-detail"><strong>'+m.executionCount+' execuções registradas</strong>'+
-  '<span>'+m.executedActivities+' de '+m.matrixTotal+' itens da matriz de atividades com execução neste mês</span>'+
-  '<span>'+m.pending+' registros aguardam conferência documental</span>'+
-  (m.validated>0?'<span>Valor tecnicamente validado: '+money(m.validated)+'</span>':'<span>Validação técnica ainda não concluída</span>')+
-  '<span>Medição aprovada e faturamento não são controlados neste indicador.</span></div></div></section>';
+  '<div class="execution-finance-detail"><strong>'+m.executionCount+' apontamentos de execução cadastrados</strong>'+
+  '<span>'+m.executedActivities+' de '+m.matrixTotal+' atividades da matriz com apontamentos neste mês</span>'+
+  '<span>'+m.pending+' registros pendentes de conferência técnica/documental</span>'+
+  (m.validated>0?'<span>Valor tecnicamente validado: '+money(m.validated)+'</span>':'<span>Nenhum valor tecnicamente validado neste indicador</span>')+
+  '<span>Apontamento não comprova entrega, medição aceita ou faturamento.</span></div></div></section>';
 }
 export function renderExecutionTable(entries,month){
  const rows=(entries||[]).filter(r=>String(r.performed_on||"").slice(0,7)===month)
