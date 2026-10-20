@@ -7,6 +7,31 @@ const R=6371008.8;
 const METER=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2});
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const n=x=>METER.format(x);
+// Uma cor exclusiva por área identificada no KML institucional, sem alterar o traçado.
+const areaPalette={
+ "area da central hidreletrica de itaipu - br":"#FFDA45",
+ "pti":"#58B5FF",
+ "vila a":"#38E089",
+ "vila b":"#FF9652",
+ "vila c":"#B794FF",
+ "rbv 1":"#34D7E0",
+ "rbv 2":"#FA7DB1",
+ "rbv 3":"#D9F36A",
+ "rbv 4":"#FB735E",
+ "centro executivo e gramadao":"#EE7AEE"
+};
+const fallbackPalette=["#65CDF8","#F6B55E","#7BE0A5","#E697F4","#EAD55D","#F68F94","#97C5FF"];
+const areaKey=value=>String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+ .replace(/["']/g,"").toLowerCase().replace(/\s+/g," ").trim();
+const featureName=(feature,layer)=>String(feature?.properties?.name||feature?.properties?.Name||
+ feature?.properties?.trecho||layer?.name||"Geometria sem nome").trim();
+const areaColor=name=>{
+ const key=areaKey(name);
+ if(areaPalette[key])return areaPalette[key];
+ let hash=0;for(const char of key)hash=(hash*31+char.charCodeAt(0))>>>0;
+ return fallbackPalette[hash%fallbackPalette.length];
+};
+const colorForFeature=(feature,layer)=>areaColor(featureName(feature,layer));
 const countryBounds=p=>Array.isArray(p)&&p.length>=2&&Number.isFinite(p[0])&&Number.isFinite(p[1])&&
  p[0]>-55.2&&p[0]<-54.05&&p[1]>-26.0&&p[1]<-24.9;
 function haversine(a,b){
@@ -112,7 +137,9 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   (canWrite?'<button type="button" class="btn btn-secondary" data-open-import>Importar KML / KMZ</button>':"")+
  '</div>'+
  '<div class="coverage-map-layout"><div class="coverage-map-canvas" data-map role="region" aria-label="Mapa interativo das frentes operacionais da PROERG em Itaipu"></div>'+
- '</div>'+
+ '<details class="coverage-map-legend" data-legend open><summary>'+iconMarkup("layers")+
+ ' Áreas do KML <span data-legend-count></span>'+iconMarkup("chevrondown")+'</summary>'+
+ '<div class="coverage-map-legend-items" data-legend-list></div></details></div>'+
  '<div class="coverage-map-import" data-import-panel hidden>'+
   '<h3>Importar geometria para conferência contratual</h3>'+
   '<p>Formato KML, KMZ ou GeoJSON em WGS84 · EPSG:4326. Indique a fonte e o vínculo à matriz de 73 atividades. A geometria será armazenada e poderá ser consultada por outras contas autorizadas.</p>'+
@@ -123,7 +150,6 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    '<label>Arquivo KML/KMZ/GeoJSON<input type="file" data-layer-file accept=".kml,.kmz,.json,.geojson"></label></div>'+
   '<div class="coverage-map-import-actions"><button class="btn btn-primary" type="button" data-layer-save>Salvar camada georreferenciada</button>'+
   '<button class="btn btn-ghost" type="button" data-import-close>Cancelar</button></div></div>'+
- '<div class="coverage-map-footer"><strong>Referências no contrato:</strong> 73 atividades na matriz; postos institucionais e frentes de serviço conforme registros cadastrados. As áreas institucionais do KML são referências geográficas, não confirmação de cobertura contratual. Ciclovia: 4,8 km publicados; linha ainda sem levantamento validado. <span data-provider-warning></span></div>'+
  '</section>';
  const q=s=>root.querySelector(s);let layers=[],map=null,engine="leaflet",drawn=[],googleData=[],destroyed=false,resizeObserver=null,resizeFrame=0;
  const mapDiv=q("[data-map]");
@@ -159,12 +185,31 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  };
  applyBase("satellite");
  maps.control.scale({metric:true,imperial:false}).addTo(map);
- const colorFor=l=>l.category==="ponto"?"#f1ba62":l.category==="trecho"?"#22ac81":"#4c8ae5";
+ const legend=q("[data-legend]");
+ if(window.matchMedia?.("(max-width: 600px)").matches)legend.open=false;
+ function paintLegend(){
+  const items=new Map();
+  for(const layer of layers.filter(entry=>entry.geometry)){
+   for(const feature of layer.geometry.features||[]){
+    if(!feature.geometry)continue;
+    const name=featureName(feature,layer),key=areaKey(name);
+    if(!items.has(key))items.set(key,{name,color:areaColor(name)});
+   }
+  }
+  legend.hidden=!items.size;
+  q("[data-legend-count]").textContent=items.size?"("+items.size+")":"";
+  q("[data-legend-list]").innerHTML=[...items.values()].map(entry=>
+   '<div class="coverage-map-legend-entry"><span class="coverage-map-legend-line" style="--legend-color:'+
+   entry.color+'" aria-hidden="true"></span><span>'+esc(entry.name)+'</span></div>'
+  ).join("");
+ }
  function addGeoToLeaflet(l){
   if(!l.geometry)return;
   const layer=maps.geoJSON(l.geometry,{
-   style:()=>({color:colorFor(l),weight:4,fillColor:"#25a779",fillOpacity:.24}),
-   pointToLayer:(feature,latlng)=>maps.circleMarker(latlng,{radius:7,color:"#fff",weight:2,fillColor:colorFor(l),fillOpacity:.95}),
+   style:feature=>({color:colorForFeature(feature,l),weight:3,opacity:1,fill:false,fillOpacity:0}),
+   pointToLayer:(feature,latlng)=>maps.circleMarker(latlng,{
+    radius:7,color:colorForFeature(feature,l),weight:3,opacity:1,fill:false,fillOpacity:0
+   }),
    onEachFeature:(feature,item)=>{
     item.bindPopup('<strong>'+esc(feature.properties?.name||l.name)+'</strong><br>'+
       esc(l.source_name||"KML fornecido")+'<br>Geometria ainda não validada pelo contrato.');
@@ -182,11 +227,20 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  function addGoogleData(l){
   const mapData=new google.maps.Data({map:gMap});
   mapData.addGeoJson(l.geometry);
-  mapData.setStyle({strokeColor:colorFor(l),strokeWeight:4,fillColor:"#26a879",fillOpacity:.25});
+  mapData.setStyle(feature=>({
+   strokeColor:areaColor(feature.getProperty("name")||feature.getProperty("Name")||
+    feature.getProperty("trecho")||l.name),
+   strokeWeight:3,strokeOpacity:1,fillOpacity:0
+  }));
+  mapData.addListener("click",event=>{
+   const name=event.feature.getProperty("name")||event.feature.getProperty("Name")||l.name;
+   new google.maps.InfoWindow({content:'<strong>'+esc(name)+'</strong>',position:event.latLng}).open({map:gMap});
+  });
   googleData.push({id:l.id,layer:mapData});
  }
  function draw(){
   const geo=layers.filter(l=>l.geometry);
+  paintLegend();
   const polygons=geo.reduce((total,l)=>total+(l.geometry.features||[]).reduce((count,f)=>
    count+(f.geometry?.type==="Polygon"?1:f.geometry?.type==="MultiPolygon"?f.geometry.coordinates.length:0),0),0);
   q("[data-count]").textContent=polygons?polygons+" áreas georreferenciadas":geo.length+" camada(s) com geometria";
@@ -267,8 +321,6 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  layers=result.data||[];
  if(destroyed)return ()=>{};
  draw();
- q("[data-provider-warning]").textContent=GOOGLE_MAPS_BROWSER_KEY?"Google Satélite disponível pela API configurada.":
-  "Google Satélite integrado exige chave de API autorizada; mapa inicia com satélite Esri.";
  syncMapSize();
  return ()=>{destroyed=true;resizeObserver?.disconnect();if(resizeFrame)cancelAnimationFrame(resizeFrame);if(map){map.remove();map=null;}for(const g of googleData)g.layer.setMap(null);};
 }
