@@ -40,7 +40,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
       r.delivered_on>=start&&r.delivered_on<end);
  }
  function eligibleVisible(){return allFiltered().filter(e=>!alreadyReceived(e.id));}
- function itemSizes(e){return state.sizes.get(e.id)||{shirt_size:e.shirt_size||"",pants_size:e.pants_size||""}}
+ function itemSizes(e){return state.sizes.get(e.id)||{shirt_size:e.shirt_size||"",pants_size:e.pants_size||"",shoe_size:e.shoe_size||"",jacket_size:e.jacket_size||""}}
  function complete(e){const sizes=itemSizes(e);return validSize(sizes.shirt_size)&&validSize(sizes.pants_size)}
  function prepared(){return state.employees.filter(e=>state.selected.has(e.id))}
  function chosenReady(){return prepared().filter(e=>!alreadyReceived(e.id)&&complete(e))}
@@ -86,12 +86,12 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
     '<td><label class="uniform-person-checkbox"><input type="checkbox" data-uniform-select="'+safe(e.id)+'" '+(isSelected?'checked ':'')+(already?'disabled ':'')+' aria-label="Selecionar '+safe(e.name)+'"><span class="uniform-person-name">'+safe(e.name)+'</span></label><small class="uniform-person-team">'+safe(team?team.code+" · "+team.name:"Equipe não informada")+'</small></td>'+
     '<td><input type="text" class="uniform-size" data-uniform-shirt="'+safe(e.id)+'" list="uniform-shirt-sizes" maxlength="12" placeholder="PP, P, M, G…" value="'+safe(sizes.shirt_size)+'" aria-label="Tamanho de camisa de '+safe(e.name)+'"></td>'+
     '<td><input type="text" class="uniform-size" data-uniform-pants="'+safe(e.id)+'" list="uniform-pants-sizes" maxlength="24" placeholder="Ex.: 42" value="'+safe(pantsInfo(sizes.pants_size).size)+'" aria-label="Tamanho de calça de '+safe(e.name)+'"></td>'+
-    '<td><span class="uniform-extra-size">'+safe(e.shoe_size||"—")+'</span></td>'+
-    '<td><span class="uniform-extra-size">'+safe(e.jacket_size||"—")+'</span></td>'+
+    '<td><input type="text" class="uniform-size" data-uniform-shoe="'+safe(e.id)+'" maxlength="12" placeholder="Ex.: 40" value="'+safe(sizes.shoe_size)+'" aria-label="Número de botina de '+safe(e.name)+'"></td>'+
+    '<td><input type="text" class="uniform-size" data-uniform-jacket="'+safe(e.id)+'" maxlength="12" placeholder="Ex.: G" value="'+safe(sizes.jacket_size)+'" aria-label="Tamanho de jaqueta de '+safe(e.name)+'"></td>'+
     '<td><span class="uniform-observation">'+safe(pantsInfo(sizes.pants_size).note||"—")+'</span></td>'+
     '<td>'+label+'</td></tr>';
   }).join("");
-  return '<section class="table-panel uniform-roster"><div class="table-head"><div><h2>Tamanhos por colaborador</h2><span>'+number(people.length)+' exibido(s) · Camisa e calça editáveis aqui; botina e jaqueta editáveis no cadastro de Colaboradores. Salvar tamanhos não registra entrega.</span></div></div>'+
+  return '<section class="table-panel uniform-roster"><div class="table-head"><div><h2>Tamanhos por colaborador</h2><span>'+number(people.length)+' exibido(s) · Camisa, calça, botina e jaqueta editáveis nesta tabela. Salvar tamanhos não registra entrega.</span></div></div>'+
   '<div class="table-scroll"><table class="data-table"><thead><tr><th>Colaborador</th><th>Camisa</th><th>Calça</th><th>Botina</th><th>Jaqueta</th><th>Observação</th><th>Situação no ciclo</th></tr></thead><tbody>'+
    (rows||'<tr><td colspan="7" class="uniform-empty">Nenhum colaborador encontrado.</td></tr>')+'</tbody></table></div></section>';
  }
@@ -199,7 +199,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
   state.employees=employees.filter(e=>e.active!==false).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
   state.teams=teams.filter(t=>t.active!==false).sort((a,b)=>String(a.code).localeCompare(String(b.code),"pt-BR"));
   state.batches=batches;state.recipients=recipients;state.deliveries=deliveries;
-  for(const employee of state.employees){if(!state.dirty.has(employee.id))state.sizes.set(employee.id,{shirt_size:employee.shirt_size||"",pants_size:employee.pants_size||""})}
+  for(const employee of state.employees){if(!state.dirty.has(employee.id))state.sizes.set(employee.id,{shirt_size:employee.shirt_size||"",pants_size:employee.pants_size||"",shoe_size:employee.shoe_size||"",jacket_size:employee.jacket_size||""})}
   for(const id of [...state.selected])if(!state.employees.some(e=>e.id===id))state.selected.delete(id);
   draw();
  }
@@ -253,7 +253,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
   finally{state.busy=false;}
  }
  function updateSize(id,kind,value){
-  const old=state.sizes.get(id)||{shirt_size:"",pants_size:""};
+  const old=state.sizes.get(id)||{shirt_size:"",pants_size:"",shoe_size:"",jacket_size:""};
   state.sizes.set(id,{...old,[kind]:value.trim().toUpperCase()});
   state.dirty.add(id);state.preview=false;
  }
@@ -261,6 +261,8 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
   const target=event.target;
   if(target.matches("[data-uniform-shirt]")){updateSize(target.dataset.uniformShirt,"shirt_size",target.value);return}
   if(target.matches("[data-uniform-pants]")){updateSize(target.dataset.uniformPants,"pants_size",target.value);return}
+  if(target.matches("[data-uniform-shoe]")){updateSize(target.dataset.uniformShoe,"shoe_size",target.value);return}
+  if(target.matches("[data-uniform-jacket]")){updateSize(target.dataset.uniformJacket,"jacket_size",target.value);return}
   if(target.id==="uniform-search"){
    const caret=target.selectionStart;
    state.search=target.value;
@@ -285,7 +287,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
    if(t.checked)state.selected.add(t.dataset.uniformSelect);else state.selected.delete(t.dataset.uniformSelect);
    state.preview=false;state.requestToken=null;draw();return;
   }
-  if(t.matches("[data-uniform-shirt],[data-uniform-pants]")){draw();return}
+  if(t.matches("[data-uniform-shirt],[data-uniform-pants],[data-uniform-shoe],[data-uniform-jacket]")){draw();return}
   if(t.id==="uniform-team"){state.team=t.value;state.preview=false;draw();return}
   if(t.id==="uniform-cycle"){state.cycle=t.value;state.selected.clear();state.preview=false;state.requestToken=null;draw();return}
   if(t.id==="uniform-date"){state.day=t.value;return}
