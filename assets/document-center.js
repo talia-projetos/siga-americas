@@ -41,12 +41,12 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
  const selected=()=>records().filter(x=>state.selected.has(idKey(x.kind,x.r.id)));
  function printPreview(){
   return '<div class="doc-templates-preview">'+
-   '<div class="doc-preview-card"><div class="doc-preview-top">PROERG <span> SIGA AMÉRICAS</span></div>'+
-    '<div class="doc-preview-divider"></div><small>GESTÃO CONTRATUAL · ITAIPU</small><h3>ORDEM DE SERVIÇO</h3>'+
+   '<div class="doc-preview-card"><div class="doc-preview-top">PROERG <span> Sistema SIGA Américas</span></div>'+
+    '<div class="doc-preview-divider"></div><small>SISTEMA DE GESTÃO DA PROERG EM ITAIPU</small><h3>ORDEM DE SERVIÇO</h3>'+
     '<p>Identificação · Frente operacional · Equipe · Prazo · Atividade da matriz · Descrição da demanda</p>'+
     '<div class="doc-preview-lines"></div><div class="doc-preview-sign">____________________　　____________________<br>Supervisão　　　　　　　Equipe / responsável</div></div>'+
-   '<div class="doc-preview-card"><div class="doc-preview-top">PROERG <span> SIGA AMÉRICAS</span></div>'+
-    '<div class="doc-preview-divider"></div><small>GESTÃO CONTRATUAL · ITAIPU</small><h3>TERMO DE RESPONSABILIDADE</h3>'+
+   '<div class="doc-preview-card"><div class="doc-preview-top">PROERG <span> Sistema SIGA Américas</span></div>'+
+    '<div class="doc-preview-divider"></div><small>SISTEMA DE GESTÃO DA PROERG EM ITAIPU</small><h3>TERMO DE RESPONSABILIDADE</h3>'+
     '<p>Responsável · Bem designado · Condições · Guarda e devolução · Assinaturas</p>'+
     '<div class="doc-preview-lines"></div><div class="doc-preview-sign">____________________　　____________________<br>Responsável　　　　　　　Representante</div></div>'+
    '</div>';
@@ -54,7 +54,7 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
  function refreshUI(){
   if(!root.isConnected)return;
   const rows=filtered(),chosen=selected(),totals=records();
-  root.innerHTML='<section class="document-guide"><div class="document-guide-head"><div><span class="eyebrow">SIGA AMÉRICAS · PROERG / ITAIPU</span>'+
+  root.innerHTML='<section class="document-guide"><div class="document-guide-head"><div><span class="eyebrow">SIGA AMÉRICAS · GESTÃO DA PROERG EM ITAIPU</span>'+
    '<h2>Central de documentos e impressões</h2><p>Registre a OS ou o termo no cadastro, selecione os documentos e emita Word e PDF para assinatura física. Impressão e assinaturas não são presumidas.</p></div>'+
    '<div class="document-total">'+totals.length+'<small>documentos cadastrados</small></div></div>'+
    '<div class="document-actions"><button type="button" class="btn btn-primary" data-doc-new="os" '+(canWrite?"":"disabled")+'>+ Nova ordem de serviço</button>'+
