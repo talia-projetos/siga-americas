@@ -1016,3 +1016,25 @@
  .dashboard-field-alert-card{align-items:stretch;flex-direction:column;padding:13px}
  .dashboard-field-alert-card .btn{width:100%;white-space:normal}
 }
+
+
+/* Mapa da Visão geral: ocupação integral da janela, sem listagem lateral. */
+#dashboard-coverage-map .coverage-map-layout{display:block!important;width:100%;max-width:100%;
+ grid-template-columns:minmax(0,1fr)!important;height:330px!important;min-height:0!important;max-height:330px!important}
+#dashboard-coverage-map .coverage-map-layout>.coverage-map-canvas,
+#dashboard-coverage-map .coverage-map-canvas.leaflet-container{height:330px!important;max-height:330px!important;width:100%!important;min-height:0!important;max-width:100%!important}
+#dashboard-coverage-map .coverage-map-sidebar{display:none!important}
+#dashboard-coverage-map .coverage-map-count{white-space:normal}
+.team-search-cell{display:grid;gap:6px;min-width:0}
+.team-search-cell strong{font-size:12px;color:#294d35}
+.team-search-cell small{font-size:10.5px;color:#667e6b;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:800px){
+ #dashboard-coverage-map .coverage-map-layout{height:275px!important;max-height:275px!important}
+ #dashboard-coverage-map .coverage-map-canvas,
+ #dashboard-coverage-map .coverage-map-canvas.leaflet-container{height:275px!important;max-height:275px!important;flex:auto!important}
+}
+@media(max-width:550px){
+ #dashboard-coverage-map .coverage-map-layout{height:245px!important;max-height:245px!important}
+ #dashboard-coverage-map .coverage-map-canvas,
+ #dashboard-coverage-map .coverage-map-canvas.leaflet-container{height:245px!important;max-height:245px!important}
+}
