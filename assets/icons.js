@@ -46,7 +46,7 @@ const paths={
 export const moduleIcons={
  inicio:"dashboard",field_report:"clipboard",field_monitor:"people",resource_check:"check",coverage:"target",contract_suggestions:"target",field_execution_entries:"log",field_programs:"calendar",field_plan_items:"clipboard",
  field_routine_templates:"repeat",field_routine_records:"log",activity_catalog:"catalog",
- work_orders:"list",service_posts:"pin",contracts:"contract",contract_items:"book",obligations:"check",
+ work_orders:"list",document_center:"file",service_posts:"pin",contracts:"contract",contract_items:"book",obligations:"check",
  contract_resource_requirements:"requirements",areas:"layers",teams:"people",employees:"user",
  ppe_items:"hardhat",ppe_deliveries:"shield",uniform_deliveries:"shirt",vehicles:"truck",
  fuel_logs:"fuel",equipment:"wrench",responsibility_terms:"file",maintenance:"repair",
