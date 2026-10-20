@@ -86,7 +86,19 @@ export async function mountFieldMonitor(root,db,{user,notify}){
     const {data,error}=await db.from("field_daily_reports").update({status:state,supervisor_notes:note||null,reviewed_at:new Date().toISOString(),reviewed_by:user.id}).eq("id",id).select("id,status,supervisor_notes").single();
     if(error){notify(error.message,true);b.disabled=false;return}
     Object.assign(report,data);notify(state==="validado"?"Relatório validado pela supervisão.":"Relatório devolvido para ajuste.");
+    // Preserva a seleção de data, equipe, situação e a posição após a validação.
+    const workspace=root.closest(".workspace"),main=root.closest("#main");
+    const y=window.scrollY,workY=workspace?.scrollTop||0,mainY=main?.scrollTop||0;
+    const tableLeft=root.querySelector(".monitor-list .table-scroll")?.scrollLeft||0;
     refresh();
+    requestAnimationFrame(()=>{
+     if(!root.isConnected)return;
+     if(workspace)workspace.scrollTop=workY;
+     if(main)main.scrollTop=mainY;
+     const table=root.querySelector(".monitor-list .table-scroll");
+     if(table)table.scrollLeft=tableLeft;
+     window.scrollTo(0,y);
+    });
    }));
   }catch(e){target.innerHTML='<div class="notice danger">'+esc(e.message)+'</div>'}
  }

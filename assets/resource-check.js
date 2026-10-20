@@ -76,8 +76,23 @@ export async function mountInventoryCheck(root,db,{notify}){
    const payload={observed_quantity:Number(value),inventory_note:note||null,quantity_checked_at:new Date().toISOString()};
    const result=await db.from("contract_resource_requirements").update(payload).eq("id",item.id).select("id,observed_quantity,inventory_note,quantity_checked_at").single();
    if(result.error){notify(result.error.message,true);btn.disabled=false;btn.textContent="Salvar";return;}
-   Object.assign(item,result.data);notify("Quantidade de "+item.item_name+" registrada.");draw();
+   Object.assign(item,result.data);notify("Quantidade de "+item.item_name+" registrada.");redrawKeepingPosition();
   }));
+ }
+ // Ao atualizar uma linha, manter aba, pesquisa, fornecedor e posição na lista.
+ function redrawKeepingPosition(){
+  const workspace=root.closest(".workspace"),main=root.closest("#main");
+  const winY=window.scrollY,workY=workspace?.scrollTop||0,mainY=main?.scrollTop||0;
+  const left=root.querySelector(".inventory-table-wrap .table-scroll")?.scrollLeft||0;
+  draw();
+  requestAnimationFrame(()=>{
+   if(!root.isConnected)return;
+   if(workspace)workspace.scrollTop=workY;
+   if(main)main.scrollTop=mainY;
+   const table=root.querySelector(".inventory-table-wrap .table-scroll");
+   if(table)table.scrollLeft=left;
+   window.scrollTo(0,winY);
+  });
  }
  draw();
 }
