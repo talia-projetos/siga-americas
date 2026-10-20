@@ -96,7 +96,7 @@
 
 /* Grade completa da relação de setembro: tamanhos sem vincular a entrega. */
 .uniform-roster .data-table{width:100%!important;min-width:0!important;table-layout:fixed!important}
-.uniform-roster .data-table th:first-child{width:27%;min-width:0}
+.uniform-roster .data-table th:first-child{width:23%;min-width:0}
 .uniform-roster .data-table th:nth-child(2),
 .uniform-roster .data-table th:nth-child(3){width:14%}
 .uniform-roster .data-table th:nth-child(4),
