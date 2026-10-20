@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" fill="none">
+ <title>Folha decorativa</title>
+ <g stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M151 704C72 498 158 267 391 163c137-61 299-74 392-56-19 113-81 293-194 433-153 191-305 246-438 164Z" fill="#FFFFFF" fill-opacity=".24" stroke-width="5"/>
+  <path d="M142 770c135-255 338-465 598-614" stroke-width="19"/>
+  <path d="M330 474c-10-116-20-174-58-231M448 352c4-87 9-150-3-212M552 273c38-58 59-96 75-133M249 618c-26-70-58-126-103-175" stroke-width="10"/>
+  <path d="M281 553c113 6 201 0 291-25M420 417c129-3 201-20 267-64M550 304c66-10 104-21 144-45" stroke-width="10"/>
+ </g>
+</svg>
