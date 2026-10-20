@@ -8,19 +8,21 @@ const METER=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2});
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const n=x=>METER.format(x);
 // Uma cor exclusiva por área identificada no KML institucional, sem alterar o traçado.
+// Cartografia SIGA: materiais e paisagens de Itaipu (ardósia, musgo, terra,
+// aço e madeira). Tonalidades sóbrias, suficientemente distintas sobre satélite.
 const areaPalette={
- "area da central hidreletrica de itaipu - br":"#FFDA45",
- "pti":"#58B5FF",
- "vila a":"#38E089",
- "vila b":"#FF9652",
- "vila c":"#B794FF",
- "rbv 1":"#34D7E0",
- "rbv 2":"#FA7DB1",
- "rbv 3":"#D9F36A",
- "rbv 4":"#FB735E",
- "centro executivo e gramadao":"#EE7AEE"
+ "area da central hidreletrica de itaipu - br":"#C5B58C", // areia / concreto
+ "pti":"#80A8B7",                           // aço azulado
+ "vila a":"#86B38F",                        // verde-mata
+ "vila b":"#C49573",                        // argila
+ "vila c":"#9D98B1",                        // ardósia violeta
+ "rbv 1":"#72A69F",                         // petróleo esverdeado
+ "rbv 2":"#B7A587",                         // pedra terrosa
+ "rbv 3":"#AAB57D",                         // oliva
+ "rbv 4":"#B77E73",                         // óxido / ferrugem
+ "centro executivo e gramadao":"#9AB0A8" // cinza-sálvia
 };
-const fallbackPalette=["#65CDF8","#F6B55E","#7BE0A5","#E697F4","#EAD55D","#F68F94","#97C5FF"];
+const fallbackPalette=["#85ABA2","#BCA785","#8FAFB7","#AB967B","#9DAF83","#9C98B1","#BA897C"];
 const areaKey=value=>String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
  .replace(/["']/g,"").toLowerCase().replace(/\s+/g," ").trim();
 const featureName=(feature,layer)=>String(feature?.properties?.name||feature?.properties?.Name||
