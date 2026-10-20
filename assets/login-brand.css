@@ -54,7 +54,7 @@ body.auth-locked .auth-wrap{
 }
 body.auth-locked .auth-card{
  position:relative;z-index:1;
- padding:29px 39px 36px;
+ padding:25px 39px 36px;
  border:1px solid rgba(233,242,233,.94);
  background:#fff;
  border-radius:20px;
@@ -71,14 +71,14 @@ body.auth-locked .auth-brand-stack{
  display:flex;
  flex-direction:column;
  align-items:center;
- gap:5px;
- margin:0 0 19px;
+ gap:10px;
+ margin:0 0 23px;
 }
 body.auth-locked .auth-company{
  position:relative;
  display:block;
  flex:0 0 auto;
- width:174px;height:40px;
+ width:150px;height:34px;
  overflow:hidden;
  margin:0 auto;
  pointer-events:none;
@@ -91,19 +91,20 @@ body.auth-locked .auth-company img{
  object-fit:contain;object-position:center;
  transform:translate(-50%,-50%);
  filter:brightness(0);
- opacity:.44;
+ opacity:.40;
 }
 body.auth-locked .auth-brand{
  width:100%;
  margin:0;
- padding:0 0 21px;
- border-bottom:1px solid #e4eae4;
+ padding:0 0 24px;
+ border-bottom:1px solid #e8eee9;
  display:flex;align-items:center;justify-content:center;
 }
 body.auth-locked .auth-logo{
  width:min(330px,100%);max-width:100%;
  height:auto;max-height:106px;object-fit:contain;
 }
+body.auth-locked .auth-card > .eyebrow{display:inline-block;margin-top:2px}
 body.auth-locked .auth-card h1{font-size:23px;letter-spacing:-.7px;margin-top:10px}
 body.auth-locked .auth-card p{font-size:12px;line-height:1.6;color:#677c73}
 body.auth-locked .auth-form .btn{padding:14px;font-size:13px}
@@ -113,9 +114,9 @@ body.auth-locked .auth-form .btn{padding:14px;font-size:13px}
 @media(max-width:600px){
  body.auth-locked .main-content{padding:22px 15px;min-height:100dvh}
  body.auth-locked .auth-wrap{width:min(440px,100%)}
- body.auth-locked .auth-card{padding:24px 24px 28px;border-radius:17px}
- body.auth-locked .auth-company{width:150px;height:34px}
- body.auth-locked .auth-brand-stack{gap:3px;margin-bottom:16px}
+ body.auth-locked .auth-card{padding:22px 24px 28px;border-radius:17px}
+ body.auth-locked .auth-company{width:132px;height:30px}
+ body.auth-locked .auth-brand-stack{gap:8px;margin-bottom:18px}
  body.auth-locked .auth-logo{max-height:96px}
  body.auth-locked .main-content::before{
   width:100vw;opacity:.24;
