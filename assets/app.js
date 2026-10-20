@@ -564,6 +564,7 @@ document.addEventListener("click",async e=>{
  if(action==="uniformBatch"&&app.page==="uniform_deliveries"&&privileged())await uniformPage();
  if(action==="export")exportCSV();
  if(action==="planActivity"){const id=e.target.closest("[data-activity-id]")?.dataset.activityId;if(id){app.prefillActivity=id;await navigate("field_plan_items");await openForm();}}
+ if(action==="editExecution"){const id=e.target.closest("[data-execution-id]")?.dataset.executionId;if(id&&privileged()){await navigate("field_execution_entries");await openForm(id);}}
  if(action==="logout")await logout();
  if(action==="login"){app.pendingPage=null;login()}
  
