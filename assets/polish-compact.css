@@ -478,3 +478,37 @@
 .purchase-sector-field input[type=checkbox]{flex:0 0 auto;width:17px;height:17px;min-height:0;margin:0;accent-color:#2d741d;box-shadow:none}
 .purchase-sector-counter{font-size:11px;color:#6d826e}
 @media(max-width:600px){.purchase-sector-field{padding:12px}.purchase-sector-grid{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Planejamento e receita: leitura rápida sem confundir apontamento com medição. */
+.execution-finance{min-width:0;background:#fff;border:1px solid #dce8df;border-radius:15px;padding:20px 22px;margin:20px 0}
+.execution-finance-head{display:flex;gap:16px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+.execution-finance-head h2{font-size:19px;margin:5px 0 6px;color:#194534}
+.execution-finance-head p{font-size:12px;line-height:1.6;color:#61786d;margin:0;max-width:800px}
+.execution-month-label{font-size:12px;color:#527263;display:grid;gap:6px}
+.execution-month-label input{font:inherit;border:1px solid #d7e4da;border-radius:8px;padding:9px 10px;background:#fff;color:#204b37}
+.execution-money-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.execution-money-grid .metric{min-width:0;padding:16px}
+.execution-money-grid .metric strong{font-size:clamp(17px,1.7vw,24px);overflow-wrap:anywhere;letter-spacing:-.5px}
+.execution-money-grid .metric .metric-header{font-size:11px}
+.execution-money-grid .metric small{line-height:1.5}
+.execution-goal-progress{margin-top:17px;background:#f6faf7;border:1px solid #e6efe7;padding:15px;border-radius:11px}
+.execution-goal-progress>div:first-child{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;font-size:12px;color:#456851}
+.execution-goal-progress strong{color:#1b4c32}
+.execution-goal-progress small{font-size:11px;color:#64796e;line-height:1.5}
+.execution-progress-track{height:10px;overflow:hidden;background:#dfebe1;border-radius:12px;margin:12px 0}
+.execution-progress-track span{display:block;height:100%;background:#267c50;border-radius:12px;min-width:0}
+.execution-month-table{margin-top:16px;max-width:100%;min-width:0}
+.execution-month-table .data-table{width:100%;table-layout:fixed;max-width:100%;min-width:0}
+.execution-month-table .data-table th:first-child{width:11%}
+.execution-month-table .data-table th:nth-child(2){width:27%}
+.execution-month-table .data-table th:nth-child(3){width:13%}
+.execution-month-table .data-table th:nth-child(4){width:13%}
+.execution-month-table .data-table th:nth-child(5){width:15%}
+.execution-month-table .data-table th:nth-child(6){width:12%}
+.execution-month-table .data-table th:nth-child(7){width:9%}
+.execution-month-table .data-table td,.execution-month-table .data-table th{overflow-wrap:anywhere;white-space:normal}
+.execution-location{display:block;font-size:10px;color:#73877c;margin-top:4px;line-height:1.4}
+.execution-dashboard-link{margin:-8px 0 18px;text-align:right}
+@media(max-width:1050px){.execution-money-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.execution-finance{padding:16px 13px}.execution-money-grid{grid-template-columns:minmax(0,1fr)}.execution-month-table .table-head{flex-wrap:wrap}}
