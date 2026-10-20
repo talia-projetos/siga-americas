@@ -509,6 +509,35 @@ async function documentCenterPage(){
  }catch(error){if(app.page==="document_center")
    el("document-center-root").innerHTML=errorBanner(friendlyError(error));}
 }
+async function fleetContractPanel(vehicles){
+ const {data,error}=await app.db.from("contract_resource_requirements")
+  .select("id,item_name,source_ref,required_quantity,observed_quantity,inventory_note")
+  .eq("category","veiculo").order("item_name").limit(100);
+ if(error)return '<div class="notice warning">Não foi possível consultar a relação contratual de frota: '+escapeHTML(friendlyError(error))+'</div>';
+ const rows=data||[];
+ const quant=n=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0}).format(Number(n||0));
+ const projected=rows.reduce((sum,r)=>sum+Number(r.required_quantity||0),0);
+ const informed=rows.filter(r=>r.observed_quantity!==null&&r.observed_quantity!==undefined);
+ const declared=informed.reduce((sum,r)=>sum+Number(r.observed_quantity||0),0);
+ const linked=vehicles.filter(v=>v.contract_resource_requirement_id);
+ return '<section class="fleet-contract-panel" aria-labelledby="fleet-contract-heading">'+
+  '<div class="fleet-contract-header"><div><span class="eyebrow">ITEM 6.1 · REFERÊNCIA CONTRATUAL</span><h2 id="fleet-contract-heading">Relação de veículos previstos</h2><p>Esta relação já consta no SIGA, mas não equivale a cadastros individuais. Compare os quantitativos e identifique cada veículo por placa, chassi ou patrimônio.</p></div></div>'+
+  '<div class="fleet-contract-kpis">'+
+   '<div><span>Unidades previstas</span><strong>'+quant(projected)+'</strong><small>Em '+rows.length+' categorias contratuais</small></div>'+
+   '<div><span>Quantidades informadas</span><strong>'+quant(declared)+'</strong><small>Soma parcial de '+informed.length+' categorias, sem identificação individual</small></div>'+
+   '<div><span>Veículos identificados</span><strong>'+quant(vehicles.length)+'</strong><small>'+quant(linked.length)+' vinculados às categorias contratuais</small></div></div>'+
+  '<div class="table-scroll fleet-contract-scroll"><table class="fleet-contract-table"><thead><tr><th>Tipo previsto no contrato</th><th>Previsto</th><th>Informado</th><th>Identificados</th><th>Anotações</th><th>Ação</th></tr></thead><tbody>'+
+   rows.map(r=>{
+    const identified=vehicles.filter(v=>v.contract_resource_requirement_id===r.id).length;
+    const reported=r.observed_quantity===null||r.observed_quantity===undefined?'A conferir':quant(r.observed_quantity);
+    return '<tr><td><strong>'+escapeHTML(r.item_name)+'</strong><small>'+escapeHTML(r.source_ref||"")+'</small></td>'+
+     '<td class="fleet-number">'+quant(r.required_quantity)+'</td><td class="fleet-number">'+reported+'</td><td class="fleet-number">'+identified+'</td>'+
+     '<td class="fleet-note">'+(r.inventory_note?escapeHTML(r.inventory_note)+'<small>Referência informada, não validada</small>':'<span class="muted">—</span>')+'</td>'+
+     '<td>'+(privileged()?'<button type="button" class="table-action fleet-add" data-fleet-add="'+escapeHTML(r.id)+'">Identificar veículo</button>':'<span class="muted">Consulta</span>')+'</td></tr>';
+   }).join("")+
+  '</tbody></table></div>'+
+  '<p class="fleet-contract-foot">Valores informados não comprovam entrega, disponibilidade ou vistoria. Não foram criadas placas ou veículos fictícios. A tabela individual abaixo exibirá apenas bens efetivamente identificados.</p></section>';
+}
 async function modulePage(key){
  app.page=key;app.search="";app.filters={};app.sort={key:null,descending:false};nav();header(key);
  const m=modules[key];
@@ -545,7 +574,8 @@ async function modulePage(key){
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos de responsabilidade históricos; não representa inventário de bens disponíveis. Os responsáveis citados nos termos não foram definidos como guardiões atuais.</small></div>':
    key==="vehicles"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' veículo(s) individualizados</strong><span>Cadastre placa, chassi ou patrimônio para identificar cada veículo.</span><small>Quantidades previstas ou declaradas no contrato não são registros individuais. Consulte a conferência de quantitativos para comparação de frota.</small></div>':"";
-  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview;
+  const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
+  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview;
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
   '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
@@ -558,6 +588,11 @@ async function modulePage(key){
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>';
+  if(key==="vehicles")el("main").querySelectorAll("[data-fleet-add]").forEach(button=>button.addEventListener("click",async()=>{
+    await openForm();
+    const field=el("modal-fields").querySelector("#fld-contract_resource_requirement_id");
+    if(field)field.value=button.dataset.fleetAdd;
+  }));
   el("list-search").addEventListener("input",event=>{app.search=event.target.value;renderRows()});
   el("main").querySelectorAll("[data-sort-col]").forEach(button=>button.addEventListener("click",()=>{
    const key=button.dataset.sortCol;
