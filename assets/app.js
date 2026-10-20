@@ -9,6 +9,7 @@ import {mountUniformManager} from "./uniform-bulk.js?v=9";
 import {mountFieldReport} from "./field-forms.js?v=3";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 import {renderFinancialIndicator,renderExecutionTable} from "./execution-metrics.js?v=3";
+import {initRoutinePhotoField} from "./routine-photos.js?v=1";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=3";
 
 const el=id=>document.getElementById(id);
@@ -524,14 +525,20 @@ function fieldInput(f,row){
  }
  return '<div class="field '+(f.wide?"wide":"")+'">'+label+inp+'</div>';
 }
+let routineEvidence=null;
 async function openForm(id=null){
  if(!privileged())return;
  const m=modules[app.page];if(!m?.table)return;try{await ensureRefs(app.page)}catch(e){notify(friendlyError(e),true);return;}
  const row=id?app.rows.find(x=>x.id===id):null;
  app.editing=row?.id??null;
  el("modal-title").textContent=(row?"Editar":"Novo registro · ")+m.title;
+ if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}
  el("modal-fields").innerHTML=m.fields.map(f=>fieldInput(f,row)).join("")+
-  (app.page==="field_execution_entries"?'<div class="field wide execution-valuation-preview" id="execution-valuation-preview" role="status"></div>':"");
+  (app.page==="field_execution_entries"?'<div class="field wide execution-valuation-preview" id="execution-valuation-preview" role="status"></div>':"")+
+  (app.page==="field_routine_records"?'<div class="field wide" id="routine-photo-root"></div>':"");
+ if(app.page==="field_routine_records"){
+  routineEvidence=initRoutinePhotoField(el("routine-photo-root"),app.db,{recordId:row?.id||null,notify});
+ }
  if(app.page==="field_execution_entries"){
   const calculate=()=>{
    const productId=el("modal-fields").querySelector("#fld-contract_item_id")?.value;
@@ -551,7 +558,7 @@ async function openForm(id=null){
  el("modal-root").hidden=false;
  el("modal-fields").querySelector("input,select,textarea")?.focus();
 }
-function closeForm(){el("modal-root").hidden=true;app.editing=null}
+function closeForm(){if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}el("modal-root").hidden=true;app.editing=null}
 async function saveRecord(e){
  e.preventDefault();if(app.busy)return;
  const m=modules[app.page],fd=new FormData(e.target),payload={};
@@ -570,6 +577,9 @@ async function saveRecord(e){
   if(value===""){payload[f.key]=null;continue;}
   payload[f.key]=f.type==="number"?Number(value):value;
   if(f.type==="number"&&!Number.isFinite(payload[f.key])){notify("Valor numérico inválido: "+f.label,true);return;}
+ }
+ if(app.page==="field_routine_records"&&routineEvidence?.hasPending()){
+  try{routineEvidence.validate();}catch(error){notify(error.message,true);return;}
  }
  if(app.page==="purchases"){
   const sectors=payload.sector_team_ids||[];
@@ -597,7 +607,16 @@ async function saveRecord(e){
  const btn=el("modal-submit");app.busy=true;btn.disabled=true;btn.textContent="Salvando...";
  try{
   const query=app.editing?app.db.from(m.table).update(payload).eq("id",app.editing):app.db.from(m.table).insert(payload);
-  const {error}=await query.select("id").single();if(error)throw error;
+  const {data,error}=await query.select("id").single();if(error)throw error;
+  if(app.page==="field_routine_records"&&routineEvidence?.hasPending()){
+   try{await routineEvidence.savePhotos(data.id);}
+   catch(photoError){
+    // O registro já existe. Manter o formulário e o ID permite novo envio sem duplicar a rotina.
+    app.editing=data.id;
+    notify("Rotina salva, mas o envio das fotos não foi concluído: "+photoError.message+". Confira a conexão e tente salvar novamente.",true);
+    return;
+   }
+  }
   closeForm();app.prefillActivity=null;notify("Registro salvo com sucesso.");app.refs={};if(app.page==="uniform_deliveries")await uniformPage();else await modulePage(app.page);
  }catch(e){notify(friendlyError(e),true)}finally{app.busy=false;btn.disabled=false;btn.textContent="Salvar registro";}
 }
