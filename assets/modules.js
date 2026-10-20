@@ -4,7 +4,7 @@ const ref=(key,label,table,display="name",extra={})=>f(key,label,"ref",{table,di
 const options=(...values)=>values.map(x=>({value:x,label:x.replaceAll("_"," ")}));
 // Organização apenas da navegação. Os nomes e IDs dos módulos permanecem idênticos.
 export const groups=[
-  {label:"PLANEJAMENTO",icon:"calendar",items:["coverage","field_execution_entries","field_programs","field_plan_items"]},
+  {label:"PLANEJAMENTO",icon:"calendar",items:["coverage","contract_suggestions","field_execution_entries","field_programs","field_plan_items"]},
   {label:"CAMPO E EXECUÇÃO",icon:"field",items:["field_report","field_monitor","work_orders","field_routine_templates","field_routine_records"]},
   {label:"CONTRATO E OBRIGAÇÕES",icon:"contract",items:["contracts","obligations","activity_catalog","service_posts","areas","teams"]},
   {label:"FINANCEIRO",icon:"assets",items:["contract_items","fuel_logs","maintenance","purchases"]},
@@ -16,6 +16,7 @@ export const modules={
   field_report:{title:"Registro semanal de campo",icon:"▤",virtual:true,description:"Relatórios semanais das equipes, com atividades realizadas por frente e validação da supervisão."},
   field_monitor:{title:"Acompanhamento das equipes",icon:"◫",virtual:true,description:"Painel da supervisão para acompanhar, validar e devolver relatórios de campo."},
   resource_check:{title:"Conferência de quantitativos",icon:"▧",virtual:true,description:"Tabela 05, veículos e equipamentos previstos: informe apenas a quantidade efetivamente encontrada."},
+  contract_suggestions:{title:"Itens contratuais sugeridos",icon:"◎",virtual:true,description:"Apoio à decisão com base nos 73 itens da matriz. Prioriza oportunidade de receita registrada, recorrência provável e bloqueadores de segurança, clima e autorizações."},
   coverage:{title:"Cobertura",icon:"◉",virtual:true,description:"Exploração técnica de 73 atividades: identificar oportunidades e distinguir programação, execução e inviabilidade."},
   field_execution_entries:{title:"Execuções registradas",icon:"▤",table:"field_execution_entries",description:"Execuções informadas com data, quantidades e valores calculados por item da planilha de preços. Conferência não equivale a faturamento aprovado.",columns:["performed_on","activity_id","activity_label","quantity","unit","estimated_amount","validation_status"],fields:[
     f("performed_on","Data de execução","date",{required:true}),
