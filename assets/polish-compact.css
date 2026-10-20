@@ -885,3 +885,23 @@
  #dashboard-coverage-map .coverage-map-sidebar{height:165px;max-height:165px}
  #dashboard-coverage-map .coverage-map-footer{padding:10px 14px}
 }
+
+
+/* Ritmo vertical padrão · separar painéis consecutivos nas telas do SIGA.
+   Aplicado somente à composição da página, sem espaçar elementos internos
+   de cartões, tabelas, modais ou do formulário de login. */
+:root{--siga-panel-gap:20px}
+#main > :is(.table-panel,.panel,.analytics-panel,.catalog-chart,.catalog-stat,.execution-finance,.metric-grid,.panel-grid,.analytics-grid)
+ + :is(.table-panel,.panel,.analytics-panel,.catalog-chart,.catalog-stat,.execution-finance,.metric-grid,.panel-grid,.analytics-grid){
+ margin-block-start:var(--siga-panel-gap);
+}
+#main :is(.metric-grid,.panel-grid,.analytics-grid){gap:var(--siga-panel-gap)}
+/* A Cobertura monta os dois painéis financeiros dentro de um contêiner. */
+#coverage-execution-metrics > .execution-finance{margin-block:0}
+#coverage-execution-metrics > .execution-month-table{margin-block:var(--siga-panel-gap) 0}
+#main > #coverage-execution-metrics + .table-panel{
+ margin-block-start:var(--siga-panel-gap);
+}
+@media(max-width:600px){
+ #main :is(.metric-grid,.panel-grid,.analytics-grid){gap:16px}
+}
