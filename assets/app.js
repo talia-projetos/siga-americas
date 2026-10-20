@@ -151,6 +151,7 @@ async function establishSession(){
  await navigate(canView(target)?target:(app.role==="tecnico"?"field_report":"inicio"));
 }
 async function logout(){
+ listViews.clear();
  app.pendingPage=null;
  if(app.db)await app.db.auth.signOut();
  app.user=null;app.role=null;app.teamId=null;app.rows=[];app.refs={};
@@ -1004,7 +1005,7 @@ async function init(){
  if(!SUPABASE_URL||!SUPABASE_PUBLISHABLE_KEY){setup();return;}
  try{app.db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false}});
  await establishSession();
- app.db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT"){app.user=null;app.role=null;app.teamId=null;app.pendingPage=null;login();}});
+ app.db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT"){listViews.clear();app.user=null;app.role=null;app.teamId=null;app.pendingPage=null;login();}});
  }catch(e){el("main").innerHTML=errorBanner("Erro ao iniciar o sistema: "+friendlyError(e))}
 }
 init();
