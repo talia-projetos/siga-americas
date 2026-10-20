@@ -10,7 +10,7 @@ const numbered=x=>Number.isFinite(Number(x))&&x!==null&&x!==""?
  new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(x)):"Não informado";
 const money=x=>x!==null&&x!==undefined&&x!==""?
  new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(x)):"Não informado";
-const stripPDF=s=>String(s??"").replace(/[\u2000-\u206F\u2190-\u21FF]/g," ").replace(/[^\x20-\x7E\u00A0-\u00FF]/g,"?");
+const stripPDF=s=>String(s??"").replace(/\r\n?/g,"\n").replace(/[\u2000-\u206F\u2190-\u21FF]/g," ").replace(/[^\x20-\x7E\u00A0-\u00FF\n]/g,"?");
 const fileName=(s)=>clean(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9_-]+/g,"_").slice(0,65)||"documento";
 export function buildOperationalDocument(kind,row,refs){
  if(kind==="os"){
@@ -41,8 +41,15 @@ export function buildOperationalDocument(kind,row,refs){
    sections:[
     ["01  DESCRIÇÃO DO SERVIÇO",val(row.description)],
     ["02  ORIENTAÇÕES E IMPEDIMENTOS",val(row.impediment)],
-    ["03  REGISTRO POSTERIOR DA EXECUÇÃO","Preenchimento após a realização da atividade; os campos abaixo não representam serviço executado.\nInício: ____/____/________ às ______  |  Término: ____/____/________ às ______\nEquipe mobilizada: _____________________________________________________\nQuantidade efetivamente executada: ______________  Unidade: "+(unit||"________")+
-     "\nEvidências / ocorrências: ______________________________________________"]
+    ["03  REGISTRO POSTERIOR DA EXECUÇÃO",
+     "Preencher após a realização do serviço; este espaço não comprova a execução.\n"+
+     "Data e hora de início: ____/____/________  às ______\n"+
+     "Data e hora de término: ____/____/________  às ______\n"+
+     "Equipe mobilizada: ______________________________________________\n"+
+     "Quantidade efetivamente executada: ______________________________\n"+
+     "Unidade de medição: "+(unit||"A confirmar")+"\n"+
+     "Evidências / referência documental: ______________________________\n"+
+     "Ocorrências / observações: _______________________________________"]
    ],
    notice:"Esta OS registra programação e orientação. A quantidade prevista não constitui execução comprovada, medição aprovada ou aceite contratual. Conferir requisitos de segurança, acessos e autorizações aplicáveis."+(unitAlert?" Atenção: "+unitAlert:""),
    signers:[["EMISSOR / SUPERVISÃO","Nome, cargo e assinatura"],["CIÊNCIA DA EQUIPE / RESPONSÁVEL","Nome, cargo e assinatura"]]
@@ -145,7 +152,7 @@ function buildDocxContent(model,lib,logo){
  ];
  for(const [h,body] of model.sections){
   children.push(band(h));
-  for(const line of String(body).split("\n"))children.push(para(line||" ",{size:18,after:95}));
+  for(const line of String(body).split("\n"))children.push(para(line||" ",{size:18,after:model.kind==="os"&&h.startsWith("03")?165:95}));
  }
  children.push(band("OBSERVAÇÃO DOCUMENTAL"),para(model.notice,{size:16,color:muted,after:150}));
  children.push(para("Local: _______________________________    Data: ____ / ____ / ________",{size:18,before:120,after:300}));
@@ -242,7 +249,13 @@ export async function generatePDF(models){
   model.meta.forEach(([name,value])=>label(name,value));
   section("IDENTIFICAÇÃO E REFERÊNCIAS");
   model.fields.forEach(([name,value])=>label(name,value));
-  for(const [h,body] of model.sections){section(h);textLines(body,9.2,{lineHeight:13.5,after:6});}
+  for(const [h,body] of model.sections){
+   const executionRegister=model.kind==="os"&&h.startsWith("03");
+   // Mantém título e linhas de preenchimento juntos em uma mesma página.
+   if(executionRegister)ensure(wrapText(regular,body,9.2,W-margin*2).length*19+49);
+   section(h);
+   textLines(body,9.2,{lineHeight:executionRegister?19:13.5,after:executionRegister?12:6});
+  }
   section("OBSERVAÇÃO DOCUMENTAL");textLines(model.notice,8,{color:muted,lineHeight:11.5,after:11});
   ensure(60);textLines("Local: ______________________________     Data: ____ / ____ / ________ ",9,{after:22});
   for(const [role,detail] of model.signers){
