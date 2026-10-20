@@ -1225,3 +1225,34 @@
  #document-center-root .doc-preview-company{flex-basis:132px;width:132px;height:35px}
  #document-center-root .doc-preview-top .doc-preview-system{font-size:9.5px}
 }
+
+
+/* Refinamento do cabeçalho de OS e termos: assinatura da PROERG é um
+   elemento gráfico independente, com respiro antes do nome do sistema. */
+#document-center-root .doc-preview-top{
+ display:flex!important;flex-direction:row;justify-content:flex-start;
+ align-items:center;flex-wrap:nowrap;gap:19px!important;
+ min-height:48px;padding:3px 0;overflow:hidden;
+}
+#document-center-root .doc-preview-company{
+ flex:0 0 146px!important;width:146px!important;
+ height:42px!important;position:relative;
+}
+#document-center-root .doc-preview-company img{
+ width:100%!important;height:auto!important;max-height:none!important;
+ position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+}
+#document-center-root .doc-preview-top .doc-preview-system{
+ align-self:center;display:flex;align-items:center;
+ min-height:27px;min-width:0;margin:0!important;
+ padding-left:18px!important;border-left:1px solid #dbe6df;
+ font-size:10.5px!important;line-height:1.4;
+ font-weight:650;color:#577563;letter-spacing:0;overflow-wrap:anywhere;
+}
+@media(max-width:600px){
+ #document-center-root .doc-preview-top{gap:11px!important;min-height:42px}
+ #document-center-root .doc-preview-company{flex-basis:119px!important;width:119px!important;height:37px!important}
+ #document-center-root .doc-preview-top .doc-preview-system{
+  padding-left:11px!important;font-size:9.5px!important;
+ }
+}
