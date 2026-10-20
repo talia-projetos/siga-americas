@@ -5,7 +5,7 @@ const options=(...values)=>values.map(x=>({value:x,label:x.replaceAll("_"," ")})
 // Organização apenas da navegação. Os nomes e IDs dos módulos permanecem idênticos.
 export const groups=[
   {label:"PLANEJAMENTO",icon:"calendar",items:["coverage","contract_suggestions","field_execution_entries","field_programs","field_plan_items"]},
-  {label:"CAMPO E EXECUÇÃO",icon:"field",items:["field_report","field_monitor","work_orders","document_center","field_routine_templates","field_routine_records"]},
+  {label:"CAMPO E EXECUÇÃO",icon:"field",items:["field_report","field_monitor","work_orders","field_routine_templates","field_routine_records"]},
   {label:"CONTRATO E OBRIGAÇÕES",icon:"contract",items:["contracts","obligations","activity_catalog","service_posts","areas","teams"]},
   {label:"FINANCEIRO",icon:"assets",items:["contract_items","fuel_logs","maintenance","purchases"]},
   {label:"PATRIMÔNIO E MATERIAIS",icon:"supplies",items:["resource_check","contract_resource_requirements","vehicles","equipment","responsibility_terms","stock_items","stock_movements"]},
