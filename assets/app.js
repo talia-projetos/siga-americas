@@ -154,6 +154,7 @@ async function dashboard(){
    '<div class="dashboard-section-head"><div><span class="eyebrow">PAINEL OPERACIONAL</span><h2>O que precisa de atenção</h2><p>Indicadores atualizados com os registros disponíveis no sistema.</p></div></div>'+
    '<div class="metric-grid dashboard-metrics">'+metricsHTML(["—","—","—","—"])+'</div>'+
   '</section>'+
+  '<div id="dashboard-execution-finance"></div>'+
   '<div class="panel-grid dashboard-utility-grid">'+
     '<section class="panel dashboard-workspace-panel"><div class="panel-inner"><span class="eyebrow">ROTINA DE GESTÃO</span><h2>Continuar de onde você precisa</h2><p>Acesse rapidamente as funções usadas na supervisão e no planejamento.</p><div class="quick-grid dashboard-quick-grid">'+quick+'</div></div></section>'+
     '<section class="panel dashboard-activity-panel"><div class="panel-inner"><span class="eyebrow">ACOMPANHAMENTO</span><div class="dashboard-recent-head"><h2>Ordens de serviço recentes</h2><button class="table-action" type="button" data-nav="work_orders">Ver todas '+iconMarkup("arrow")+'</button></div><div id="dashboard-recent-orders" class="dashboard-recent-orders"><p class="dashboard-subtle">Buscando movimentações...</p></div></div></section>'+
@@ -183,6 +184,20 @@ async function dashboard(){
   }catch(error){
     if(orders&&app.page==="inicio")orders.innerHTML='<p class="dashboard-subtle">As ordens não puderam ser consultadas agora.</p>';
   }
+ })();
+ const finance=el("dashboard-execution-finance");
+ if(finance)(async()=>{
+  const month=new Date().toISOString().slice(0,7);
+  try{
+   const [executions,goals]=await Promise.all([
+    app.db.from("field_execution_entries").select("performed_on,estimated_amount,validation_status,execution_status").gte("performed_on",month+"-01").lt("performed_on",month==="2026-12"?"2027-01-01":new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),1)).toISOString().slice(0,10)).limit(1200),
+    app.db.from("finance_goals").select("period_month,target_amount").eq("period_month",month+"-01")
+   ]);
+   if(executions.error)throw executions.error;
+   if(goals.error)throw goals.error;
+   if(app.page==="inicio")finance.innerHTML=renderFinancialIndicator(executions.data||[],goals.data||[],month,true)+
+    '<p class="execution-dashboard-link"><button class="table-action" type="button" data-nav="coverage">Conferir lançamentos e preços na Cobertura ↗</button></p>';
+  }catch(error){if(app.page==="inicio")finance.innerHTML='<p class="muted">Métricas de produção financeira indisponíveis neste momento.</p>';}
  })();
  if(charts)renderDashboardAnalytics(charts,app.db,{privileged:privileged()}).catch(error=>{
   if(app.page==="inicio")charts.innerHTML='<div class="notice">Os gráficos não puderam ser atualizados neste momento. Os demais módulos continuam disponíveis.</div>';
