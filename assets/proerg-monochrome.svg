@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 95" role="img" aria-label="PROERG" fill="none">
+ <title>PROERG - marca monocromática para o acesso</title>
+ <g stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M18 61C10 44 22 24 46 17c16-5 33-5 46-2-5 16-13 32-25 43-19 18-37 17-49 3Z" fill="#FFFFFF" fill-opacity=".13" stroke-width="1.8"/>
+  <path d="M10 77c17-27 36-47 70-60M32 48l-7-19m20 8 1-20m-2 30 28-2" stroke-width="3.4"/>
+ </g>
+ <text x="104" y="58" fill="#FFFFFF" font-family="Manrope,Arial,sans-serif" font-size="40" font-weight="800" letter-spacing="1.8">PROERG</text>
+ <text x="105" y="77" fill="#FFFFFF" font-family="Inter,Arial,sans-serif" font-size="10" font-weight="600" letter-spacing="2">ENGENHARIA E MEIO AMBIENTE</text>
+</svg>
