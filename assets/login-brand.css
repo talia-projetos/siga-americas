@@ -127,3 +127,30 @@ body.auth-locked .auth-form .btn{padding:14px;font-size:13px}
 @media(prefers-reduced-motion:reduce){
  body.auth-locked .main-content::before{animation:none;transition:none}
 }
+
+
+/* Ajuste definitivo do lockup: logotipos oficiais intactos, sem recorte no mobile.
+   Sobrescreve o posicionamento absoluto legado em styles.css. */
+body.auth-locked .auth-brand-stack{gap:0!important;margin:0 0 15px!important}
+body.auth-locked .auth-company{width:131px!important;height:29px!important;margin-bottom:-15px!important;z-index:2}
+body.auth-locked .auth-brand{
+ position:relative;display:block;width:100%!important;max-width:100%!important;
+ height:114px!important;min-height:0!important;
+ margin:0!important;padding:0 0 14px!important;
+ overflow:hidden!important;
+}
+body.auth-locked .auth-logo{
+ position:absolute!important;top:43%!important;left:50%!important;
+ display:block;width:100%!important;max-width:100%!important;
+ height:280px!important;max-height:none!important;
+ object-fit:contain!important;
+ transform:translate(-50%,-50%) scale(1)!important;
+}
+@media(max-width:600px){
+ body.auth-locked .auth-card{max-width:100%!important;min-width:0!important}
+ body.auth-locked .auth-brand-stack{gap:0!important;margin-bottom:12px!important}
+ body.auth-locked .auth-company{width:117px!important;height:26px!important;margin-bottom:-13px!important}
+ body.auth-locked .auth-brand{height:98px!important;width:100%!important;overflow:hidden!important}
+ body.auth-locked .auth-logo{width:100%!important;max-width:100%!important;height:238px!important;top:42%!important;left:50%!important;
+  transform:translate(-50%,-50%) scale(1)!important}
+}
