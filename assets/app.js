@@ -407,11 +407,12 @@ function renderRows(){
   return;
  }
  table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>{
-  if(financial&&key==="code")return '<td><span class="catalog-code">'+escapeHTML(row.code)+'</span></td>';
-  if(financial&&key==="name")return '<td><span class="catalog-name" title="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</span></td>';
+  if(financial&&key==="code")return '<td data-label="Código"><span class="catalog-code">'+escapeHTML(row.code)+'</span></td>';
+  if(financial&&key==="name")return '<td data-label="Atividade / serviço"><span class="catalog-name" title="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</span></td>';
   const klass=financial&&["estimated_quantity","unit_price","estimated_total"].includes(key)?' class="numeric-cell"':"";
-  return '<td'+klass+'>'+fieldValue(key,row[key])+'</td>';
- }).join("")+'<td>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">'+iconMarkup('file')+' Editar</button>':'<span class="muted">Consulta</span>')+'</td></tr>').join("");
+  const mobileLabel=financial?({unit:"Unidade contratual",estimated_quantity:"Quantidade estimada",unit_price:"Valor unitário",estimated_total:"Total estimado"}[key]||key):null;
+  return '<td'+(mobileLabel?' data-label="'+escapeHTML(mobileLabel)+'"':'')+klass+'>'+fieldValue(key,row[key])+'</td>';
+ }).join("")+'<td'+(financial?' data-label="Ações"':'')+'>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">'+iconMarkup('file')+' Editar</button>':'<span class="muted">Consulta</span>')+'</td></tr>').join("");
 }
 async function coveragePage(){
  app.page="coverage";app.search="";nav();header("coverage");
@@ -542,11 +543,11 @@ async function modulePage(key){
   const overview=special?catalogOverview(key,app.rows):"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
-  '<section class="table-panel catalog-table '+(key==="employees"?'people-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
+  '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
    (special?'<button type="button" class="btn btn-ghost filter-clear" id="clear-list-filters">'+iconMarkup("close")+' Limpar</button>':"")+
   '</div></div>'+
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
-  '<div class="table-scroll"><table class="data-table"><thead><tr>'+m.columns.map(col=>{
+  '<div class="table-scroll"><table class="data-table">'+(key==="contract_items"?'<colgroup><col class="price-col-code"><col class="price-col-name"><col class="price-col-unit"><col class="price-col-quantity"><col class="price-col-price"><col class="price-col-total"><col class="price-col-actions"></colgroup>':'')+'<thead><tr>'+m.columns.map(col=>{
     const numeric=["unit_price","estimated_quantity","estimated_total","required_quantity","observed_quantity"].includes(col);
     const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)"}[col]||col;
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
