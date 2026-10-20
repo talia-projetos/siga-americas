@@ -558,7 +558,7 @@ async function openForm(id=null){
  el("modal-root").hidden=false;
  el("modal-fields").querySelector("input,select,textarea")?.focus();
 }
-function closeForm(force=false){if(app.busy&&!force)return;if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}el("modal-root").hidden=true;app.editing=null}
+function closeForm(force=false){if(app.busy&&force!==true)return;if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}el("modal-root").hidden=true;app.editing=null}
 async function saveRecord(e){
  e.preventDefault();if(app.busy)return;
  const m=modules[app.page],fd=new FormData(e.target),payload={};
