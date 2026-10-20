@@ -321,6 +321,7 @@ async function coveragePage(){
     '<button class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento mensal</button><button class="btn btn-primary" data-nav="field_plan_items">'+iconMarkup("clipboard")+' Ações programadas</button>')+
     '<div class="metric-grid">'+cards+'</div>'+
     '<p class="catalog-context-note">'+iconMarkup("check")+' Cobertura significa analisar e classificar cada atividade. Serviços só são executados quando necessários e autorizados.</p>'+
+    renderApontamentosPreposto(escapeHTML)+
     '<section class="table-panel"><div class="table-head"><div><h2>Diagnóstico das 73 atividades</h2><span>Atividades, responsáveis e situação de planejamento</span></div><div class="table-toolbar"><input type="search" id="coverage-search" class="searchbox" placeholder="Buscar atividade ou responsável..." aria-label="Pesquisar catálogo"></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Item</th><th>Atividade</th><th>PROERG</th><th>Itaipu</th><th>Planejamento</th><th>Ação</th></tr></thead><tbody id="coverage-body"></tbody></table></div></section>';
   const tbody=el("coverage-body");
   const draw=(term="")=>{
