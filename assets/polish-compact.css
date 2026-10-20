@@ -591,3 +591,23 @@
 .suggestion-finance-list>div>span small{font-size:10px;color:#78867b;overflow-wrap:anywhere}
 .suggestion-finance-list>div>strong{font-size:13px;color:#255b37;text-align:right;flex:0 0 auto}
 @media(max-width:520px){.suggestion-finance-list>div{flex-wrap:wrap}.suggestion-finance-list>div>strong{text-align:left}}
+
+
+/* Cobertura · semântica visual dos 73 itens da matriz.
+ * Oportunidade = hipótese; contemplada = ao menos um registro de execução.
+ * Essas classes não alteram status, aprovações nem a medição no banco. */
+.coverage-status-legend{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 0 15px;max-width:100%}
+.coverage-status.tag{
+ display:inline-flex;align-items:center;justify-content:center;
+ max-width:100%;border:1px solid;white-space:normal;
+ font-weight:700;font-size:10.5px;line-height:1.4;
+ padding:5px 9px;border-radius:7px;
+}
+.coverage-status--candidata.tag{color:#69469c;background:#f3eeff;border-color:#ded1f4}
+.coverage-status--executada.tag{color:#14664d;background:#e1f4e9;border-color:#bde5cf}
+.coverage-status--programada.tag{color:#1c5e96;background:#e9f3ff;border-color:#c5dcf7}
+.coverage-status--em_execucao.tag{color:#8a570a;background:#fff0d7;border-color:#efd09a}
+.coverage-status--a_validar.tag{color:#926022;background:#fff7e9;border-color:#edddb9}
+.coverage-status--inviavel.tag{color:#9a3643;background:#fff0f2;border-color:#f1cbd1}
+.coverage-status--nao_aplicavel.tag{color:#576a70;background:#edf2f3;border-color:#d9e3e5}
+.coverage-status--sem_programacao.tag{color:#67717d;background:#f2f4f6;border-color:#e1e5e9}
