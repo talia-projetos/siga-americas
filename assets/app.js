@@ -4,7 +4,7 @@ import {groups,modules} from "./modules.js?v=19";
 import {iconMarkup} from "./icons.js?v=5";
 import {renderDashboardAnalytics} from "./analytics.js?v=6";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
-import {mountInventoryCheck} from "./resource-check.js?v=4";
+import {mountInventoryCheck} from "./resource-check.js?v=5";
 import {mountUniformManager} from "./uniform-bulk.js?v=10";
 import {mountFieldReport} from "./field-forms.js?v=6";
 import {mountFieldMonitor} from "./field-monitor.js?v=4";
@@ -539,6 +539,27 @@ async function documentCenterPage(){
  }catch(error){if(app.page==="document_center")
    el("document-center-root").innerHTML=errorBanner(friendlyError(error));}
 }
+// Transcrições do caderno são evidências preliminares, não medições nem receitas.
+async function executionSourceNotesPanel(){
+ const {data,error}=await app.db.from("field_execution_source_notes")
+  .select("id,performed_on,activity_text,location_text,quantity_text,raw_excerpt,photo_refs,legibility,review_status")
+  .order("performed_on",{ascending:false,nullsFirst:false}).limit(200);
+ if(error)return '<div class="notice warning">Não foi possível consultar os apontamentos de campo: '+escapeHTML(friendlyError(error))+'</div>';
+ const notes=data||[],pending=notes.filter(x=>x.review_status==="a_conferir").length;
+ const date=x=>x?new Date(x+"T12:00:00").toLocaleDateString("pt-BR"):"Data a conferir";
+ const label=x=>x==="a_conferir"?"A conferir":x==="classificado"?"Classificado":"Descartado";
+ const table=notes.map(n=>'<tr>'+
+  '<td>'+escapeHTML(date(n.performed_on))+'</td>'+
+  '<td><strong>'+escapeHTML(n.activity_text||"Não especificado")+'</strong><small>'+escapeHTML(n.location_text||"Local a conferir")+'</small></td>'+
+  '<td>'+escapeHTML(n.quantity_text||"Não informado")+'</td>'+
+  '<td><strong>'+escapeHTML(label(n.review_status))+'</strong><small>'+escapeHTML(n.photo_refs||"")+'</small></td>'+
+  '<td><details><summary>Ver anotação</summary><p>'+escapeHTML(n.raw_excerpt||"")+'</p></details></td></tr>').join("");
+ return '<section class="execution-sources-panel"><details class="execution-sources-details" open>'+
+  '<summary><span><span class="eyebrow">CONFERÊNCIA DOCUMENTAL</span><strong>Apontamentos manuscritos recebidos</strong><small>'+notes.length+' registros transcritos · '+pending+' pendentes</small></span><span class="execution-sources-chevron" aria-hidden="true"></span></summary>'+
+  '<div class="execution-sources-content"><p>Estas anotações foram transcritas das fotos do caderno. Podem conter trechos incompletos ou duplicados entre imagens. Não representam serviço validado, quantidade medida nem faturamento. A <strong>tabela de custeio do contrato vigente</strong> é a única referência para eventual classificação financeira; a matriz de 73 atividades não determina esses valores.</p>'+
+  (notes.length?'<div class="table-scroll"><table class="execution-sources-table"><thead><tr><th>Data</th><th>Serviço informado</th><th>Quantidade anotada</th><th>Fonte / situação</th><th>Detalhamento</th></tr></thead><tbody>'+table+'</tbody></table></div>':'<p>Nenhum apontamento recebido.</p>')+
+  '</div></details></section>';
+}
 async function fleetContractPanel(vehicles){
  const {data,error}=await app.db.from("contract_resource_requirements")
   .select("id,item_name,source_ref,required_quantity,observed_quantity,inventory_note")
@@ -609,7 +630,8 @@ async function modulePage(key){
    key==="vehicles"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' veículo(s) individualizados</strong><span>Cadastre placa, chassi ou patrimônio para identificar cada veículo.</span><small>Quantidades previstas ou declaradas no contrato não são registros individuais. Consulte a conferência de quantitativos para comparação de frota.</small></div>':"";
   const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
-  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview;
+  const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
+  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+notesOverview;
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
   '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
