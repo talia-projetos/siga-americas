@@ -1197,3 +1197,31 @@
  #main .dashboard-metric{min-height:112px}
  #main .dashboard-metric strong{font-size:25px}
 }
+
+
+/* Documentos institucionais: usar o SVG oficial da PROERG nas prévias,
+   preservando o desenho original e diferenciando empresa e sistema. */
+#document-center-root .doc-preview-top{
+ display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;
+ column-gap:12px;row-gap:6px;min-width:0;min-height:41px;
+}
+#document-center-root .doc-preview-company{
+ position:relative;display:block;flex:0 0 149px;
+ width:149px;height:39px;overflow:hidden;margin:0;
+}
+#document-center-root .doc-preview-company img{
+ position:absolute;top:50%;left:50%;display:block;
+ width:100%;height:auto;max-height:none;max-width:none;
+ object-fit:contain;transform:translate(-50%,-50%);
+ filter:brightness(0) saturate(100%) invert(25%) sepia(20%)
+  saturate(1044%) hue-rotate(89deg) brightness(94%) contrast(93%);
+}
+#document-center-root .doc-preview-top .doc-preview-system{
+ display:inline-block;min-width:0;margin:0;
+ color:#607a69;font-size:10px;letter-spacing:0;font-weight:600;
+}
+@media(max-width:520px){
+ #document-center-root .doc-preview-top{column-gap:9px;min-height:35px}
+ #document-center-root .doc-preview-company{flex-basis:132px;width:132px;height:35px}
+ #document-center-root .doc-preview-top .doc-preview-system{font-size:9.5px}
+}
