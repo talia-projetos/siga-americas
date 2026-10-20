@@ -65,7 +65,38 @@ let cached={};
 async function docxLib(){return cached.docx??=await import("https://cdn.jsdelivr.net/npm/docx@9.11.0/+esm");}
 async function pdfLib(){return cached.pdf??=await import("https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm");}
 async function zipLib(){return cached.zip??=await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm");}
-function buildDocxContent(model,lib){
+/* Rasterização para Word/PDF: usa o SVG oficial sem editar seus caminhos.
+   A cor discreta é aplicada somente à cópia renderizada no documento. */
+async function officialLogo(){
+ if(!cached.logo){
+  cached.logo=(async()=>{
+   const img=new Image();
+   img.src=new URL("./assets/proerg-official-white.svg?v=1",document.baseURI).href;
+   await img.decode();
+   const src=document.createElement("canvas");src.width=1000;src.height=500;
+   const context=src.getContext("2d",{willReadFrequently:true});
+   if(!context)throw Error("Canvas indisponível");
+   context.drawImage(img,0,0,src.width,src.height);
+   const data=context.getImageData(0,0,src.width,src.height).data;
+   let x0=src.width,y0=src.height,x1=0,y1=0;
+   for(let y=0;y<src.height;y++)for(let x=0;x<src.width;x++){
+    if(data[(y*src.width+x)*4+3]>20){
+     x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);
+    }
+   }
+   if(x0>x1||y0>y1)throw Error("Marca não renderizada");
+   const width=x1-x0+1,height=y1-y0+1;
+   const output=document.createElement("canvas");output.width=width;output.height=height;
+   const out=output.getContext("2d");
+   out.drawImage(src,x0,y0,width,height,0,0,width,height);
+   out.globalCompositeOperation="source-in";out.fillStyle="#31533F";out.fillRect(0,0,width,height);
+   const blob=await new Promise((resolve,reject)=>output.toBlob(b=>b?resolve(b):reject(Error("PNG indisponível")),"image/png"));
+   return {bytes:new Uint8Array(await blob.arrayBuffer()),width,height};
+  })().catch(error=>{cached.logo=null;throw error});
+ }
+ return cached.logo;
+}
+function buildDocxContent(model,lib,logo){
  const {Paragraph,TextRun,Table,TableCell,TableRow,WidthType,BorderStyle,AlignmentType}=lib;
  const green="164D38",muted="567263",light="EEF4EE";
  const para=(text,opt={})=>new Paragraph({
@@ -90,7 +121,9 @@ function buildDocxContent(model,lib){
   ]}))
  });
  const children=[
-  para("PROERG",{bold:true,size:25,color:green,after:60}),
+  ...(logo?[new Paragraph({spacing:{after:70},children:[new lib.ImageRun({
+   data:logo.bytes,type:"png",transformation:{width:135,height:Math.max(22,Math.round(135*logo.height/logo.width))}
+  })]})]:[para("PROERG",{bold:true,size:25,color:green,after:60})]),
   para("SIGA AMÉRICAS  |  SISTEMA DE GESTÃO DA PROERG EM ITAIPU",{size:15,color:muted,after:240}),
   para(model.heading,{bold:true,size:31,color:"193D2A",after:45}),
   para(model.subheading,{size:19,color:muted,after:175}),
@@ -114,11 +147,12 @@ function buildDocxContent(model,lib){
 }
 export async function generateWord(model){
  const lib=await docxLib();
+ const logo=await officialLogo().catch(()=>null);
  const document=new lib.Document({
   creator:"PROERG · SIGA Américas (sistema de gestão)",title:model.heading+" · "+model.reference,
   description:"Modelo administrativo para assinatura manual. Emissão não comprova aceite.",
   styles:{default:{document:{run:{font:"Aptos",size:19,color:"294635"},paragraph:{spacing:{line:276}}}}},
-  sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:850,bottom:760,left:900,right:900}}},children:buildDocxContent(model,lib)}]
+  sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:850,bottom:760,left:900,right:900}}},children:buildDocxContent(model,lib,logo)}]
  });
  return await lib.Packer.toBlob(document);
 }
@@ -146,6 +180,7 @@ export async function generatePDF(models){
  pdf.setAuthor("PROERG · Sistema SIGA Américas");
  pdf.setSubject("Documentos administrativos para coleta de assinatura física; sem comprovação de execução");
  const regular=await pdf.embedFont(lib.StandardFonts.Helvetica),bold=await pdf.embedFont(lib.StandardFonts.HelveticaBold);
+ const companyImage=await officialLogo().then(logo=>pdf.embedPng(logo.bytes)).catch(()=>null);
  const dark=lib.rgb(.10,.26,.20),green=lib.rgb(.11,.37,.27),muted=lib.rgb(.37,.49,.42),line=lib.rgb(.85,.90,.86);
  const W=595.28,H=841.89,margin=49;
  let page,y,pageNo=0;
@@ -153,8 +188,15 @@ export async function generatePDF(models){
  const start=()=>{
   page=pdf.addPage([W,H]);pageNo++;
   page.drawRectangle({x:0,y:H-12,width:W,height:12,color:green});
-  page.drawText("PROERG",{x:margin,y:H-47,size:14,font:bold,color:green});
-  page.drawText("SIGA AMÉRICAS · SISTEMA DE GESTÃO DA PROERG EM ITAIPU",{x:margin,y:H-66,size:8.1,font:regular,color:muted});
+  if(companyImage){
+   const h=114*companyImage.height/companyImage.width;
+   page.drawImage(companyImage,{x:margin,y:H-33-h,width:114,height:h});
+   page.drawText("SIGA AMÉRICAS",{x:margin+130,y:H-45,size:9.5,font:bold,color:green});
+   page.drawText("Sistema de gestão da PROERG em Itaipu",{x:margin+130,y:H-60,size:8,font:regular,color:muted});
+  }else{
+   page.drawText("PROERG",{x:margin,y:H-47,size:14,font:bold,color:green});
+   page.drawText("SIGA AMÉRICAS · SISTEMA DE GESTÃO DA PROERG EM ITAIPU",{x:margin,y:H-66,size:8.1,font:regular,color:muted});
+  }
   page.drawLine({start:{x:margin,y:H-78},end:{x:W-margin,y:H-78},thickness:1,color:line});
   page.drawText("Documento emitido para assinatura física · SIGA Américas",{x:margin,y:37,size:7.2,font:regular,color:muted});
   page.drawText(String(pageNo),{x:W-margin-5,y:37,size:8,font:regular,color:muted});
