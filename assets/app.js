@@ -10,7 +10,7 @@ import {mountFieldReport} from "./field-forms.js?v=6";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 import {renderFinancialIndicator} from "./execution-metrics.js?v=6";
 import {initRoutinePhotoField} from "./routine-photos.js?v=2";
-import {mountDocumentCenter} from "./document-center.js?v=5";
+import {mountDocumentCenter} from "./document-center.js?v=6";
 import {mountCoverageMap} from "./coverage-map.js?v=6";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=3";
 
