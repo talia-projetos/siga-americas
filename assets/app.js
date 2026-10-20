@@ -236,7 +236,7 @@ function fieldValue(key,value){
  if(f?.type==="ref")return escapeHTML(optionLabel(f.table,value,f.display));
  if(f?.type==="boolean")return value?'<span class="tag">Sim</span>':'<span class="tag gray">Não</span>';
  if(f?.type==="date")return escapeHTML(dateBR(value));
- if(["cost","total_cost","estimated_cost","unit_price","estimated_total"].includes(key))return escapeHTML(currency(value));
+ if(["cost","total_cost","estimated_cost","unit_price","estimated_total","estimated_amount"].includes(key))return escapeHTML(currency(value));
  if(["estimated_quantity","required_quantity","observed_quantity"].includes(key))return escapeHTML(new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(value)));
  if(["party_responsible","provider_party"].includes(key))return '<span class="tag">'+escapeHTML(partyLabels[value]||value)+'</span>';
  if(key==="domain")return escapeHTML(domainLabels[value]||value);
@@ -523,6 +523,16 @@ async function saveRecord(e){
   payload.team_id=sectors.length===1?sectors[0]:null;
  }
  if(app.page==="contract_items"&&payload.source_type!=="precos"){notify("Use exclusivamente a planilha de preços neste módulo.",true);return;}
+ if(app.page==="field_execution_entries"){
+  const item=(app.refs.contract_items||[]).find(x=>x.id===payload.contract_item_id);
+  if(!item||item.source_type!=="precos"||!Number.isFinite(Number(item.unit_price))){
+   notify("Selecione um item válido da planilha contratual de preços.",true);return;
+  }
+  if(!(Number(payload.quantity)>0)){notify("Informe quantidade maior que zero.",true);return;}
+  // O valor é sempre derivado da rubrica contratual, não digitado livremente.
+  payload.unit_price=Number(item.unit_price);
+  payload.unit=item.unit||"un";
+ }
  if(app.page==="field_plan_items"&&!(app.refs.activity_catalog||[]).some(item=>item.id===payload.activity_id&&isProgrammableAction(item.code))){
   notify("Selecione uma ação contratual executável. Máquinas, diárias, postos e fornecimentos não entram nesta programação.",true);return;
  }
