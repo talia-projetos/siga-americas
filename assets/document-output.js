@@ -250,8 +250,10 @@ export async function generatePDF(models){
   section("IDENTIFICAÇÃO E REFERÊNCIAS");
   model.fields.forEach(([name,value])=>label(name,value));
   for(const [h,body] of model.sections){
-   section(h);
    const executionRegister=model.kind==="os"&&h.startsWith("03");
+   // Mantém título e linhas de preenchimento juntos em uma mesma página.
+   if(executionRegister)ensure(wrapText(regular,body,9.2,W-margin*2).length*19+49);
+   section(h);
    textLines(body,9.2,{lineHeight:executionRegister?19:13.5,after:executionRegister?12:6});
   }
   section("OBSERVAÇÃO DOCUMENTAL");textLines(model.notice,8,{color:muted,lineHeight:11.5,after:11});
