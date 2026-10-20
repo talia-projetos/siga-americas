@@ -15,7 +15,15 @@ const fileName=(s)=>clean(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").rep
 export function buildOperationalDocument(kind,row,refs){
  if(kind==="os"){
   const a=ref(refs.activity_catalog,row.activity_id,x=>x.code+" · "+x.name);
-  const p=ref(refs.contract_items,row.contract_item_id,x=>x.code+" · "+x.name);
+  const priceItem=(refs.contract_items||[]).find(x=>x.id===row.contract_item_id&&x.source_type==="precos");
+  const p=priceItem?[priceItem.code,priceItem.name].filter(Boolean).join(" · "):"Não vinculado";
+  const priceUnit=clean(priceItem?.unit);
+  const recordedUnit=clean(row.unit);
+  const unit=priceUnit||recordedUnit;
+  const unitMismatch=Boolean(priceUnit&&recordedUnit&&priceUnit!==recordedUnit);
+  const qtySet=row.quantity!==null&&row.quantity!==undefined&&row.quantity!=="";
+  const unitLabel=unit?(priceUnit?unit+" (planilha de preços)":unit+" (informada no cadastro)"):"A definir";
+  const unitAlert=unitMismatch?"Unidade do cadastro divergente da planilha de preços; conferir o registro antes do uso.":!unit&&qtySet?"Unidade não definida; conferir antes do uso.":"";
   return {
    kind,reference:val(row.reference),heading:"ORDEM DE SERVIÇO",subheading:"Programação e orientação para execução",
    badge:"EMISSÃO PARA COLETA DE ASSINATURAS",
@@ -25,14 +33,18 @@ export function buildOperationalDocument(kind,row,refs){
     ["Frente operacional",ref(refs.operational_areas,row.area_id,x=>x.code+" · "+x.name)],
     ["Equipe responsável",ref(refs.teams,row.team_id,x=>x.code+" · "+x.name)],
     ["Local de execução",val(row.location)],["Prazo / data prevista",niceDate(row.due_on)],
-    ["Prioridade",titleCase(row.priority)],["Quantidade informada",numbered(row.quantity)+" "+clean(row.unit)]
+    ["Prioridade",titleCase(row.priority)],
+    ["Quantidade prevista na OS",qtySet?numbered(row.quantity):"A definir"],
+    ["Unidade de medição",unitLabel],
+    ...(unitAlert?[["Conferência necessária",unitAlert]]:[])
    ],
    sections:[
     ["01  DESCRIÇÃO DO SERVIÇO",val(row.description)],
     ["02  ORIENTAÇÕES E IMPEDIMENTOS",val(row.impediment)],
-    ["03  CONTROLE DE EXECUÇÃO","Início: ____/____/________ às ______  |  Término: ____/____/________ às ______\nEquipe mobilizada: _____________________________________________________\nQuantidade executada e comprovada: _____________________________________\nObservações de campo / evidências: _____________________________________"]
+    ["03  REGISTRO POSTERIOR DA EXECUÇÃO","Preenchimento após a realização da atividade; os campos abaixo não representam serviço executado.\nInício: ____/____/________ às ______  |  Término: ____/____/________ às ______\nEquipe mobilizada: _____________________________________________________\nQuantidade efetivamente executada: ______________  Unidade: "+(unit||"________")+
+     "\nEvidências / ocorrências: ______________________________________________"]
    ],
-   notice:"Esta OS organiza a demanda e não equivale a autorização ambiental, execução comprovada, medição aprovada ou aceite contratual. Conferir requisitos de segurança, acessos e autorizações aplicáveis.",
+   notice:"Esta OS registra programação e orientação. A quantidade prevista não constitui execução comprovada, medição aprovada ou aceite contratual. Conferir requisitos de segurança, acessos e autorizações aplicáveis."+(unitAlert?" Atenção: "+unitAlert:""),
    signers:[["EMISSOR / SUPERVISÃO","Nome, cargo e assinatura"],["CIÊNCIA DA EQUIPE / RESPONSÁVEL","Nome, cargo e assinatura"]]
   };
  }

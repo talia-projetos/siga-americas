@@ -2,7 +2,7 @@
 // Gera PDF, Word e lotes diretamente dos cadastros existentes.
 // O log comprova emissão de arquivo, NUNCA impressão física ou assinatura.
 import {buildOperationalDocument,generateWord,generatePDF,generateBatchWordZip,
- generateCompletePack,downloadDocument,safeFilename} from "./document-output.js?v=3";
+ generateCompletePack,downloadDocument,safeFilename} from "./document-output.js?v=4";
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=d=>d?new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
 const labelKind=k=>k==="os"?"Ordem de serviço":"Termo de responsabilidade";
@@ -43,7 +43,7 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
   return '<div class="doc-templates-preview">'+
    '<div class="doc-preview-card"><div class="doc-preview-top"><span class="doc-preview-company"><img src="./assets/proerg-official-white.svg?v=1" alt="Logotipo oficial da PROERG" loading="lazy" decoding="async"></span><span class="doc-preview-system">SIGA Américas</span></div>'+
     '<div class="doc-preview-divider"></div><small>SISTEMA DE GESTÃO DA PROERG EM ITAIPU</small><h3>ORDEM DE SERVIÇO</h3>'+
-    '<p>Identificação · Frente operacional · Equipe · Prazo · Atividade da matriz · Descrição da demanda</p>'+
+    '<p>Identificação · Frente operacional · Item contratual · Quantidade prevista · Unidade de medição · Registro posterior da execução</p>'+
     '<div class="doc-preview-lines"></div><div class="doc-preview-sign">____________________　　____________________<br>Supervisão　　　　　　　Equipe / responsável</div></div>'+
    '<div class="doc-preview-card"><div class="doc-preview-top"><span class="doc-preview-company"><img src="./assets/proerg-official-white.svg?v=1" alt="Logotipo oficial da PROERG" loading="lazy" decoding="async"></span><span class="doc-preview-system">SIGA Américas</span></div>'+
     '<div class="doc-preview-divider"></div><small>SISTEMA DE GESTÃO DA PROERG EM ITAIPU</small><h3>TERMO DE RESPONSABILIDADE</h3>'+

@@ -1,6 +1,6 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=17";
+import {groups,modules} from "./modules.js?v=18";
 import {iconMarkup} from "./icons.js?v=5";
 import {renderDashboardAnalytics} from "./analytics.js?v=6";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
@@ -10,7 +10,7 @@ import {mountFieldReport} from "./field-forms.js?v=6";
 import {mountFieldMonitor} from "./field-monitor.js?v=3";
 import {renderFinancialIndicator} from "./execution-metrics.js?v=6";
 import {initRoutinePhotoField} from "./routine-photos.js?v=2";
-import {mountDocumentCenter} from "./document-center.js?v=4";
+import {mountDocumentCenter} from "./document-center.js?v=5";
 import {mountCoverageMap} from "./coverage-map.js?v=6";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=3";
 
@@ -666,6 +666,38 @@ async function openForm(id=null){
  if(app.page==="field_routine_records"){
   routineEvidence=initRoutinePhotoField(el("routine-photo-root"),app.db,{recordId:row?.id||null,notify});
  }
+ if(app.page==="work_orders"){
+  const fields=el("modal-fields");
+  const priceSelect=fields.querySelector("#fld-contract_item_id");
+  const unitInput=fields.querySelector("#fld-unit");
+  if(unitInput){
+   const hint=document.createElement("small");
+   hint.className="work-order-unit-hint";
+   hint.setAttribute("aria-live","polite");
+   unitInput.closest(".field")?.appendChild(hint);
+   let lastContractUnit="";
+   const syncUnit=()=>{
+    const selected=(app.refs.contract_items||[]).find(item=>item.id===priceSelect?.value&&item.source_type==="precos");
+    const contractUnit=String(selected?.unit??"").trim();
+    if(contractUnit){
+     unitInput.value=contractUnit;
+     unitInput.readOnly=true;
+     lastContractUnit=contractUnit;
+     unitInput.classList.add("work-order-unit-derived");
+     hint.textContent="Unidade definida pelo item "+(selected.code||"")+" da planilha de preços.";
+    }else{
+     if(lastContractUnit&&unitInput.value===lastContractUnit)unitInput.value="";
+     lastContractUnit="";
+     unitInput.readOnly=false;
+     unitInput.classList.remove("work-order-unit-derived");
+     unitInput.placeholder="Informe a unidade da atividade";
+     hint.textContent=priceSelect?.value?"Item sem unidade contratual cadastrada; confirme antes de emitir a OS.":"Selecione um item de preços para preencher automaticamente ou informe a unidade aplicável.";
+    }
+   };
+   priceSelect?.addEventListener("change",syncUnit);
+   syncUnit();
+  }
+ }
  if(app.page==="field_execution_entries"){
   const fields=el("modal-fields");
   const activitySelect=fields.querySelector("#fld-activity_id");
@@ -740,6 +772,16 @@ async function saveRecord(e){
   payload.team_id=sectors.length===1?sectors[0]:null;
  }
  if(app.page==="contract_items"&&payload.source_type!=="precos"){notify("Use exclusivamente a planilha de preços neste módulo.",true);return;}
+ if(app.page==="work_orders"){
+  const item=(app.refs.contract_items||[]).find(x=>x.id===payload.contract_item_id&&x.source_type==="precos");
+  if(payload.contract_item_id&&!item){
+   notify("Item da planilha de preços inválido para esta OS.",true);return;
+  }
+  if(item&&String(item.unit??"").trim())payload.unit=String(item.unit).trim();
+  if(payload.quantity!==null&&payload.quantity!==undefined&&payload.quantity!==""&&!String(payload.unit??"").trim()){
+   notify("Informe a unidade de medição da OS ou vincule um item da planilha de preços.",true);return;
+  }
+ }
  if(app.page==="field_execution_entries"){
   const item=(app.refs.contract_items||[]).find(x=>x.id===payload.contract_item_id);
   if(!item||item.source_type!=="precos"||!Number.isFinite(Number(item.unit_price))){

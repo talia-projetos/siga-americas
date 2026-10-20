@@ -1424,3 +1424,20 @@
   margin:0 0 0 auto;
  }
 }
+
+
+/* Ordem de serviço: unidade contratual preenchida por vínculo, não por inferência. */
+#modal-fields .work-order-unit-hint{
+ display:block;
+ margin:3px 0 0;
+ color:#647c70;
+ font-size:11px;
+ line-height:1.5;
+}
+#modal-fields input.work-order-unit-derived{
+ background:#f2f6f2;
+ border-color:#d6e4d9;
+ color:#345849;
+ cursor:default;
+ font-variant-numeric:tabular-nums;
+}
