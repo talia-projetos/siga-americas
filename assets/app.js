@@ -440,6 +440,17 @@ function fieldInput(f,row){
  const attr=' id="'+htmlId+'" name="'+escapeHTML(f.key)+'"'+required;
  const label='<label for="'+htmlId+'">'+escapeHTML(f.label)+(f.required?' *':'')+'</label>';
  let inp="";
+ if(f.type==="multi_ref"){
+  const stored=Array.isArray(value)?value:[];
+  const selected=stored.length?stored:(row?.team_id?[row.team_id]:[]);
+  const options=(app.refs[f.table]||[]).filter(o=>o.active!==false||selected.includes(o.id));
+  const all=options.length>0&&options.every(o=>selected.includes(o.id));
+  const checklist=options.map(o=>'<label class="purchase-sector-option"><input type="checkbox" name="'+escapeHTML(f.key)+'" data-purchase-sector value="'+escapeHTML(o.id)+'"'+(selected.includes(o.id)?' checked':'')+'><span>'+escapeHTML([o.code,o.name].filter(Boolean).join(" · "))+'</span></label>').join("");
+  return '<fieldset class="field wide purchase-sector-field"><legend>'+escapeHTML(f.label)+'</legend>'+
+   '<label class="purchase-sector-all"><input type="checkbox" data-purchase-select-all'+(all?' checked':'')+(options.length?'':' disabled')+'><span>Selecionar todos os setores</span></label>'+
+   '<div class="purchase-sector-grid">'+(checklist||'<span class="muted">Nenhum setor cadastrado.</span>')+'</div>'+
+   '<small class="purchase-sector-counter" data-purchase-sector-counter>'+selected.length+' de '+options.length+' setores selecionados</small></fieldset>';
+ }
  if(f.type==="select"){
   inp='<select'+attr+'><option value="">Selecione...</option>'+f.options.map(o=>'<option value="'+escapeHTML(o.value)+'"'+(String(o.value)===String(value)?' selected':'')+'>'+escapeHTML(o.label)+'</option>').join("")+'</select>';
  }else if(f.type==="ref"){
