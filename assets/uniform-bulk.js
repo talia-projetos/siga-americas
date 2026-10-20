@@ -88,7 +88,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
     '<td><input type="text" class="uniform-size" data-uniform-pants="'+safe(e.id)+'" list="uniform-pants-sizes" maxlength="24" placeholder="Ex.: 42" value="'+safe(pantsInfo(sizes.pants_size).size)+'" aria-label="Tamanho de calça de '+safe(e.name)+'"></td>'+
     '<td><input type="text" class="uniform-size" data-uniform-shoe="'+safe(e.id)+'" maxlength="12" placeholder="Ex.: 40" value="'+safe(sizes.shoe_size)+'" aria-label="Número de botina de '+safe(e.name)+'"></td>'+
     '<td><input type="text" class="uniform-size" data-uniform-jacket="'+safe(e.id)+'" maxlength="12" placeholder="Ex.: G" value="'+safe(sizes.jacket_size)+'" aria-label="Tamanho de jaqueta de '+safe(e.name)+'"></td>'+
-    '<td><span class="uniform-observation">'+safe(pantsInfo(sizes.pants_size).note||"—")+'</span></td>'+
+    '<td><span class="uniform-observation">'+safe(e.uniform_notes||pantsInfo(sizes.pants_size).note||"—")+'</span></td>'+
     '<td>'+label+'</td></tr>';
   }).join("");
   return '<section class="table-panel uniform-roster"><div class="table-head"><div><h2>Tamanhos por colaborador</h2><span>'+number(people.length)+' exibido(s) · Camisa, calça, botina e jaqueta editáveis nesta tabela. Salvar tamanhos não registra entrega.</span></div></div>'+
@@ -190,7 +190,7 @@ export async function mountUniformManager(root,db,{notify,onSingle}={}){
  }
  async function refresh(){
   const [employees,teams,batches,recipients,deliveries]=await Promise.all([
-   table("employees","id,name,team_id,shirt_size,pants_size,shoe_size,jacket_size,active",600),
+   table("employees","id,name,team_id,shirt_size,pants_size,shoe_size,jacket_size,uniform_notes,active",600),
    table("teams","id,code,name,active",60),
    table("uniform_delivery_batches","id,request_token,cycle_start,delivered_on,receipt_ref,notes,created_at",700),
    table("uniform_delivery_batch_recipients","id,batch_id,employee_id,cycle_start",1800),
