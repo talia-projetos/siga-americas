@@ -532,6 +532,7 @@ async function modulePage(key){
    app.rows=app.rows.filter(row=>allowed.has(row.activity_id));
   }
   if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
+  if(key==="service_posts")app.rows.sort((a,b)=>String(a.code||"").localeCompare(String(b.code||""),"pt-BR",{numeric:true}));
   const buttons=(privileged()
     ?key==="uniform_deliveries"
       ?'<button class="btn btn-primary" data-action="uniformBatch">'+iconMarkup("people")+' Registrar em lote</button>'+
