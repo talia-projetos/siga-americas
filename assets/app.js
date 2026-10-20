@@ -145,12 +145,13 @@ async function dashboard(){
     '<strong>'+escapeHTML(value)+'</strong><small>'+escapeHTML(detail)+'</small>'+
     '<span class="metric-open" aria-hidden="true">'+iconMarkup("arrow")+'</span></button>';
  }).join("");
- const shortcuts=["field_monitor","field_programs","resource_check","coverage"].filter(canView);
+ const shortcuts=["document_center","work_orders","field_monitor","field_programs","resource_check","coverage"].filter(canView);
  const quick=shortcuts.map(key=>
   '<button type="button" data-nav="'+key+'" class="quick-link"><span class="quick-link-label">'+iconMarkup(key)+escapeHTML(nameFor(key))+'</span><span class="quick-link-arrow" aria-hidden="true">'+iconMarkup("arrow")+'</span></button>'
  ).join("");
- const hero=title("inicio","Acompanhe as equipes, os recursos e as prioridades do contrato, em um só lugar.",
-   '<button type="button" class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Planejamento</button>'+
+ const hero=title("inicio","Supervisão da execução contratual, programação, equipes e recursos, em uma única visão.",
+   '<button type="button" class="btn btn-secondary" data-nav="document_center">'+iconMarkup("file")+' Documentos em lote</button>'+
+   '<button type="button" class="btn btn-secondary" data-nav="field_programs">'+iconMarkup("calendar")+' Programar serviços</button>'+
    '<button type="button" class="btn btn-primary" data-nav="field_monitor">'+iconMarkup("field_monitor")+' Acompanhar equipes</button>');
  const body=
   hero+
@@ -158,12 +159,12 @@ async function dashboard(){
    '<div class="dashboard-section-head"><div><span class="eyebrow">PAINEL OPERACIONAL</span><h2>O que precisa de atenção</h2><p>Indicadores atualizados com os registros disponíveis no sistema.</p></div></div>'+
    '<div class="metric-grid dashboard-metrics">'+metricsHTML(["—","—","—","—"])+'</div>'+
   '</section>'+
-  '<div id="dashboard-execution-finance"></div>'+ 
-  '<div id="dashboard-coverage-map"></div>'+ 
   '<div class="panel-grid dashboard-utility-grid">'+
     '<section class="panel dashboard-workspace-panel"><div class="panel-inner"><span class="eyebrow">ROTINA DE GESTÃO</span><h2>Continuar de onde você precisa</h2><p>Acesse rapidamente as funções usadas na supervisão e no planejamento.</p><div class="quick-grid dashboard-quick-grid">'+quick+'</div></div></section>'+
     '<section class="panel dashboard-activity-panel"><div class="panel-inner"><span class="eyebrow">ACOMPANHAMENTO</span><div class="dashboard-recent-head"><h2>Ordens de serviço recentes</h2><button class="table-action" type="button" data-nav="work_orders">Ver todas '+iconMarkup("arrow")+'</button></div><div id="dashboard-recent-orders" class="dashboard-recent-orders"><p class="dashboard-subtle">Buscando movimentações...</p></div></div></section>'+
   '</div>'+
+  '<div id="dashboard-execution-finance"></div>'+
+  '<div id="dashboard-coverage-map"></div>'+
   '<section id="dashboard-analytics" class="dashboard-analytics" aria-label="Indicadores por área"></section>';
  el("main").innerHTML=body;
  const metrics=el("main").querySelector(".dashboard-metrics");
