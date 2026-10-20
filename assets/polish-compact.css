@@ -820,3 +820,10 @@
 .coverage-status--em_execucao.tag,.coverage-status--a_validar.tag{color:var(--siga-state-amber)!important;background:var(--siga-state-amber-bg)!important;border-color:var(--siga-state-amber-border)!important}
 .coverage-status--executada.tag{color:var(--siga-state-green)!important;background:var(--siga-state-green-bg)!important;border-color:var(--siga-state-green-border)!important}
 .coverage-status--inviavel.tag{color:var(--siga-state-red)!important;background:var(--siga-state-red-bg)!important;border-color:var(--siga-state-red-border)!important}
+
+/* Central de documentos segue a mesma escala dos estados operacionais. */
+.document-record-status[data-status="aberta"],.document-record-status[data-status="programada"]{color:var(--siga-state-blue)!important;background:var(--siga-state-blue-bg)!important;border-color:var(--siga-state-blue-border)!important}
+.document-record-status[data-status="em_execucao"],.document-record-status[data-status="pendente_assinatura"],.document-record-status[data-status="impedida"]{color:var(--siga-state-amber)!important;background:var(--siga-state-amber-bg)!important;border-color:var(--siga-state-amber-border)!important}
+.document-record-status[data-status="ativo"],.document-record-status[data-status="concluida"],.document-record-status[data-status="encerrado"]{color:var(--siga-state-green)!important;background:var(--siga-state-green-bg)!important;border-color:var(--siga-state-green-border)!important}
+.document-record-status[data-status="cancelada"],.document-record-status[data-status="inviavel"]{color:var(--siga-state-red)!important;background:var(--siga-state-red-bg)!important;border-color:var(--siga-state-red-border)!important}
+.suggest-stopped{color:var(--siga-state-red)!important;background:var(--siga-state-red-bg)!important;border-color:var(--siga-state-red-border)!important}
