@@ -78,7 +78,7 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
      '<label class="document-choice"><input type="checkbox" data-doc-id="'+esc(key)+'"'+(state.selected.has(key)?" checked":"")+'><span></span></label>'+
      '<div class="document-record-title"><strong>'+esc(label(x))+'</strong><small>'+esc(labelKind(x.kind))+'</small></div>'+
      '<div class="document-record-detail"><strong>'+esc(d.sub)+'</strong><small>'+esc(d.second)+' · '+esc(d.moment)+'</small></div>'+
-     '<span class="document-record-status">'+esc(String(d.status||"").replaceAll("_"," "))+'</span>'+
+     '<span class="document-record-status status-chip" data-status="'+esc(d.status||"")+'">'+esc(String(d.status||"").replaceAll("_"," "))+'</span>'+
      '<div class="document-record-buttons"><button type="button" class="table-action" data-doc-edit="'+esc(key)+'">Editar cadastro</button>'+
      '<button type="button" class="table-action" data-doc-single="pdf" data-doc-row="'+esc(key)+'">PDF</button>'+
      '<button type="button" class="table-action" data-doc-single="docx" data-doc-row="'+esc(key)+'">Word</button></div>'+
