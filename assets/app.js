@@ -258,6 +258,13 @@ function optionLabel(table,id,display){
  return String(x[display]??x.name??x.code??x.description??"Registro");
 }
 function fieldValue(key,value){
+ if(app.page==="teams"&&key==="name"){
+  const members=(app.refs.teamWorkers||[]).filter(person=>person.team_id===app.rows.find(team=>team.name===value)?.id);
+  const technicians=members.filter(p=>/t[eé]cnic/i.test(p.job_title||""));
+  return '<div class="team-search-cell"><strong>'+escapeHTML(value||"Equipe")+'</strong>'+
+   (technicians.length?'<small>Técnicos: '+escapeHTML(technicians.map(p=>p.name).join(", "))+'</small>':
+    '<small>Técnico responsável não identificado no cadastro</small>')+'</div>';
+ }
  if(value===null||value===undefined||value==="")return '<span class="muted">—</span>';
  const f=modules[app.page]?.fields?.find(x=>x.key===key);
  if(app.page==="employees"&&key==="name")return '<strong class="employee-name">'+escapeHTML(value)+'</strong>';
@@ -304,7 +311,10 @@ function fieldValue(key,value){
 function filteredRows(){
  const term=norm(app.search);
  const rows=app.rows.filter(row=>{
-  const matches=!term||Object.values(row).some(v=>norm(v).includes(term))||modules[app.page].fields.some(f=>f.type==="ref"&&norm(optionLabel(f.table,row[f.key],f.display)).includes(term));
+  const teamMembers=app.page==="teams"?(app.refs.teamWorkers||[]).filter(person=>person.team_id===row.id):[];
+  const matches=!term||Object.values(row).some(v=>norm(v).includes(term))||
+   modules[app.page].fields.some(f=>f.type==="ref"&&norm(optionLabel(f.table,row[f.key],f.display)).includes(term))||
+   teamMembers.some(person=>norm(person.name+" "+(person.job_title||"")).includes(term));
   const selections=Object.entries(app.filters||{}).every(([key,value])=>!value||String(row[key]??"")===String(value));
   return matches&&selections;
  });
@@ -444,6 +454,11 @@ async function modulePage(key){
  el("main").innerHTML=title(key,m.description)+'<div class="loading-page"><div class="loader"></div><p>Consultando registros...</p></div>';
  try{
   await ensureRefs(key);
+  if(key==="teams"){
+   const staff=await app.db.from("employees")
+    .select("id,name,team_id,job_title,active").eq("active",true).limit(500);
+   app.refs.teamWorkers=staff.error?[]:staff.data||[];
+  }
   let query=app.db.from(m.table).select("*").order("created_at",{ascending:false});
   if(key==="contract_items")query=query.eq("source_type","precos");
   if(key==="employees")query=query.eq("active",true);
@@ -467,7 +482,7 @@ async function modulePage(key){
   const overview=special?catalogOverview(key,app.rows):"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
-  '<section class="table-panel catalog-table '+(key==="employees"?'people-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="Pesquisar..." autocomplete="off">'+
+  '<section class="table-panel catalog-table '+(key==="employees"?'people-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
    (special?'<button type="button" class="btn btn-ghost filter-clear" id="clear-list-filters">'+iconMarkup("close")+' Limpar</button>':"")+
   '</div></div>'+
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
