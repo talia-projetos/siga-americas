@@ -1,7 +1,7 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
 import {groups,modules} from "./modules.js?v=15";
-import {iconMarkup} from "./icons.js?v=4";
+import {iconMarkup} from "./icons.js?v=5";
 import {renderDashboardAnalytics} from "./analytics.js?v=4";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
 import {mountInventoryCheck} from "./resource-check.js?v=2";
@@ -341,7 +341,7 @@ function renderRows(){
    button.closest("th")?.setAttribute("aria-sort",direction);
    button.classList.toggle("active",active);
    const marker=button.querySelector(".sort-arrow");
-   if(marker){marker.innerHTML=iconMarkup("arrow");marker.style.transform=active?(app.sort.descending?"rotate(90deg)":"rotate(-90deg)"):"rotate(0deg)";}
+   if(marker)marker.innerHTML=iconMarkup(active?(app.sort.descending?"sortdown":"sortup"):"sort");
  });
  if(!rows.length){
   table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'"><div class="empty-state"><div class="empty-symbol">'+iconMarkup("search")+'</div><strong>Nenhum registro encontrado</strong>Revise a pesquisa ou os filtros.</div></td></tr>';
@@ -489,7 +489,7 @@ async function modulePage(key){
   '<div class="table-scroll"><table class="data-table"><thead><tr>'+m.columns.map(col=>{
     const numeric=["unit_price","estimated_quantity","estimated_total","required_quantity","observed_quantity"].includes(col);
     const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)"}[col]||col;
-    return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'">'+escapeHTML(label)+' <span class="sort-arrow" aria-hidden="true">'+iconMarkup("arrows")+'</span></button></th>';
+    return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>';
   el("list-search").addEventListener("input",event=>{app.search=event.target.value;renderRows()});
