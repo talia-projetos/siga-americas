@@ -210,6 +210,7 @@ async function ensureRefs(key){
  const fetches=tables.filter(table=>!app.refs[table]).map(async table=>{
   let lookup=app.db.from(table).select("*").order("created_at",{ascending:false});
   if(table==="contract_items")lookup=lookup.eq("source_type","precos");
+  if(table==="employees")lookup=lookup.eq("active",true);
   const {data,error}=await lookup.limit(500);
   if(error)throw error;app.refs[table]=data||[];
  });
@@ -395,6 +396,7 @@ async function modulePage(key){
   await ensureRefs(key);
   let query=app.db.from(m.table).select("*").order("created_at",{ascending:false});
   if(key==="contract_items")query=query.eq("source_type","precos");
+  if(key==="employees")query=query.eq("active",true);
   const {data,error}=await query.limit(500);
   if(error)throw error;
   app.rows=data||[];
