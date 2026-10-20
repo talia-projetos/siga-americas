@@ -115,3 +115,6 @@
  .uniform-roster .data-table td:before{content:attr(data-label);flex:0 0 35%;font-size:11px;color:#657e61;text-align:left}
  .uniform-roster .data-table td .uniform-size{max-width:62%;min-width:0}
 }
+
+/* Observações específicas de fardamento, como acréscimos à barra da calça. */
+.uniform-observation{font-size:11px;color:#526c45;line-height:1.45;overflow-wrap:anywhere}
