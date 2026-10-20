@@ -7,7 +7,7 @@ const formMonth=v=>String(v||"").slice(0,7);
 const sixMonths=start=>{const [y,m]=String(start).slice(0,7).split("-").map(Number);const d=new Date(Date.UTC(y,m-1+6,1));return d.toISOString().slice(0,10)};
 const oneDay=date=>{const d=new Date(date+"T12:00:00Z");d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10)};
 const number=n=>new Intl.NumberFormat("pt-BR").format(Number(n||0));
-const validSize=value=>/^[\p{L}\p{N}./ -]{1,12}$/u.test(String(value||"").trim());
+const validSize=value=>/^[\p{L}\p{N}./ +\-]{1,24}$/u.test(String(value||"").trim());
 const opt=(value,label,active)=>'<option value="'+safe(value)+'"'+(String(value)===String(active)?' selected':'')+'>'+safe(label)+'</option>';
 const kitItems=[["Camisas UV manga longa",4],["Camisa polo",1],["Calças táticas",4]];
 export async function mountUniformManager(root,db,{notify,onSingle}={}){
