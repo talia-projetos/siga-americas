@@ -594,6 +594,7 @@ async function executionSourceNotesPanel(){
  const breakdownFor=n=>{
   const group=linesBySource.get(n.source_key)||[];
   if(!group.length)return '<span class="execution-source-empty">A individualizar; consultar anotação original</span>';
+  const repeatedNotes=new Set();
   return '<div class="execution-source-breakdown">'+group.map(line=>{
    const hasNumber=line.quantity_reported!==null&&line.quantity_reported!==undefined;
    const codes=(line.candidate_price_codes||[]).filter(code=>priceMap.has(code));
@@ -603,7 +604,11 @@ async function executionSourceNotesPanel(){
     formatQty(Math.ceil(Number(line.quantity_reported)))+' '+(compatible?uniqueUnits[0]:'(unidade a conferir)'):
     'Medida pendente';
    const literal=String(line.original_quantity_note||"").trim();
-   const showLiteral=!hasNumber&&literal&&!/sem (área|quantidade|medida|volume)|não apurad/i.test(literal);
+   const displayLiteral=!hasNumber&&literal&&!/sem (área|quantidade|medida|volume)|não apurad/i.test(literal);
+   // Um total compartilhado por várias localidades (ex.: 5 cargas) só pode
+   // aparecer uma vez por anotação: nunca replicar como se fosse a soma de cada área.
+   const showLiteral=displayLiteral&&!repeatedNotes.has(literal);
+   if(showLiteral)repeatedNotes.add(literal);
    return '<div class="execution-source-split-item">'+
     '<strong>'+escapeHTML(amount)+'</strong>'+
     '<span>'+escapeHTML(line.service_name||"Serviço não identificado")+' · '+escapeHTML(line.location_name||"Local a confirmar")+'</span>'+
@@ -629,7 +634,8 @@ async function executionSourceNotesPanel(){
   '<label>Quantidade<select id="execution-location-quantity"><option value="all"'+(selectedKind==="all"?" selected":"")+'>Todas</option><option value="reported"'+(selectedKind==="reported"?" selected":"")+'>Quantidade relatada</option><option value="missing"'+(selectedKind==="missing"?" selected":"")+'>Medida pendente</option></select></label>'+
   '<span id="execution-locations-shown">'+lines.length+' linhas</span></div>'+
   '<div class="table-scroll execution-locations-scroll"><table class="execution-sources-table execution-locations-table"><thead><tr><th>Data</th><th>Local</th><th>Serviço</th><th>Quantitativo</th><th>Unidade / fonte</th><th>Conferência</th></tr></thead><tbody>'+entries+'</tbody></table></div>'+
-  '<details class="execution-original-notes"><summary>Consultar os '+notes.length+' conjuntos fotográficos (quantitativos discriminados por local)</summary>'+
+  '<details class="execution-original-notes"><summary>Consultar as '+notes.length+' anotações de origem (quantitativos separados por local)</summary>'+
+  '<p class="execution-original-warning">Quantidades transcritas, ainda não confirmadas em campo. Volumes e cargas sem data ou sem localização específica não são medição. Um total anotado para vários locais não deve ser somado novamente em cada local.</p>'+ 
   '<div class="table-scroll"><table class="execution-sources-table"><thead><tr><th>Data</th><th>Serviço</th><th>Quantitativos por local e serviço</th><th>Fonte / situação</th><th>Detalhamento</th></tr></thead><tbody>'+original+'</tbody></table></div></details>'+
   '</div></details></section>';
 }
