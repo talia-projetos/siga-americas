@@ -1,0 +1,100 @@
+/* SIGA Américas · coerência UI/UX em telas operacionais.
+   Camada global somente de apresentação: preserva dados, eventos e IDs existentes. */
+:root{
+ --siga-space-1:6px;--siga-space-2:10px;--siga-space-3:14px;--siga-space-4:18px;
+ --siga-surface:#fff;--siga-stroke:#dfe7e0;--siga-border-radius:12px;--siga-focus:#669777;
+}
+#main .page-heading{gap:18px;align-items:start;margin-bottom:18px}
+#main .page-heading h1{letter-spacing:-.7px;line-height:1.12}
+#main .page-heading p{max-width:720px;line-height:1.55}
+#main .heading-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#main .table-panel,#main .panel,#main .document-workspace{
+ border-color:var(--siga-stroke);box-shadow:0 3px 13px rgba(33,66,44,.035);
+}
+#main .table-panel .table-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+#main .table-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+#main :where(input,textarea,select,button,summary,a):focus-visible{
+ outline:2px solid var(--siga-focus);outline-offset:2px;
+}
+#main input:disabled,#main select:disabled,#main textarea:disabled{opacity:.7;cursor:not-allowed}
+#main .data-table th,#main .finance-planning-table th,#main .execution-sources-table th{
+ vertical-align:middle;letter-spacing:.01em;
+}
+#main .data-table td,#main .finance-planning-table td,#main .execution-sources-table td{vertical-align:middle}
+#main .data-table td:first-child,#main .data-table th:first-child{padding-left:16px}
+#main .data-table td:last-child,#main .data-table th:last-child{padding-right:16px}
+#main .table-scroll{max-width:100%;overscroll-behavior-x:contain}
+#main .table-panel .table-head>div:first-child{min-width:0}
+#main details>summary{scroll-margin-top:84px}
+#main .notice{line-height:1.55}
+#main .document-guide,#main .document-workspace{padding:18px 20px}
+#main .document-guide-head h2{margin-top:3px}
+#main .document-filters{column-gap:12px}
+#main .document-record-buttons{gap:6px}
+#main .document-record-buttons .table-action{min-height:32px}
+#main #finance-plan-current>.finance-panel-heading{padding-top:12px}
+#main .finance-month-tabs{padding-bottom:10px}
+#main .finance-planning-table td details>summary{white-space:normal}
+#main .finance-scenario-alert{line-height:1.65}
+
+/* Escala: operação e impressão à frente; detalhes de segurança disponíveis sob demanda. */
+#main .daily-coverage-shell{margin:12px 20px 18px;border-radius:14px;background:#fff}
+#main .daily-cover-top{align-items:center;padding:17px 18px 12px;gap:18px}
+#main .daily-cover-top h2{font-size:20px;line-height:1.25;margin:3px 0 4px}
+#main .daily-cover-top p{font-size:11.5px;line-height:1.5}
+#main .daily-pdf-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#main .daily-pdf-actions button{min-height:38px;font-size:11.5px;white-space:nowrap}
+#main .daily-cover-overview{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:2px 18px 13px}
+#main .daily-cover-overview>div{padding:9px 12px;background:#f8faf8;border-color:#e7eee8}
+#main .daily-cover-overview strong{font-size:15px;font-weight:740;line-height:1.3;color:#31553e}
+#main .daily-cover-overview span{font-size:10.5px}
+#main .daily-cover-selects{gap:10px;padding:0 18px 14px}
+#main .daily-cover-selects label{font-size:10.5px}
+#main .daily-cover-selects select{background:#fff;min-height:41px;font-size:12px}
+#main .daily-cover-list{gap:9px;padding:0 18px 17px;align-items:start}
+#main .daily-cover-card{border:1px solid #e1e9e3;border-radius:11px;padding:13px 14px 12px;background:#fff;box-shadow:0 2px 6px rgba(33,66,44,.025)}
+#main .daily-cover-card-head{align-items:center;margin-bottom:11px}
+#main .daily-cover-card-head strong{font-size:12.5px}
+#main .daily-cover-card-head small{line-height:1.55}
+#main .daily-cover-card .status-chip{font-size:10px;flex-shrink:0;white-space:nowrap}
+#main .daily-cover-card .daily-activity-title{font-size:13px;line-height:1.48;font-weight:740;color:#244e33;margin:0 0 11px}
+#main .daily-cover-card .daily-place{display:grid;gap:3px;border-left:2px solid #acc5b0;padding-left:9px;margin:0 0 9px}
+#main .daily-cover-card .daily-place strong{font-size:10px;color:#708479;font-weight:670}
+#main .daily-cover-card .daily-place span{font-size:11.5px;color:#3f624a;line-height:1.5}
+#main .daily-plan-details{border-top:1px solid #edf1ed;padding-top:9px;margin-top:9px}
+#main .daily-plan-details>summary{color:#557760;font-size:11px;font-weight:680;cursor:pointer;padding:4px 0}
+#main .daily-plan-details>p{color:#60766a;font-size:11px;line-height:1.55;margin:7px 0}
+#main .daily-cover-actions{grid-template-columns:minmax(140px,1fr) minmax(180px,1.45fr) auto;align-items:end;gap:8px;padding-top:10px;margin-top:12px}
+#main .daily-cover-actions label{font-size:10px;line-height:1.3}
+#main .daily-cover-actions .daily-reason-wrap[hidden]{display:none!important}
+#main .daily-cover-actions select{min-height:36px}
+#main .daily-cover-actions textarea{min-height:36px;max-height:120px}
+#main .daily-cover-actions>button{min-height:36px;padding:8px 13px;margin:0}
+#main .daily-cover-card .status-chip[data-status="impedida"]{color:#976333;background:#fbf1e4;border:1px solid #f0ddc5}
+#main .daily-cover-card .status-chip[data-status="remanejada"]{color:#456589;background:#eef3f9;border:1px solid #dce8f4}
+#main .daily-coverage-shell>.finance-scenario-alert{margin:0 18px 18px;padding:10px 12px}
+@media(max-width:1100px){
+ #main .daily-cover-actions{grid-template-columns:1fr 1fr}
+ #main .daily-cover-actions>button{grid-column:1/-1;justify-self:start}
+}
+@media(max-width:860px){
+ #main .daily-cover-top{align-items:flex-start;flex-direction:column}
+ #main .daily-pdf-actions{justify-content:flex-start}
+ #main .daily-cover-list{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+ #main .page-heading{flex-direction:column}
+ #main .table-panel .table-head{flex-direction:column;align-items:stretch}
+ #main .daily-coverage-shell{margin:10px 12px}
+ #main .daily-cover-overview{grid-template-columns:1fr;gap:6px;padding:0 13px 12px}
+ #main .daily-cover-overview>div{flex-direction:row;justify-content:space-between;align-items:center}
+ #main .daily-cover-list{padding:0 12px 12px}
+ #main .daily-cover-top{padding:13px}
+ #main .daily-cover-selects{padding:0 13px 13px}
+ #main .daily-cover-actions{grid-template-columns:1fr}
+ #main .daily-cover-actions>button{grid-column:auto}
+ #main .daily-pdf-actions{width:100%}
+ #main .daily-pdf-actions button{flex:1;white-space:normal}
+ #main .document-guide,#main .document-workspace{padding:14px}
+}
+@media(prefers-reduced-motion:reduce){#main *{scroll-behavior:auto!important;transition-duration:0ms!important;animation-duration:0ms!important}}
