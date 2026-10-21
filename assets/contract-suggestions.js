@@ -93,9 +93,9 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
  if(matrix.length!==73)throw Error("A matriz consultada possui "+matrix.length+" registros, em vez de 73. Verifique a base antes de priorizar.");
  const state={scenario:"incerto",window:"normal",filter:"acoes",sort:"sugerida",query:""};
  const dates=executions.map(e=>String(e.performed_on||"").slice(0,10)).filter(Boolean).sort();
- const datesLabel=dates.length?"Ocorrência registrada: "+dateBR(dates[0])+" a "+dateBR(dates[dates.length-1]):"Ainda não há apontamentos de campo";
+ const datesLabel=dates.length?"Datas extremas dos registros consultados: "+dateBR(dates[0])+" a "+dateBR(dates[dates.length-1])+" (não indica execução diária)":"Ainda não há apontamentos cadastrados";
  root.innerHTML='<section class="suggestions-guide">'+
-  '<div class="suggestions-heading"><div><span class="eyebrow">REUNIÃO DE PLANEJAMENTO · PROERG / ITAIPU</span><h2>Itens contratuais sugeridos</h2>'+
+  '<div class="suggestions-heading"><div><span class="eyebrow">ANÁLISE OPERACIONAL · PROERG / ITAIPU</span><h2>Itens contratuais sugeridos</h2>'+
   '<p>Prioridade por recorrência potencial, execução já observada e relevância financeira registrada. <strong>Bloqueadores de clima, segurança e autorização prevalecem sobre valor.</strong></p></div>'+
   '<div class="suggestions-73">73 <span>itens da matriz</span></div></div>'+
   '<div class="suggestions-controls">'+
@@ -172,7 +172,7 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
     ["Atividades com execução",recent,"Quantidade de itens distintos"],
     ["Bloqueios no cenário",blockers,"Prioridade absoluta: segurança e viabilidade"]
    ].map(([label,value,note])=>'<div class="suggestion-stat"><small>'+text(label)+'</small><strong>'+text(value)+'</strong><span>'+text(note)+'</span></div>').join('')+'</div>';
-  root.querySelector("#suggest-shortlist").innerHTML='<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Direcionamento para a reunião</h3><p>Oportunidades para vistoria e confirmação, não autorização de execução. '+text(datesLabel)+'.</p></div><button type="button" class="btn btn-ghost" id="suggest-export">Exportar os 73 itens (CSV)</button></div>'+
+  root.querySelector("#suggest-shortlist").innerHTML='<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Sugestões para vistoria e planejamento</h3><p>Seleção automática para conferência técnica. Não constitui reunião agendada, OS autorizada nem medição validada. '+text(datesLabel)+'.</p></div><button type="button" class="btn btn-ghost" id="suggest-export">Exportar os 73 itens (CSV)</button></div>'+
    '<div class="suggestion-list">'+top.map(x=>row(x,true)).join('')+'</div></section>'+
    '<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Maiores valores registrados · por item da matriz</h3>'+
    '<p>Valores dos apontamentos já cadastrados, sujeitos à conferência. Rubricas de apoio, como SE, não são novas ações executáveis.</p></div></div>'+
