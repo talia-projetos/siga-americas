@@ -1621,3 +1621,57 @@
  #main .execution-location-filters{grid-template-columns:minmax(0,1fr)}
  #main .execution-location-filters #execution-locations-shown{grid-column:auto}
 }
+
+
+/* Planejamento financeiro em rascunho; não confundir cotas matemáticas com medições. */
+#main .finance-planning-shell,#main .climate-planner-panel{border:1px solid #dfe8df;background:#fff;border-radius:13px;margin:0 0 16px;overflow:hidden}
+#main .finance-panel-heading,#main .climate-panel-head{padding:18px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+#main .finance-panel-heading h2,#main .climate-panel-head h2{margin:4px 0 6px;font-size:19px;color:#244a36}
+#main .finance-panel-heading h3{margin:0;color:#365948;font-size:14px}
+#main .finance-panel-heading p,#main .climate-panel-head p{margin:0;font-size:12px;line-height:1.55;color:#728778}
+#main .climate-panel-head a{font-size:11px;color:#456e52;white-space:nowrap;padding:8px;text-decoration:none}
+#main .finance-month-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:0 20px 14px}
+#main .finance-month-tabs button{border:1px solid #dfe8dd;color:#557562;border-radius:8px;padding:10px 13px;background:#f8faf8;cursor:pointer;font-weight:690;font-size:12px}
+#main .finance-month-tabs button[aria-current="true"]{background:#e4efe7;border-color:#bad3c1;color:#2b6041}
+#main .finance-planning-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:0 20px 16px}
+#main .finance-planning-kpis>div{padding:12px;border-radius:9px;background:#f3f7f2;border:1px solid #e2eadf;display:grid;gap:6px}
+#main .finance-planning-kpis span{color:#738477;font-size:11px}
+#main .finance-planning-kpis strong{color:#355d45;font-size:17px;font-variant-numeric:tabular-nums}
+#main .finance-scenario-alert{margin:0 20px 15px;font-size:11.5px;line-height:1.6;color:#6a785b;background:#f9faf3;padding:12px;border-radius:8px;border:1px solid #eaeddd}
+#main #finance-plan-current>.finance-panel-heading{padding-top:4px;padding-bottom:10px}
+#main .finance-planning-table{border-collapse:collapse;min-width:980px;width:100%}
+#main .finance-planning-table th{font-size:10.5px;padding:11px;text-align:left;line-height:1.4;background:#f3f7f3;color:#5b7362;border-bottom:1px solid #e1e9e2}
+#main .finance-planning-table td{font-size:11px;line-height:1.5;padding:10px 11px;vertical-align:top;color:#526653;border-bottom:1px solid #edf1ec}
+#main .finance-planning-table td small{font-size:10px;display:block;color:#839387;margin-top:3px}
+#main .finance-planning-table td strong{font-size:11.2px;color:#345442}
+#main .finance-planning-table td details>summary{cursor:pointer;font-weight:680;color:#4e745c;white-space:nowrap}
+#main .finance-planning-table td details>p{margin:5px 0;font-size:11px;color:#69806b;max-width:330px}
+#main .finance-planning-table input.monthly-qty{max-width:112px;min-height:36px;border:1px solid #d5e1d7;border-radius:7px;background:#fff;padding:5px 8px;font-size:12px}
+#main .finance-planning-table td .table-action{display:block;margin-bottom:6px;text-align:left;white-space:normal}
+#main .finance-reference-table{margin:17px 20px 20px;border:1px solid #e2eae4;border-radius:9px;overflow:hidden}
+#main .finance-reference-table>summary{cursor:pointer;padding:13px 14px;background:#f7faf7;font-size:12px;font-weight:680;color:#4a7057}
+#main .climate-seasonal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:0 20px 14px}
+#main .climate-seasonal>div{display:grid;gap:7px;padding:12px;border:1px solid #e2e9e2;border-radius:9px;background:#fafbfa}
+#main .climate-seasonal strong{font-size:12px;color:#446551}
+#main .climate-seasonal span{font-size:11px;line-height:1.6;color:#64796a}
+#main .climate-live-result{margin:0 20px 12px;padding:14px;border:1px solid #e1eae3;background:#f7faf7;border-radius:9px;color:#566c5d;font-size:11px}
+#main .climate-label{font-size:11px;margin:0 0 11px;color:#50745d;font-weight:750}
+#main .climate-live-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:9px}
+#main .climate-live-days>div{display:grid;gap:6px;padding:10px;border:1px solid #e5ece5;border-radius:8px;background:#fff}
+#main .climate-live-days strong{color:#3f6049;font-size:11px}
+#main .climate-live-days span{color:#516f60;font-size:13px;font-variant-numeric:tabular-nums}
+#main .climate-live-days small{color:#6b7d6e;font-size:10px;line-height:1.45}
+#main .climate-live-warning{line-height:1.65;color:#906c43;margin:0}
+#main .climate-disclaimer,#main .climate-sources{font-size:11px;color:#6d8373;line-height:1.6;margin:0;padding:0 20px 12px}
+#main .climate-sources{padding-bottom:18px}
+#main .climate-sources a{color:#547c60}
+@media(max-width:900px){#main .finance-planning-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#main .climate-seasonal{grid-template-columns:1fr}}
+@media(max-width:600px){
+ #main .finance-panel-heading,#main .climate-panel-head{padding:14px;flex-direction:column}
+ #main .finance-planning-kpis{grid-template-columns:1fr;padding:0 14px 14px}
+ #main .finance-scenario-alert,.finance-reference-table{margin:0 14px 12px}
+ #main .finance-month-tabs{padding:0 14px 12px}
+ #main .climate-seasonal{padding:0 14px 14px}
+ #main .climate-live-result{margin:0 14px 14px}
+ #main .climate-disclaimer,#main .climate-sources{padding-left:14px;padding-right:14px}
+}
