@@ -21,7 +21,7 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
   return response.data||[];
  }));
  const state={data:Object.fromEntries(tables.map((table,i)=>[table,results[i]])),
-  view:"todos",query:"",selected:new Set(),busy:false,issues:[],previewOpen:false};
+  view:"todos",query:"",selected:new Set(),busy:false,issues:[]};
  const records=()=>[
   ...(state.data.work_orders||[]).map(r=>({kind:"os",r})),
   ...(state.data.responsibility_terms||[]).map(r=>({kind:"termo",r}))
@@ -39,18 +39,7 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
    String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
     .includes(state.query.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase())));
  const selected=()=>records().filter(x=>state.selected.has(idKey(x.kind,x.r.id)));
- function printPreview(){
-  return '<div class="doc-templates-preview">'+
-   '<div class="doc-preview-card"><div class="doc-preview-top"><span class="doc-preview-company"><img src="./assets/proerg-official-white.svg?v=1" alt="Logotipo oficial da PROERG" loading="lazy" decoding="async"></span><span class="doc-preview-system">SIGA Américas</span></div>'+
-    '<div class="doc-preview-divider"></div><small>SISTEMA DE GESTÃO DA PROERG EM ITAIPU</small><h3>ORDEM DE SERVIÇO</h3>'+
-    '<p>Identificação · Frente operacional · Item contratual · Quantidade prevista · Unidade de medição · Registro posterior da execução</p>'+
-    '<div class="doc-preview-lines"></div><div class="doc-preview-sign">____________________　　____________________<br>Supervisão　　　　　　　Equipe / responsável</div></div>'+
-   '<div class="doc-preview-card"><div class="doc-preview-top"><span class="doc-preview-company"><img src="./assets/proerg-official-white.svg?v=1" alt="Logotipo oficial da PROERG" loading="lazy" decoding="async"></span><span class="doc-preview-system">SIGA Américas</span></div>'+
-    '<div class="doc-preview-divider"></div><small>SISTEMA DE GESTÃO DA PROERG EM ITAIPU</small><h3>TERMO DE RESPONSABILIDADE</h3>'+
-    '<p>Responsável · Bem designado · Condições · Guarda e devolução · Assinaturas</p>'+
-    '<div class="doc-preview-lines"></div><div class="doc-preview-sign">____________________　　____________________<br>Responsável　　　　　　　Representante</div></div>'+
-   '</div>';
- }
+
  function refreshUI(){
   if(!root.isConnected)return;
   const rows=filtered(),chosen=selected(),totals=records();
@@ -84,16 +73,10 @@ export async function mountDocumentCenter(root,db,{notify=()=>{},onCreate=()=>{}
      '<button type="button" class="table-action" data-doc-single="docx" data-doc-row="'+esc(key)+'">Word</button></div>'+
      '</article>';
    }).join("")||'<div class="document-empty"><strong>Nenhum documento encontrado.</strong><p>Cadastre uma ordem de serviço ou termo de responsabilidade para preencher os modelos automaticamente.</p></div>')+'</div></section>'+
-   '<details class="document-workspace doc-models-collapsible" id="doc-models-preview"'+(state.previewOpen?' open':'')+'>'+
-    '<summary class="document-workspace-head doc-models-summary"><span class="doc-models-summary-title"><h3>Padrão visual dos modelos</h3><small>Prévia da Ordem de Serviço e do Termo de Responsabilidade</small></span>'+
-    '<span class="doc-models-summary-meta">Formato A4 · campos de assinatura <span class="doc-models-chevron" aria-hidden="true"></span></span></summary>'+
-    '<div class="doc-models-content">'+printPreview()+
-    '<p class="document-legal-note">Os modelos são administrativos e devem ser conferidos antes do uso oficial. Não constituem laudo, autorização ambiental, assinatura digital, comprovante de entrega ou aprovação de medição. As responsabilidades por danos devem ser apuradas, nunca presumidas.</p></div></details>'+
    '<section class="document-workspace"><div class="document-workspace-head"><h3>Emissões recentes</h3><span>Registro de geração, não de assinatura</span></div>'+
    '<div class="document-issues">'+(state.issues.length?
      state.issues.slice(0,12).map(x=>'<div><strong>'+esc(x.source_reference)+'</strong><span>'+esc(labelKind(x.document_kind))+'</span><small>'+new Date(x.issued_at).toLocaleString("pt-BR")+' · '+esc(x.issue_format.toUpperCase())+'</small></div>').join(""):
      '<p class="document-muted">Nenhuma emissão registrada.</p>')+'</div></section>';
-  root.querySelector("#doc-models-preview").addEventListener("toggle",e=>{state.previewOpen=e.currentTarget.open;});
   root.querySelector("#doc-kind").addEventListener("change",e=>{state.view=e.target.value;refreshUI();});
   root.querySelector("#doc-search").addEventListener("input",e=>{
    const pos=e.target.selectionStart;
