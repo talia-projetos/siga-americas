@@ -1702,3 +1702,23 @@
 #main .daily-coverage-shell>.finance-scenario-alert{margin:0 18px 18px}
 @media(max-width:1020px){#main .daily-cover-list{grid-template-columns:1fr}}
 @media(max-width:720px){#main .daily-cover-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#main .daily-cover-selects{grid-template-columns:1fr}#main .daily-cover-actions{grid-template-columns:1fr}#main .daily-coverage-shell{margin:12px}}
+
+
+/* Caderno: quantitativos por serviço e local, preservando a transcrição literal. */
+#main .execution-original-notes .execution-sources-table th:nth-child(1){width:88px}
+#main .execution-original-notes .execution-sources-table th:nth-child(2){width:22%}
+#main .execution-original-notes .execution-sources-table th:nth-child(3){width:43%}
+#main .execution-original-notes .execution-sources-table th:nth-child(4){width:16%}
+#main .execution-original-notes .execution-sources-table th:nth-child(5){width:15%}
+#main .execution-source-breakdown{display:grid;gap:6px}
+#main .execution-source-split-item{display:grid;grid-template-columns:minmax(70px,max-content) minmax(0,1fr);gap:4px 10px;align-items:start;border-bottom:1px solid #eef1ed;padding:4px 0 7px}
+#main .execution-source-split-item:last-child{border-bottom:0}
+#main .execution-source-split-item strong{font-variant-numeric:tabular-nums;color:#305d40;font-size:11px;white-space:nowrap}
+#main .execution-source-split-item span{color:#526d5a;font-size:10.7px;line-height:1.5}
+#main .execution-source-split-item small{grid-column:1/-1;margin:0;color:#849082;font-size:10px}
+#main .execution-source-empty{color:#7d8d80;font-size:11px}
+#main .execution-original-warning{padding:12px 15px;margin:0;color:#6f795e;background:#f7f9f3;border-bottom:1px solid #e6eadd;font-size:11px;line-height:1.6}
+@media(max-width:700px){
+ #main .execution-source-split-item{grid-template-columns:1fr;gap:2px}
+ #main .execution-source-split-item small{grid-column:auto}
+}
