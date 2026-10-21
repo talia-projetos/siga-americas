@@ -583,12 +583,40 @@ async function executionSourceNotesPanel(){
    '<td><strong>'+escapeHTML(unit||"A classificar")+'</strong><small>'+escapeHTML(source?.photo_refs||"")+'</small></td>'+
    '<td><details><summary>Conferir origem</summary><p>'+escapeHTML(note||"Sem observação")+'</p></details></td></tr>';
  }).join("");
+ // Exiba cada quantitativo junto do seu local, nunca como cadeia corrida entre frentes.
+ // O texto manuscrito original continua preservado na área "Ver transcrição".
+ const linesBySource=new Map();
+ lines.forEach(line=>{
+  const group=linesBySource.get(line.source_key)||[];
+  group.push(line);
+  linesBySource.set(line.source_key,group);
+ });
+ const breakdownFor=n=>{
+  const group=linesBySource.get(n.source_key)||[];
+  if(!group.length)return '<span class="execution-source-empty">A individualizar; consultar anotação original</span>';
+  return '<div class="execution-source-breakdown">'+group.map(line=>{
+   const hasNumber=line.quantity_reported!==null&&line.quantity_reported!==undefined;
+   const codes=(line.candidate_price_codes||[]).filter(code=>priceMap.has(code));
+   const uniqueUnits=[...new Set(codes.map(code=>priceMap.get(code)?.unit).filter(Boolean))];
+   const compatible=uniqueUnits.length===1&&(!line.contract_unit||uniqueUnits[0].toLowerCase()===line.contract_unit.toLowerCase());
+   const amount=hasNumber?
+    formatQty(Math.ceil(Number(line.quantity_reported)))+' '+(compatible?uniqueUnits[0]:'(unidade a conferir)'):
+    'Medida pendente';
+   const literal=String(line.original_quantity_note||"").trim();
+   const showLiteral=!hasNumber&&literal&&!/sem (área|quantidade|medida|volume)|não apurad/i.test(literal);
+   return '<div class="execution-source-split-item">'+
+    '<strong>'+escapeHTML(amount)+'</strong>'+
+    '<span>'+escapeHTML(line.service_name||"Serviço não identificado")+' · '+escapeHTML(line.location_name||"Local a confirmar")+'</span>'+
+    (showLiteral?'<small>Nota de campo: '+escapeHTML(literal)+'</small>':'')+
+    '</div>';
+  }).join("")+'</div>';
+ };
  const original=notes.map(n=>'<tr>'+
   '<td>'+escapeHTML(date(n.performed_on))+'</td>'+
   '<td><strong>'+escapeHTML(n.activity_text||"")+'</strong><small>'+escapeHTML(n.location_text||"")+'</small></td>'+
-  '<td>'+escapeHTML(n.quantity_text||"")+'</td>'+
+  '<td>'+breakdownFor(n)+'</td>'+
   '<td><strong>'+escapeHTML(sourceStatus(n.review_status))+'</strong><small>'+escapeHTML(n.photo_refs||"")+'</small></td>'+
-  '<td><details><summary>Ver transcrição</summary><p>'+escapeHTML(n.raw_excerpt||"")+'</p></details></td></tr>').join("");
+  '<td><details><summary>Ver transcrição literal</summary><p>'+escapeHTML(n.quantity_text||"")+'</p><p>'+escapeHTML(n.raw_excerpt||"")+'</p></details></td></tr>').join("");
  const selectedDate=app.filters.execution_note_date||"",selectedKind=app.filters.execution_note_quantity||"all";
  const days=[...new Set(lines.map(x=>x.performed_on).filter(Boolean))].sort().reverse();
  const dates='<option value="">Todas as datas</option>'+days.map(d=>'<option value="'+escapeHTML(d)+'"'+(d===selectedDate?" selected":"")+'>'+escapeHTML(date(d))+'</option>').join("")+
@@ -601,8 +629,8 @@ async function executionSourceNotesPanel(){
   '<label>Quantidade<select id="execution-location-quantity"><option value="all"'+(selectedKind==="all"?" selected":"")+'>Todas</option><option value="reported"'+(selectedKind==="reported"?" selected":"")+'>Quantidade relatada</option><option value="missing"'+(selectedKind==="missing"?" selected":"")+'>Medida pendente</option></select></label>'+
   '<span id="execution-locations-shown">'+lines.length+' linhas</span></div>'+
   '<div class="table-scroll execution-locations-scroll"><table class="execution-sources-table execution-locations-table"><thead><tr><th>Data</th><th>Local</th><th>Serviço</th><th>Quantitativo</th><th>Unidade / fonte</th><th>Conferência</th></tr></thead><tbody>'+entries+'</tbody></table></div>'+
-  '<details class="execution-original-notes"><summary>Consultar os '+notes.length+' apontamentos originais (sem desmembramento)</summary>'+
-  '<div class="table-scroll"><table class="execution-sources-table"><thead><tr><th>Data</th><th>Serviço</th><th>Texto do quantitativo</th><th>Fonte / situação</th><th>Detalhamento</th></tr></thead><tbody>'+original+'</tbody></table></div></details>'+
+  '<details class="execution-original-notes"><summary>Consultar os '+notes.length+' conjuntos fotográficos (quantitativos discriminados por local)</summary>'+
+  '<div class="table-scroll"><table class="execution-sources-table"><thead><tr><th>Data</th><th>Serviço</th><th>Quantitativos por local e serviço</th><th>Fonte / situação</th><th>Detalhamento</th></tr></thead><tbody>'+original+'</tbody></table></div></details>'+
   '</div></details></section>';
 }
 async function fleetContractPanel(vehicles){
