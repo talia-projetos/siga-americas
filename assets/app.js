@@ -1,6 +1,6 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=19";
+import {groups,modules} from "./modules.js?v=20";
 import {iconMarkup} from "./icons.js?v=5";
 import {renderDashboardAnalytics} from "./analytics.js?v=6";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
@@ -13,6 +13,8 @@ import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=7";
 import {mountCoverageMap} from "./coverage-map.js?v=6";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=3";
+import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=1";
+import {mountWeatherAdvisory} from "./climate-planner.js?v=1";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -674,7 +676,8 @@ async function modulePage(key){
    '<div class="asset-data-summary"><strong>'+app.rows.length+' veículo(s) individualizados</strong><span>Cadastre placa, chassi ou patrimônio para identificar cada veículo.</span><small>Quantidades previstas ou declaradas no contrato não são registros individuais. Consulte a conferência de quantitativos para comparação de frota.</small></div>':"";
   const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
-  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+notesOverview;
+  const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
+  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+notesOverview+climateOverview;
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
   '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
@@ -687,6 +690,7 @@ async function modulePage(key){
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>';
+  if(key==="field_programs")mountWeatherAdvisory(el("planning-climate-live"),app.db);
   if(key==="vehicles")el("main").querySelectorAll("[data-fleet-add]").forEach(button=>button.addEventListener("click",async()=>{
     await openForm();
     const field=el("modal-fields").querySelector("#fld-contract_resource_requirement_id");
@@ -773,6 +777,11 @@ async function navigate(key){
  else if(next==="coverage")await coveragePage();
  else if(next==="contract_suggestions")await contractSuggestionsPage();
  else if(next==="document_center")await documentCenterPage();
+ else if(next==="financial_planning"){
+   nav();header(next);
+   el("main").innerHTML=title(next,modules[next].description)+'<div id="monthly-financial-planner"></div>';
+   await mountMonthlyFinancialPlanner(el("monthly-financial-planner"),app.db,{role:app.role,notify});
+ }
  else if(next==="uniform_deliveries")await uniformPage();
  else if(["field_report","field_monitor","resource_check"].includes(next)){
    nav();header(next);
