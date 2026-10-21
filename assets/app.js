@@ -24,6 +24,8 @@ const privileged=()=>["admin","gestao","supervisao"].includes(app.role);
 // Estado de consulta por módulo, mantido apenas durante a sessão na interface.
 // Não afeta dados contratuais nem filtros usados em outras telas.
 const listViews=new Map();
+// Estado documental separado: nunca filtrar registros com dados da transcrição.
+const executionNoteFilterState={search:"",date:"",quantity:"missing"};
 function rememberListView(key=app.page){
  if(!modules[key]?.table||key==="uniform_deliveries"||key!==app.page||!el("list-search"))return;
  const main=el("main"),workspace=document.querySelector(".workspace");
@@ -408,7 +410,8 @@ function filteredRows(){
   const matches=!term||Object.values(row).some(v=>norm(v).includes(term))||
    modules[app.page].fields.some(f=>f.type==="ref"&&norm(optionLabel(f.table,row[f.key],f.display)).includes(term))||
    teamMembers.some(person=>norm(person.name+" "+(person.job_title||"")).includes(term));
-  const selections=Object.entries(app.filters||{}).every(([key,value])=>!value||String(row[key]??"")===String(value));
+  const validKeys=new Set(modules[app.page].fields.map(field=>field.key));
+  const selections=Object.entries(app.filters||{}).every(([key,value])=>!validKeys.has(key)||!value||String(row[key]??"")===String(value));
   return matches&&selections;
  });
  const {key,descending}=app.sort||{};
@@ -444,6 +447,7 @@ function renderRows(){
   return;
  }
  table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>{
+  if(app.page==="field_execution_entries"&&key==="activity_id"&&row.activity_id==null)return '<td><span class="tag gray">Modalidade de poda a definir</span><small>Quantidade anotada, ainda sem rubrica</small></td>';
   if(financial&&key==="code")return '<td data-label="Código"><span class="catalog-code">'+escapeHTML(row.code)+'</span></td>';
   if(financial&&key==="name")return '<td data-label="Atividade / serviço"><span class="catalog-name" title="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</span></td>';
   const klass=financial&&["estimated_quantity","unit_price","estimated_total"].includes(key)?' class="numeric-cell"':"";
@@ -562,6 +566,8 @@ async function executionSourceNotesPanel(){
  if(split.error)return '<div class="notice warning">Não foi possível consultar a separação dos locais: '+escapeHTML(friendlyError(split.error))+'</div>';
  if(priced.error)return '<div class="notice warning">A tabela de custeio não pôde ser consultada. Os apontamentos não foram exibidos para evitar associação de unidades incorretas.</div>';
  const notes=raw.data||[],lines=split.data||[],prices=priced.data||[];
+ const missingQuantification=lines.filter(line=>line.quantity_reported==null).length;
+ const quantifiedWithoutDate=lines.filter(line=>line.quantity_reported!=null&&!line.performed_on).length;
  const noteMap=new Map(notes.map(n=>[n.source_key,n]));
  const priceMap=new Map(prices.map(p=>[p.code,p]));
  const date=x=>x?new Date(x+"T12:00:00").toLocaleDateString("pt-BR"):"Data a conferir";
@@ -576,7 +582,7 @@ async function executionSourceNotesPanel(){
   const hasQty=line.quantity_reported!==null&&line.quantity_reported!==undefined;
   const indicatedUnit=String(line.contract_unit||"").trim();
   const quantity=hasQty?formatQty(line.quantity_reported)+(unit?" "+unit:indicatedUnit?" "+indicatedUnit+" (rubrica pendente)":" (unidade a conferir)"):"—";
-  const status=!hasQty?"Medida pendente":line.verification_status==="conferido"?"Conferido":"Quantidade relatada";
+  const status=!hasQty?"Quantificação pendente":!line.performed_on?"Data a informar":line.verification_status==="conferido"?"Conferido documentalmente":"Quantidade transcrita";
   const source=noteMap.get(line.source_key);
   const candidateText=codes.length?"Rubricas possíveis: "+codes.join(", "):"Rubrica a identificar";
   const note=[line.original_quantity_note,line.review_note].filter(Boolean).join(" · ");
@@ -628,16 +634,16 @@ async function executionSourceNotesPanel(){
   '<td>'+breakdownFor(n)+'</td>'+
   '<td><strong>'+escapeHTML(sourceStatus(n.review_status))+'</strong><small>'+escapeHTML(n.photo_refs||"")+'</small></td>'+
   '<td><details><summary>Ver transcrição literal</summary><p>'+escapeHTML(n.quantity_text||"")+'</p><p>'+escapeHTML(n.raw_excerpt||"")+'</p></details></td></tr>').join("");
- const selectedDate=app.filters.execution_note_date||"",selectedKind=app.filters.execution_note_quantity||"all";
+ const selectedDate=executionNoteFilterState.date||"",selectedKind=executionNoteFilterState.quantity||"missing";
  const days=[...new Set(lines.map(x=>x.performed_on).filter(Boolean))].sort().reverse();
  const dates='<option value="">Todas as datas</option>'+days.map(d=>'<option value="'+escapeHTML(d)+'"'+(d===selectedDate?" selected":"")+'>'+escapeHTML(date(d))+'</option>').join("")+
   '<option value="sem_data"'+(selectedDate==="sem_data"?" selected":"")+'>Sem data</option>';
- return '<section class="execution-sources-panel"><details class="execution-sources-details" open>'+
-  '<summary><span><span class="eyebrow">CONFERÊNCIA DOCUMENTAL</span><strong>Apontamentos separados por local e serviço</strong><small>'+lines.length+' linhas individualizadas · '+notes.length+' registros de origem · todos sujeitos a conferência</small></span><span class="execution-sources-chevron" aria-hidden="true"></span></summary>'+
-  '<div class="execution-sources-content"><p><strong>Unidades vinculadas exclusivamente à tabela de preços do contrato vigente.</strong> Quantitativos aqui são apenas os escritos no caderno, sem medição, confirmação de escopo ou precificação. Áreas de roçada e corte de gramado exigem ha; cargas de entulho precisam de m³; horas de equipe não são automaticamente H/h. As 73 atividades da matriz permanecem separadas para o contrato subsequente.</p>'+
-  '<div class="execution-location-filters"><label>Buscar local ou serviço<input id="execution-location-search" type="search" placeholder="Local, serviço ou foto..." value="'+escapeHTML(app.filters.execution_note_search||"")+'"></label>'+
+ return '<section class="execution-sources-panel"><details class="execution-sources-details">'+
+  '<summary><span><span class="eyebrow">CONFERÊNCIA DOCUMENTAL</span><strong>Pendências de quantificação dos apontamentos</strong><small>'+missingQuantification+' sem quantidade · '+quantifiedWithoutDate+' com quantidade, mas sem data · '+notes.length+' conjuntos de origem</small></span><span class="execution-sources-chevron" aria-hidden="true"></span></summary>'+
+  '<div class="execution-sources-content"><p><strong>Registros quantificados com data estão em Registros cadastrados. Aqui, o filtro inicial destaca apenas os sem quantificação. Use “Com quantitativo, sem data” para corrigir a data sem duplicar lançamentos.</strong> Unidades vinculadas exclusivamente à tabela de preços do contrato vigente.</p><p> Quantitativos aqui são apenas os escritos no caderno, sem medição, confirmação de escopo ou precificação. Áreas de roçada e corte de gramado exigem ha; cargas de entulho precisam de m³; horas de equipe não são automaticamente H/h. As 73 atividades da matriz permanecem separadas para o contrato subsequente.</p>'+
+  '<div class="execution-location-filters"><label>Buscar local ou serviço<input id="execution-location-search" type="search" placeholder="Local, serviço ou foto..." value="'+escapeHTML(executionNoteFilterState.search||"")+'"></label>'+
   '<label>Data<select id="execution-location-date">'+dates+'</select></label>'+
-  '<label>Quantidade<select id="execution-location-quantity"><option value="all"'+(selectedKind==="all"?" selected":"")+'>Todas</option><option value="reported"'+(selectedKind==="reported"?" selected":"")+'>Quantidade relatada</option><option value="missing"'+(selectedKind==="missing"?" selected":"")+'>Medida pendente</option></select></label>'+
+  '<label>Quantidade<select id="execution-location-quantity"><option value="all"'+(selectedKind==="all"?" selected":"")+'>Todas</option><option value="reported"'+(selectedKind==="reported"?" selected":"")+'>Com quantitativo (todas)</option><option value="undated"'+(selectedKind==="undated"?" selected":"")+'>Com quantitativo, sem data</option><option value="missing"'+(selectedKind==="missing"?" selected":"")+'>Sem quantificação</option></select></label>'+
   '<span id="execution-locations-shown">'+lines.length+' linhas</span></div>'+
   '<div class="table-scroll execution-locations-scroll"><table class="execution-sources-table execution-locations-table"><thead><tr><th>Data</th><th>Local</th><th>Serviço</th><th>Quantitativo</th><th>Unidade / fonte</th><th>Conferência</th></tr></thead><tbody>'+entries+'</tbody></table></div>'+
   '<details class="execution-original-notes"><summary>Consultar as '+notes.length+' anotações de origem (quantitativos separados por local)</summary>'+
@@ -716,7 +722,8 @@ async function modulePage(key){
   const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
-  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+notesOverview+climateOverview;
+  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+climateOverview;
+ const afterTable=key==="field_execution_entries"?notesOverview:"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
   '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(key==="vehicles"?"Veículos individualizados":catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
@@ -728,7 +735,7 @@ async function modulePage(key){
     const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)"}[col]||col;
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
-  '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>';
+  '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>'+afterTable;
   if(key==="field_programs")mountWeatherAdvisory(el("planning-climate-live"),app.db);
   if(key==="vehicles")el("main").querySelectorAll("[data-fleet-add]").forEach(button=>button.addEventListener("click",async()=>{
     await openForm();
@@ -739,15 +746,15 @@ async function modulePage(key){
   if(key==="field_execution_entries"){
    const term=el("execution-location-search"),day=el("execution-location-date"),amount=el("execution-location-quantity");
    const showLocations=()=>{
-    app.filters.execution_note_search=term.value;
-    app.filters.execution_note_date=day.value;
-    app.filters.execution_note_quantity=amount.value;
+    executionNoteFilterState.search=term.value;
+    executionNoteFilterState.date=day.value;
+    executionNoteFilterState.quantity=amount.value;
     const q=term.value.toLocaleLowerCase("pt-BR").trim();
     let count=0;
     el("main").querySelectorAll("[data-exec-note-query]").forEach(row=>{
      const matches=(!q||row.dataset.execNoteQuery.includes(q))&&
       (!day.value||row.dataset.execNoteDate===day.value)&&
-      (amount.value==="all"||(amount.value==="reported"&&row.dataset.execNoteHasQuantity==="1")||(amount.value==="missing"&&row.dataset.execNoteHasQuantity==="0"));
+      (amount.value==="all"||(amount.value==="reported"&&row.dataset.execNoteHasQuantity==="1")||(amount.value==="undated"&&row.dataset.execNoteHasQuantity==="1"&&row.dataset.execNoteDate==="sem_data")||(amount.value==="missing"&&row.dataset.execNoteHasQuantity==="0"));
      row.hidden=!matches;
      if(matches)count++;
     });
