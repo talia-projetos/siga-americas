@@ -443,7 +443,7 @@ function renderRows(){
   const fleetEmpty=app.page==="vehicles"&&app.rows.length===0;
   table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'">'+(fleetEmpty?
    '<div class="empty-state fleet-empty-state"><div class="empty-symbol">'+iconMarkup("truck")+'</div><strong>Nenhum veículo individualizado</strong><p>A lista contratual está acima. Clique em <strong>Identificar veículo</strong> no tipo correspondente para cadastrar as unidades reais com placa, chassi, lacre ou patrimônio.</p></div>':
-   '<div class="empty-state"><div class="empty-symbol">'+iconMarkup("search")+'</div><strong>Nenhum registro encontrado</strong>Revise a pesquisa ou os filtros.</div>')+'</td></tr>';
+   '<div class="empty-state"><div class="empty-symbol">'+iconMarkup("search")+'</div><strong>'+(app.rows.length?"Nenhum registro corresponde aos filtros":"Ainda não há registros cadastrados")+'</strong><p>'+(app.rows.length?"Limpe a pesquisa ou os filtros para voltar a visualizar os registros.":"Nenhum lançamento foi encontrado nesta base.")+'</p></div>')+'</td></tr>';
   return;
  }
  table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>{
@@ -727,7 +727,7 @@ async function modulePage(key){
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
   '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(key==="vehicles"?"Veículos individualizados":catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
-   (special?'<button type="button" class="btn btn-ghost filter-clear" id="clear-list-filters">'+iconMarkup("close")+' Limpar</button>':"")+
+   ((special||key==="field_execution_entries")?'<button type="button" class="btn btn-ghost filter-clear" id="clear-list-filters">'+iconMarkup("close")+' Limpar filtros</button>':"")+
   '</div></div>'+
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
   '<div class="table-scroll"><table class="data-table">'+(key==="contract_items"?'<colgroup><col class="price-col-code"><col class="price-col-name"><col class="price-col-unit"><col class="price-col-quantity"><col class="price-col-price"><col class="price-col-total"><col class="price-col-actions"></colgroup>':'')+'<thead><tr>'+m.columns.map(col=>{
@@ -774,7 +774,7 @@ async function modulePage(key){
    renderRows();
   }));
   const reset=el("clear-list-filters");
-  if(special&&reset)reset.addEventListener("click",()=>{
+  if(reset)reset.addEventListener("click",()=>{
    app.search="";app.filters={};app.sort={key:null,descending:false};
    el("list-search").value="";
    el("main").querySelectorAll("[data-list-filter]").forEach(select=>select.value="");
