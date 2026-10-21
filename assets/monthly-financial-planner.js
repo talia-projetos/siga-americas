@@ -30,8 +30,8 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
    const body=monthTasks.map(t=>{
     const item=byId.get(t.contract_item_id)||{},released=Boolean(t.work_order_id);
     const code=[item.code,item.name].filter(Boolean).join(" · ");
-    return '<tr data-proposal="'+esc(t.id)+'"><td>'+esc(date(t.planned_for))+'</td>'+
-    '<td><strong>'+esc(code)+'</strong><small>'+esc(t.location_description)+'</small></td>'+
+    return '<tr data-proposal="'+esc(t.id)+'"><td>'+(canWrite&&!released?'<input type="date" class="monthly-date" aria-label="Data prevista" value="'+esc(t.planned_for)+'">':esc(date(t.planned_for)))+'</td>'+ 
+    '<td><strong>'+esc(code)+'</strong><small>Local da atividade:</small>'+(canWrite&&!released?'<input type="text" class="monthly-location" aria-label="Local exato" value="'+esc(t.location_description)+'">':'<small>'+esc(t.location_description)+'</small>')+'</td>'+ 
     '<td><strong>'+esc(item.unit||"—")+'</strong><small>'+esc(currency(item.unit_price))+' / '+esc(item.unit||"un")+'</small></td>'+
     '<td><input type="number" min="0.001" step="0.001" inputmode="decimal" class="monthly-qty" aria-label="Quantidade proposta para '+esc(item.code)+'" '+(released||!canWrite?'disabled ':'')+'value="'+(t.proposed_quantity===null?"":esc(t.proposed_quantity))+'" placeholder="A medir"></td>'+
     '<td>'+esc(t.proposal_status==="os_gerada"?"OS emitida":t.proposal_status==="candidata"?"A validar":t.proposal_status)+'</td>'+
@@ -49,20 +49,24 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
     const getTask=id=>monthTasks.find(v=>v.id===id);
     const qtyInput=id=>root.querySelector('tr[data-proposal="'+id+'"] .monthly-qty');
     root.querySelectorAll("[data-save-proposal]").forEach(button=>button.onclick=async()=>{
-     const task=getTask(button.dataset.saveProposal),textQty=qtyInput(task.id).value.trim(),n=Number(textQty);
+     const task=getTask(button.dataset.saveProposal),row=button.closest("tr"),textQty=qtyInput(task.id).value.trim(),n=Number(textQty),planned_for=row.querySelector(".monthly-date")?.value||task.planned_for,location_description=row.querySelector(".monthly-location")?.value.trim()||task.location_description;
      if(textQty&&(!Number.isFinite(n)||n<=0)){notify("Quantidade deve ser maior que zero.",true);return}
+      if(!planned_for.startsWith(selected.slice(0,7))){notify("A data precisa pertencer ao mês selecionado.",true);return}
+      if(location_description.length<4){notify("Informe o local de execução.",true);return}
      button.disabled=true;
      try{
-      const {error}=await db.from("monthly_operational_proposals").update({proposed_quantity:textQty?n:null}).eq("id",task.id);
+      const {error}=await db.from("monthly_operational_proposals").update({proposed_quantity:textQty?n:null,planned_for,location_description}).eq("id",task.id);
       if(error)throw error;
-      task.proposed_quantity=textQty?n:null;
+      task.proposed_quantity=textQty?n:null;task.planned_for=planned_for;task.location_description=location_description;
       notify("Quantidade preliminar atualizada, ainda sem emissão de OS.");panel();
      }catch(e){notify(e.message,true)}finally{button.disabled=false}
     });
     root.querySelectorAll("[data-issue-proposal]").forEach(button=>button.onclick=async()=>{
      const task=getTask(button.dataset.issueProposal),n=Number(qtyInput(task.id).value.trim());
      if(!Number.isFinite(n)||n<=0){notify("Defina e salve antes a quantidade mensurável por unidade contratual.",true);return}
-     if(n!==Number(task.proposed_quantity)){notify("Salve primeiro a quantidade atualizada.",true);return}
+     const row=button.closest("tr"),editedDate=row.querySelector(".monthly-date")?.value||task.planned_for,editedLocation=row.querySelector(".monthly-location")?.value.trim()||task.location_description;
+      if(n!==Number(task.proposed_quantity)||editedDate!==task.planned_for||editedLocation!==task.location_description){notify("Salve quantidade, data e local antes de emitir a OS.",true);return}
+      if(/a confirmar|a definir|local exato/i.test(task.location_description)){notify("Defina o local exato antes da emissão da OS.",true);return}
      if(!window.confirm("Confirmou local, medida, disponibilidade e autorização? Esta ação gera uma OS programada para "+date(task.planned_for)+"."))return;
      button.disabled=true;
      try{
