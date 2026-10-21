@@ -541,23 +541,66 @@ async function documentCenterPage(){
 }
 // Transcrições do caderno são evidências preliminares, não medições nem receitas.
 async function executionSourceNotesPanel(){
- const {data,error}=await app.db.from("field_execution_source_notes")
-  .select("id,performed_on,activity_text,location_text,quantity_text,raw_excerpt,photo_refs,legibility,review_status")
-  .order("performed_on",{ascending:false,nullsFirst:false}).limit(200);
- if(error)return '<div class="notice warning">Não foi possível consultar os apontamentos de campo: '+escapeHTML(friendlyError(error))+'</div>';
- const notes=data||[],pending=notes.filter(x=>x.review_status==="a_conferir").length;
+ const [raw,split,priced]=await Promise.all([
+  app.db.from("field_execution_source_notes")
+   .select("source_key,performed_on,activity_text,location_text,quantity_text,raw_excerpt,photo_refs,review_status")
+   .order("performed_on",{ascending:false,nullsFirst:false}).limit(200),
+  app.db.from("field_execution_note_locations")
+   .select("source_key,line_key,performed_on,location_name,service_name,quantity_reported,contract_unit,candidate_price_codes,original_quantity_note,allocation_status,verification_status,review_note")
+   .order("performed_on",{ascending:false,nullsFirst:false}).order("location_name",{ascending:true}).limit(500),
+  app.db.from("contract_items")
+   .select("code,unit,source_type").eq("source_type","precos").limit(100)
+ ]);
+ if(raw.error)return '<div class="notice warning">Não foi possível consultar os apontamentos do caderno: '+escapeHTML(friendlyError(raw.error))+'</div>';
+ if(split.error)return '<div class="notice warning">Não foi possível consultar a separação dos locais: '+escapeHTML(friendlyError(split.error))+'</div>';
+ if(priced.error)return '<div class="notice warning">A tabela de custeio não pôde ser consultada. Os apontamentos não foram exibidos para evitar associação de unidades incorretas.</div>';
+ const notes=raw.data||[],lines=split.data||[],prices=priced.data||[];
+ const noteMap=new Map(notes.map(n=>[n.source_key,n]));
+ const priceMap=new Map(prices.map(p=>[p.code,p]));
  const date=x=>x?new Date(x+"T12:00:00").toLocaleDateString("pt-BR"):"Data a conferir";
- const label=x=>x==="a_conferir"?"A conferir":x==="classificado"?"Classificado":"Descartado";
- const table=notes.map(n=>'<tr>'+
+ const formatQty=n=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(n));
+ const sourceStatus=x=>x==="a_conferir"?"A conferir":x==="classificado"?"Classificado":"Descartado";
+ const entries=lines.map(line=>{
+  const codes=(line.candidate_price_codes||[]).filter(x=>priceMap.has(x));
+  const uniqueUnits=[...new Set(codes.map(code=>priceMap.get(code)?.unit).filter(Boolean))];
+  const refUnit=uniqueUnits.length===1?uniqueUnits[0]:null;
+  const consistent=Boolean(refUnit)&&(!line.contract_unit||refUnit.toLocaleLowerCase("pt-BR")===line.contract_unit.toLocaleLowerCase("pt-BR"));
+  const unit=consistent?refUnit:null;
+  const hasQty=line.quantity_reported!==null&&line.quantity_reported!==undefined;
+  const quantity=hasQty&&unit?formatQty(line.quantity_reported)+" "+unit:hasQty?formatQty(line.quantity_reported)+" (unidade a conferir)":"—";
+  const status=!hasQty?"Medida pendente":line.verification_status==="conferido"?"Conferido":"Quantidade relatada";
+  const source=noteMap.get(line.source_key);
+  const candidateText=codes.length?"Rubricas possíveis: "+codes.join(", "):"Rubrica a identificar";
+  const note=[line.original_quantity_note,line.review_note].filter(Boolean).join(" · ");
+  const searchable=[line.location_name,line.service_name,line.original_quantity_note,source?.photo_refs,source?.raw_excerpt].filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");
+  return '<tr data-exec-note-date="'+escapeHTML(line.performed_on||"sem_data")+'" data-exec-note-query="'+escapeHTML(searchable)+'" data-exec-note-has-quantity="'+(hasQty?"1":"0")+'">'+
+   '<td>'+escapeHTML(date(line.performed_on))+'</td>'+
+   '<td><strong>'+escapeHTML(line.location_name)+'</strong></td>'+
+   '<td><strong>'+escapeHTML(line.service_name)+'</strong><small>'+escapeHTML(candidateText)+'</small></td>'+
+   '<td class="execution-note-qty"><strong>'+escapeHTML(quantity)+'</strong><small>'+escapeHTML(status)+'</small></td>'+
+   '<td><strong>'+escapeHTML(unit||"A classificar")+'</strong><small>'+escapeHTML(source?.photo_refs||"")+'</small></td>'+
+   '<td><details><summary>Conferir origem</summary><p>'+escapeHTML(note||"Sem observação")+'</p></details></td></tr>';
+ }).join("");
+ const original=notes.map(n=>'<tr>'+
   '<td>'+escapeHTML(date(n.performed_on))+'</td>'+
-  '<td><strong>'+escapeHTML(n.activity_text||"Não especificado")+'</strong><small>'+escapeHTML(n.location_text||"Local a conferir")+'</small></td>'+
-  '<td>'+escapeHTML(n.quantity_text||"Não informado")+'</td>'+
-  '<td><strong>'+escapeHTML(label(n.review_status))+'</strong><small>'+escapeHTML(n.photo_refs||"")+'</small></td>'+
-  '<td><details><summary>Ver anotação</summary><p>'+escapeHTML(n.raw_excerpt||"")+'</p></details></td></tr>').join("");
+  '<td><strong>'+escapeHTML(n.activity_text||"")+'</strong><small>'+escapeHTML(n.location_text||"")+'</small></td>'+
+  '<td>'+escapeHTML(n.quantity_text||"")+'</td>'+
+  '<td><strong>'+escapeHTML(sourceStatus(n.review_status))+'</strong><small>'+escapeHTML(n.photo_refs||"")+'</small></td>'+
+  '<td><details><summary>Ver transcrição</summary><p>'+escapeHTML(n.raw_excerpt||"")+'</p></details></td></tr>').join("");
+ const selectedDate=app.filters.execution_note_date||"",selectedKind=app.filters.execution_note_quantity||"all";
+ const days=[...new Set(lines.map(x=>x.performed_on).filter(Boolean))].sort().reverse();
+ const dates='<option value="">Todas as datas</option>'+days.map(d=>'<option value="'+escapeHTML(d)+'"'+(d===selectedDate?" selected":"")+'>'+escapeHTML(date(d))+'</option>').join("")+
+  '<option value="sem_data"'+(selectedDate==="sem_data"?" selected":"")+'>Sem data</option>';
  return '<section class="execution-sources-panel"><details class="execution-sources-details" open>'+
-  '<summary><span><span class="eyebrow">CONFERÊNCIA DOCUMENTAL</span><strong>Apontamentos manuscritos recebidos</strong><small>'+notes.length+' registros transcritos · '+pending+' pendentes</small></span><span class="execution-sources-chevron" aria-hidden="true"></span></summary>'+
-  '<div class="execution-sources-content"><p>Estas anotações foram transcritas das fotos do caderno. Podem conter trechos incompletos ou duplicados entre imagens. Não representam serviço validado, quantidade medida nem faturamento. A <strong>tabela de custeio do contrato vigente</strong> é a única referência para eventual classificação financeira; a matriz de 73 atividades não determina esses valores.</p>'+
-  (notes.length?'<div class="table-scroll"><table class="execution-sources-table"><thead><tr><th>Data</th><th>Serviço informado</th><th>Quantidade anotada</th><th>Fonte / situação</th><th>Detalhamento</th></tr></thead><tbody>'+table+'</tbody></table></div>':'<p>Nenhum apontamento recebido.</p>')+
+  '<summary><span><span class="eyebrow">CONFERÊNCIA DOCUMENTAL</span><strong>Apontamentos separados por local e serviço</strong><small>'+lines.length+' linhas individualizadas · '+notes.length+' registros de origem · todos sujeitos a conferência</small></span><span class="execution-sources-chevron" aria-hidden="true"></span></summary>'+
+  '<div class="execution-sources-content"><p><strong>Unidades vinculadas exclusivamente à tabela de preços do contrato vigente.</strong> Quantitativos aqui são apenas os escritos no caderno, sem medição, confirmação de escopo ou precificação. Áreas de roçada e corte de gramado exigem ha; cargas de entulho precisam de m³; horas de equipe não são automaticamente H/h. As 73 atividades da matriz permanecem separadas para o contrato subsequente.</p>'+
+  '<div class="execution-location-filters"><label>Buscar local ou serviço<input id="execution-location-search" type="search" placeholder="Local, serviço ou foto..." value="'+escapeHTML(app.filters.execution_note_search||"")+'"></label>'+
+  '<label>Data<select id="execution-location-date">'+dates+'</select></label>'+
+  '<label>Quantidade<select id="execution-location-quantity"><option value="all"'+(selectedKind==="all"?" selected":"")+'>Todas</option><option value="reported"'+(selectedKind==="reported"?" selected":"")+'>Quantidade relatada</option><option value="missing"'+(selectedKind==="missing"?" selected":"")+'>Medida pendente</option></select></label>'+
+  '<span id="execution-locations-shown">'+lines.length+' linhas</span></div>'+
+  '<div class="table-scroll execution-locations-scroll"><table class="execution-sources-table execution-locations-table"><thead><tr><th>Data</th><th>Local</th><th>Serviço</th><th>Quantitativo</th><th>Unidade / fonte</th><th>Conferência</th></tr></thead><tbody>'+entries+'</tbody></table></div>'+
+  '<details class="execution-original-notes"><summary>Consultar os '+notes.length+' apontamentos originais (sem desmembramento)</summary>'+
+  '<div class="table-scroll"><table class="execution-sources-table"><thead><tr><th>Data</th><th>Serviço</th><th>Texto do quantitativo</th><th>Fonte / situação</th><th>Detalhamento</th></tr></thead><tbody>'+original+'</tbody></table></div></details>'+
   '</div></details></section>';
 }
 async function fleetContractPanel(vehicles){
@@ -650,6 +693,26 @@ async function modulePage(key){
     if(field)field.value=button.dataset.fleetAdd;
   }));
   // Repõe os controles visuais antes de instalar eventos; não apenas o predicado da lista.
+  if(key==="field_execution_entries"){
+   const term=el("execution-location-search"),day=el("execution-location-date"),amount=el("execution-location-quantity");
+   const showLocations=()=>{
+    app.filters.execution_note_search=term.value;
+    app.filters.execution_note_date=day.value;
+    app.filters.execution_note_quantity=amount.value;
+    const q=term.value.toLocaleLowerCase("pt-BR").trim();
+    let count=0;
+    el("main").querySelectorAll("[data-exec-note-query]").forEach(row=>{
+     const matches=(!q||row.dataset.execNoteQuery.includes(q))&&
+      (!day.value||row.dataset.execNoteDate===day.value)&&
+      (amount.value==="all"||(amount.value==="reported"&&row.dataset.execNoteHasQuantity==="1")||(amount.value==="missing"&&row.dataset.execNoteHasQuantity==="0"));
+     row.hidden=!matches;
+     if(matches)count++;
+    });
+    el("execution-locations-shown").textContent=count+" linha(s)";
+   };
+   [term,day,amount].forEach(input=>input?.addEventListener(input===term?"input":"change",showLocations));
+   showLocations();
+  }
   el("list-search").value=app.search;
   el("main").querySelectorAll("[data-list-filter]").forEach(filter=>{
    filter.value=app.filters[filter.dataset.listFilter]??"";
