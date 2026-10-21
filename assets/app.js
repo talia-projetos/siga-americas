@@ -572,7 +572,8 @@ async function executionSourceNotesPanel(){
   const consistent=Boolean(refUnit)&&(!line.contract_unit||refUnit.toLocaleLowerCase("pt-BR")===line.contract_unit.toLocaleLowerCase("pt-BR"));
   const unit=consistent?refUnit:null;
   const hasQty=line.quantity_reported!==null&&line.quantity_reported!==undefined;
-  const quantity=hasQty&&unit?formatQty(line.quantity_reported)+" "+unit:hasQty?formatQty(line.quantity_reported)+" (unidade a conferir)":"—";
+  const indicatedUnit=String(line.contract_unit||"").trim();
+  const quantity=hasQty?formatQty(line.quantity_reported)+(unit?" "+unit:indicatedUnit?" "+indicatedUnit+" (rubrica pendente)":" (unidade a conferir)"):"—";
   const status=!hasQty?"Medida pendente":line.verification_status==="conferido"?"Conferido":"Quantidade relatada";
   const source=noteMap.get(line.source_key);
   const candidateText=codes.length?"Rubricas possíveis: "+codes.join(", "):"Rubrica a identificar";
@@ -604,7 +605,7 @@ async function executionSourceNotesPanel(){
    const uniqueUnits=[...new Set(codes.map(code=>priceMap.get(code)?.unit).filter(Boolean))];
    const compatible=uniqueUnits.length===1&&(!line.contract_unit||uniqueUnits[0].toLowerCase()===line.contract_unit.toLowerCase());
    const amount=hasNumber?
-    formatQty(Math.ceil(Number(line.quantity_reported)))+' '+(compatible?uniqueUnits[0]:'(unidade a conferir)'):
+    formatQty(Math.ceil(Number(line.quantity_reported)))+' '+(compatible?uniqueUnits[0]:line.contract_unit?line.contract_unit+' (rubrica pendente)':'(unidade a conferir)'):
     'Medida pendente';
    const literal=String(line.original_quantity_note||"").trim();
    const displayLiteral=!hasNumber&&literal&&!/sem (área|quantidade|medida|volume)|não apurad/i.test(literal);
