@@ -13,7 +13,7 @@ import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=8";
 import {mountCoverageMap} from "./coverage-map.js?v=6";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=4";
-import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=2";
+import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=4";
 import {mountWeatherAdvisory} from "./climate-planner.js?v=2";
 
 const el=id=>document.getElementById(id);
