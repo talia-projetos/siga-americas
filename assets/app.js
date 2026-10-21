@@ -15,6 +15,7 @@ import {mountCoverageMap} from "./coverage-map.js?v=6";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=4";
 import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=4";
 import {mountWeatherAdvisory} from "./climate-planner.js?v=2";
+import {mountQuickVehicle} from "./quick-vehicle.js?v=1";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -335,6 +336,7 @@ function optionLabel(table,id,display){
  if(!id)return "—";
  const x=(app.refs[table]||[]).find(v=>v.id===id);
  if(!x)return "Registro vinculado";
+ if(table==="vehicles")return [x.plate||x.chassis||x.asset_tag||"Sem identificação",x.description].filter(Boolean).join(" · ");
  if(display==="code_name")return [x.code,x.name].filter(Boolean).join(" · ");
  if(display==="routine_label"){const p=(app.refs.service_posts||[]).find(v=>v.id===x.service_post_id);return [p?.code,p?.name,x.title].filter(Boolean).join(" · ");}
  if(display==="program_label"){
@@ -854,7 +856,8 @@ function fieldInput(f,row){
   inp='<select'+attr+'><option value="">Selecione...</option>'+f.options.map(o=>'<option value="'+escapeHTML(o.value)+'"'+(String(o.value)===String(value)?' selected':'')+'>'+escapeHTML(o.label)+'</option>').join("")+'</select>';
  }else if(f.type==="ref"){
   const options=(app.refs[f.table]||[]).filter(o=>f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"));
-  inp='<select'+attr+'><option value="">Selecione...</option>'+options.map(o=>'<option value="'+escapeHTML(o.id)+'"'+(o.id===value?' selected':'')+'>'+escapeHTML(optionLabel(f.table,o.id,f.display))+'</option>').join("")+'</select>';
+  const noVehicle=f.table==="vehicles"&&!options.length;
+  inp='<select'+attr+'><option value="">'+(noVehicle?'Nenhum veículo individual cadastrado':'Selecione...')+'</option>'+options.map(o=>'<option value="'+escapeHTML(o.id)+'"'+(o.id===value?' selected':'')+'>'+escapeHTML(optionLabel(f.table,o.id,f.display))+'</option>').join("")+'</select>';
  }else if(f.type==="textarea"){
   inp='<textarea'+attr+'>'+escapeHTML(value)+'</textarea>';
  }else if(f.type==="boolean"){
@@ -867,7 +870,9 @@ function fieldInput(f,row){
 let routineEvidence=null;
 async function openForm(id=null){
  if(!privileged())return;
- const m=modules[app.page];if(!m?.table)return;try{await ensureRefs(app.page)}catch(e){notify(friendlyError(e),true);return;}
+ const m=modules[app.page];if(!m?.table)return;
+ if(app.page==="responsibility_terms")delete app.refs.vehicles;
+ try{await ensureRefs(app.page)}catch(e){notify(friendlyError(e),true);return;}
  const row=id?app.rows.find(x=>x.id===id):null;
  app.editing=row?.id??null;
  el("modal-title").textContent=(row?"Editar":"Novo registro · ")+m.title;
@@ -878,6 +883,7 @@ async function openForm(id=null){
  if(app.page==="field_routine_records"){
   routineEvidence=initRoutinePhotoField(el("routine-photo-root"),app.db,{recordId:row?.id||null,notify});
  }
+ if(app.page==="responsibility_terms")mountQuickVehicle(el("modal-fields"),{db:app.db,notify,onCreated:vehicle=>{app.refs.vehicles=[...new Map([...(app.refs.vehicles||[]),vehicle].map(v=>[v.id,v])).values()];}});
  if(app.page==="work_orders"){
   const fields=el("modal-fields");
   const priceSelect=fields.querySelector("#fld-contract_item_id");
