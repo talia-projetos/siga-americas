@@ -1647,6 +1647,8 @@
 #main .finance-planning-table td details>summary{cursor:pointer;font-weight:680;color:#4e745c;white-space:nowrap}
 #main .finance-planning-table td details>p{margin:5px 0;font-size:11px;color:#69806b;max-width:330px}
 #main .finance-planning-table input.monthly-qty{max-width:112px;min-height:36px;border:1px solid #d5e1d7;border-radius:7px;background:#fff;padding:5px 8px;font-size:12px}
+#main .finance-planning-table input.monthly-date,#main .finance-planning-table input.monthly-location{display:block;min-height:35px;width:100%;min-width:0;box-sizing:border-box;border:1px solid #d5e1d7;border-radius:7px;background:#fff;padding:5px 8px;font-size:11px;color:#3c5d49;margin-top:4px}
+#main .finance-planning-table input.monthly-date{min-width:135px}
 #main .finance-planning-table td .table-action{display:block;margin-bottom:6px;text-align:left;white-space:normal}
 #main .finance-reference-table{margin:17px 20px 20px;border:1px solid #e2eae4;border-radius:9px;overflow:hidden}
 #main .finance-reference-table>summary{cursor:pointer;padding:13px 14px;background:#f7faf7;font-size:12px;font-weight:680;color:#4a7057}
