@@ -98,3 +98,11 @@
  #main .document-guide,#main .document-workspace{padding:14px}
 }
 @media(prefers-reduced-motion:reduce){#main *{scroll-behavior:auto!important;transition-duration:0ms!important;animation-duration:0ms!important}}
+
+
+/* A competência já é selecionada nas abas do planejamento: não repetir filtro dentro da escala. */
+#main #finance-daily-coverage .daily-cover-selects{grid-template-columns:repeat(2,minmax(0,1fr))}
+#main #finance-daily-coverage .daily-cover-selects>label:first-child{display:none}
+@media(max-width:620px){
+ #main #finance-daily-coverage .daily-cover-selects{grid-template-columns:1fr}
+}
