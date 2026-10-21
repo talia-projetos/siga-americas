@@ -106,3 +106,12 @@
 @media(max-width:620px){
  #main #finance-daily-coverage .daily-cover-selects{grid-template-columns:1fr}
 }
+
+
+/* Frota: a lista contratual fica sempre disponível, mesmo sem placas cadastradas. */
+#main .fleet-contract-panel{margin-top:10px}
+#main .fleet-contract-header p{max-width:760px;line-height:1.65}
+#main .fleet-contract-table td:first-child{min-width:275px}
+#main .fleet-contract-table .fleet-add{white-space:normal;min-height:34px;text-align:left}
+#main .fleet-empty-state{padding:30px 25px;max-width:800px;margin:auto;text-align:center}
+#main .fleet-empty-state p{max-width:590px;margin:9px auto 0;color:#6c806e;font-size:12px;line-height:1.7}
