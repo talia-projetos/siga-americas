@@ -707,7 +707,7 @@ async function modulePage(key){
    const allowed=new Set((app.refs.activity_catalog||[]).map(item=>item.id));
    app.rows=app.rows.filter(row=>allowed.has(row.activity_id));
   }
-  if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
+  if(["contract_items","activity_catalog"].includes(key))app.rows.sort(compareReferenceCode);
   if(key==="service_posts")app.rows.sort((a,b)=>String(a.code||"").localeCompare(String(b.code||""),"pt-BR",{numeric:true}));
   const buttons=(privileged()
     ?key==="uniform_deliveries"
@@ -841,7 +841,21 @@ async function navigate(key){
  }
  else await modulePage(next);
 }
-function fieldInput(f,row){
+// Ordenação natural para códigos contratuais: 3.1, 3.2, ..., 3.9, 3.10.
+ // Mantém a ordem original para cadastros sem código (ex.: colaboradores).
+ const referenceCodeCollator=new Intl.Collator("pt-BR",{numeric:true,sensitivity:"base"});
+ function compareReferenceCode(a,b){
+  const ac=String(a?.code??"").trim(),bc=String(b?.code??"").trim();
+  if(!ac&&!bc)return 0;
+  if(!ac)return 1;
+  if(!bc)return -1;
+  return referenceCodeCollator.compare(ac,bc)||
+   referenceCodeCollator.compare(String(a.name||a.item_name||""),String(b.name||b.item_name||""));
+ }
+ function sortedReferenceOptions(options){
+  return options.some(o=>String(o?.code??"").trim())?[...options].sort(compareReferenceCode):options;
+ }
+ function fieldInput(f,row){
  const value=row?.[f.key]??(f.key==="activity_id"?app.prefillActivity:null)??f.default??"";
  const required=f.required?" required":"";
  const htmlId="fld-"+f.key;
@@ -851,7 +865,7 @@ function fieldInput(f,row){
  if(f.type==="multi_ref"){
   const stored=Array.isArray(value)?value:[];
   const selected=stored.length?stored:(row?.team_id?[row.team_id]:[]);
-  const options=(app.refs[f.table]||[]).filter(o=>o.active!==false||selected.includes(o.id));
+  const options=sortedReferenceOptions((app.refs[f.table]||[]).filter(o=>o.active!==false||selected.includes(o.id)));
   const all=options.length>0&&options.every(o=>selected.includes(o.id));
   const checklist=options.map(o=>'<label class="purchase-sector-option"><input type="checkbox" name="'+escapeHTML(f.key)+'" data-purchase-sector value="'+escapeHTML(o.id)+'"'+(selected.includes(o.id)?' checked':'')+'><span>'+escapeHTML([o.code,o.name].filter(Boolean).join(" · "))+'</span></label>').join("");
   return '<fieldset class="field wide purchase-sector-field"><legend>'+escapeHTML(f.label)+'</legend>'+
@@ -862,7 +876,7 @@ function fieldInput(f,row){
  if(f.type==="select"){
   inp='<select'+attr+'><option value="">Selecione...</option>'+f.options.map(o=>'<option value="'+escapeHTML(o.value)+'"'+(String(o.value)===String(value)?' selected':'')+'>'+escapeHTML(o.label)+'</option>').join("")+'</select>';
  }else if(f.type==="ref"){
-  const options=(app.refs[f.table]||[]).filter(o=>f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"));
+  const options=sortedReferenceOptions((app.refs[f.table]||[]).filter(o=>f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento")));
   const noVehicle=f.table==="vehicles"&&!options.length;
   inp='<select'+attr+'><option value="">'+(noVehicle?'Nenhum veículo individual cadastrado':'Selecione...')+'</option>'+options.map(o=>'<option value="'+escapeHTML(o.id)+'"'+(o.id===value?' selected':'')+'>'+escapeHTML(optionLabel(f.table,o.id,f.display))+'</option>').join("")+'</select>';
  }else if(f.type==="textarea"){
