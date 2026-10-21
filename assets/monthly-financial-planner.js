@@ -1,4 +1,5 @@
-import {mountWeatherAdvisory} from "./climate-planner.js?v=1";
+import {mountWeatherAdvisory} from "./climate-planner.js?v=2";
+import {mountDailyCoverage} from "./daily-coverage.js?v=1";
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const currency=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const qty=n=>Number(n||0).toLocaleString("pt-BR",{maximumFractionDigits:3});
@@ -80,12 +81,14 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
   };
   root.innerHTML='<section class="finance-planning-shell"><div class="finance-panel-heading"><div><span class="eyebrow">CUSTEIO DO CONTRATO ATUAL</span><h2>Planejamento de novembro a janeiro</h2><p>Três competências com meta gerencial, serviços candidatos e autorização de OS controlada pela supervisão.</p></div></div>'+
    '<div class="finance-month-tabs" id="finance-month-tabs">'+months.map(([v,label])=>'<button type="button" data-fin-month="'+v+'"'+(v===selected?' aria-current="true"':'')+'>'+label+'</button>').join("")+'</div>'+
-   '<div id="finance-plan-current"></div></section><div id="finance-climate-advisory"></div>';
+   '<div id="finance-daily-coverage"></div><div id="finance-plan-current"></div></section><div id="finance-climate-advisory"></div>';
   root.querySelectorAll("[data-fin-month]").forEach(btn=>btn.onclick=()=>{
    selected=btn.dataset.finMonth;root.querySelectorAll("[data-fin-month]").forEach(b=>b.setAttribute("aria-current",String(b===btn)));
+   const dailyMonth=root.querySelector("#daily-month");if(dailyMonth){dailyMonth.value=selected.slice(0,7);dailyMonth.dispatchEvent(new Event("change"));}
    panel();
   });
   panel();
+  await mountDailyCoverage(root.querySelector("#finance-daily-coverage"),db,{role,notify});
   mountWeatherAdvisory(root.querySelector("#finance-climate-advisory"),db);
  }catch(e){root.innerHTML='<div class="notice danger">Não foi possível carregar o planejamento: '+esc(e.message)+'</div>';}
 }
