@@ -45,7 +45,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
     return '<article class="daily-cover-card" data-daily-id="'+safe(e.id)+'"><div class="daily-cover-card-head"><div><strong>'+safe(t.code||"—")+' · '+safe(t.name||"Equipe")+'</strong>'+
      '<small>'+safe(a.name||"A conferir")+' · Rubrica '+safe(c.code||"—")+' · '+safe(c.unit||"—")+'</small></div>'+
      '<span class="status-chip" data-status="'+safe(e.block_status)+'">'+safe(stateLabels[e.block_status]||e.block_status)+'</span></div>'+
-     '<p class="daily-activity-title">'+safe(String(e.planned_service||"").replace(/\\s*·\\s*programação diária.*$/i,""))+'</p>'+
+     '<p class="daily-activity-title">'+safe(String(e.planned_service||"").replace(/\s*·\s*programação diária.*$/i,""))+'</p>'+
      '<p class="daily-place"><strong>Local previsto</strong><span>'+safe(e.planned_location)+'</span></p>'+
      '<details class="daily-plan-details"><summary>Alternativa e orientações</summary><p>'+safe(e.climate_alternative)+'</p></details>'+
      (canManage&&!locked?'<div class="daily-cover-actions"><label>Situação<select class="daily-new-status" aria-label="Situação da equipe">'+
@@ -60,6 +60,28 @@ export async function mountDailyCoverage(root,db,{role,notify}){
   root.querySelector("#daily-month").onchange=e=>{month=e.target.value;day=null;draw()};
   root.querySelector("#daily-date").onchange=e=>{day=e.target.value;draw()};
   root.querySelector("#daily-team").onchange=e=>{teamFilter=e.target.value;draw()};
+  const printSelected=async single=>{
+   if(generatingPDF)return;
+   const onDay=entries.filter(x=>x.work_date===day);
+   const chosen=single?onDay.filter(x=>teams.get(x.team_id)?.code===teamFilter):onDay;
+   if(!chosen.length){notify("Não há programação para a seleção.",true);return;}
+   generatingPDF=true;
+   root.querySelectorAll("#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=true;b.setAttribute("aria-busy","true")});
+   try{
+    await downloadDailySchedules(chosen,teams,areas,prices);
+    notify("PDF da programação gerado. Confira o conteúdo antes de distribuir às equipes.");
+   }catch(error){notify("Não foi possível gerar o PDF: "+(error.message||String(error)),true);}
+   finally{
+    generatingPDF=false;
+    root.querySelectorAll("#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=false;b.removeAttribute("aria-busy")});
+   }
+  };
+  root.querySelector("#daily-pdf-all").onclick=()=>printSelected(false);
+  if(teamFilter)root.querySelector("#daily-pdf-selected").onclick=()=>printSelected(true);
+  root.querySelectorAll(".daily-new-status").forEach(select=>select.onchange=()=>{
+   const wrap=select.closest(".daily-cover-actions")?.querySelector(".daily-reason-wrap");
+   if(wrap)wrap.hidden=select.value==="programada";
+  });
   if(canManage)root.querySelectorAll("[data-daily-save]").forEach(button=>button.onclick=async()=>{
    const item=entries.find(x=>x.id===button.dataset.dailySave),card=button.closest(".daily-cover-card");
    const status=card.querySelector(".daily-new-status").value,reason=card.querySelector(".daily-reason").value.trim();
