@@ -57,6 +57,7 @@ export function mountQuickVehicle(root,{db,notify,onCreated,knownVehicles=[]}){
    if(!select.querySelector('option[value="'+record.id+'"]')){
     const opt=document.createElement("option");opt.value=record.id;opt.textContent=desc(record);select.add(opt);
    }
+   if(select.options[0])select.options[0].textContent="Selecione...";
    select.value=record.id;
    if(equipment)equipment.value="";
    fields.hidden=true;toggle.setAttribute("aria-expanded","false");
