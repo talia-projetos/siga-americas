@@ -435,7 +435,10 @@ function renderRows(){
    if(marker)marker.innerHTML=iconMarkup(active?(app.sort.descending?"sortdown":"sortup"):"sort");
  });
  if(!rows.length){
-  table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'"><div class="empty-state"><div class="empty-symbol">'+iconMarkup("search")+'</div><strong>Nenhum registro encontrado</strong>Revise a pesquisa ou os filtros.</div></td></tr>';
+  const fleetEmpty=app.page==="vehicles"&&app.rows.length===0;
+  table.innerHTML='<tr><td colspan="'+(m.columns.length+1)+'">'+(fleetEmpty?
+   '<div class="empty-state fleet-empty-state"><div class="empty-symbol">'+iconMarkup("truck")+'</div><strong>Nenhum veículo individualizado</strong><p>A lista contratual está acima. Clique em <strong>Identificar veículo</strong> no tipo correspondente para cadastrar as unidades reais com placa, chassi, lacre ou patrimônio.</p></div>':
+   '<div class="empty-state"><div class="empty-symbol">'+iconMarkup("search")+'</div><strong>Nenhum registro encontrado</strong>Revise a pesquisa ou os filtros.</div>')+'</td></tr>';
   return;
  }
  table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>{
@@ -569,7 +572,8 @@ async function executionSourceNotesPanel(){
   const consistent=Boolean(refUnit)&&(!line.contract_unit||refUnit.toLocaleLowerCase("pt-BR")===line.contract_unit.toLocaleLowerCase("pt-BR"));
   const unit=consistent?refUnit:null;
   const hasQty=line.quantity_reported!==null&&line.quantity_reported!==undefined;
-  const quantity=hasQty&&unit?formatQty(line.quantity_reported)+" "+unit:hasQty?formatQty(line.quantity_reported)+" (unidade a conferir)":"—";
+  const indicatedUnit=String(line.contract_unit||"").trim();
+  const quantity=hasQty?formatQty(line.quantity_reported)+(unit?" "+unit:indicatedUnit?" "+indicatedUnit+" (rubrica pendente)":" (unidade a conferir)"):"—";
   const status=!hasQty?"Medida pendente":line.verification_status==="conferido"?"Conferido":"Quantidade relatada";
   const source=noteMap.get(line.source_key);
   const candidateText=codes.length?"Rubricas possíveis: "+codes.join(", "):"Rubrica a identificar";
@@ -601,7 +605,7 @@ async function executionSourceNotesPanel(){
    const uniqueUnits=[...new Set(codes.map(code=>priceMap.get(code)?.unit).filter(Boolean))];
    const compatible=uniqueUnits.length===1&&(!line.contract_unit||uniqueUnits[0].toLowerCase()===line.contract_unit.toLowerCase());
    const amount=hasNumber?
-    formatQty(Math.ceil(Number(line.quantity_reported)))+' '+(compatible?uniqueUnits[0]:'(unidade a conferir)'):
+    formatQty(Math.ceil(Number(line.quantity_reported)))+' '+(compatible?uniqueUnits[0]:line.contract_unit?line.contract_unit+' (rubrica pendente)':'(unidade a conferir)'):
     'Medida pendente';
    const literal=String(line.original_quantity_note||"").trim();
    const displayLiteral=!hasNumber&&literal&&!/sem (área|quantidade|medida|volume)|não apurad/i.test(literal);
@@ -650,13 +654,14 @@ async function fleetContractPanel(vehicles){
  const informed=rows.filter(r=>r.observed_quantity!==null&&r.observed_quantity!==undefined);
  const declared=informed.reduce((sum,r)=>sum+Number(r.observed_quantity||0),0);
  const linked=vehicles.filter(v=>v.contract_resource_requirement_id);
+ const absent=rows.length===0;
  return '<section class="fleet-contract-panel" aria-labelledby="fleet-contract-heading">'+
-  '<div class="fleet-contract-header"><div><span class="eyebrow">ITEM 6.1 · REFERÊNCIA CONTRATUAL</span><h2 id="fleet-contract-heading">Relação de veículos previstos</h2><p>Esta relação já consta no SIGA, mas não equivale a cadastros individuais. Compare os quantitativos e identifique cada veículo por placa, chassi ou patrimônio.</p></div></div>'+
+  '<div class="fleet-contract-header"><div><span class="eyebrow">FROTA · REFERÊNCIA CONTRATUAL 6.1</span><h2 id="fleet-contract-heading">Lista de veículos por tipo</h2><p>O contrato indica os tipos e quantidades. Para criar um cadastro individual com placa, chassi ou patrimônio, selecione <strong>Identificar veículo</strong> na linha correspondente.</p></div></div>'+
   '<div class="fleet-contract-kpis">'+
    '<div><span>Unidades previstas</span><strong>'+quant(projected)+'</strong><small>Em '+rows.length+' categorias contratuais</small></div>'+
    '<div><span>Quantidades informadas</span><strong>'+quant(declared)+'</strong><small>Soma parcial de '+informed.length+' categorias, sem identificação individual</small></div>'+
-   '<div><span>Veículos identificados</span><strong>'+quant(vehicles.length)+'</strong><small>'+quant(linked.length)+' vinculados às categorias contratuais</small></div></div>'+
-  '<div class="table-scroll fleet-contract-scroll"><table class="fleet-contract-table"><thead><tr><th>Tipo previsto no contrato</th><th>Previsto</th><th>Informado</th><th>Anotações</th><th>Ação</th></tr></thead><tbody>'+
+   '<div><span>Cadastros individuais</span><strong>'+quant(vehicles.length)+'</strong><small>'+quant(linked.length)+' vinculados às categorias contratuais</small></div></div>'+
+  '<div class="table-scroll fleet-contract-scroll"><table class="fleet-contract-table"><thead><tr><th>Veículo / tipo contratual</th><th>Previsto</th><th>Informado</th><th>Anotações</th><th>Cadastro</th></tr></thead><tbody>'+
    rows.map(r=>{
     const reported=r.observed_quantity===null||r.observed_quantity===undefined?'A conferir':quant(r.observed_quantity);
     return '<tr><td><strong>'+escapeHTML(r.item_name)+'</strong><small>'+escapeHTML(r.source_ref||"")+'</small></td>'+
@@ -665,7 +670,7 @@ async function fleetContractPanel(vehicles){
      '<td>'+(privileged()?'<button type="button" class="table-action fleet-add" data-fleet-add="'+escapeHTML(r.id)+'">Identificar veículo</button>':'<span class="muted">Consulta</span>')+'</td></tr>';
    }).join("")+
   '</tbody></table></div>'+
-  '<p class="fleet-contract-foot">Valores informados não comprovam entrega, disponibilidade ou vistoria. Não foram criadas placas ou veículos fictícios. A tabela individual abaixo exibirá apenas bens efetivamente identificados.</p></section>';
+  '<p class="fleet-contract-foot">15 unidades informadas não significam 15 veículos conferidos. Placas, chassis e patrimônio dependem dos cadastros individuais.</p></section>';
 }
 async function modulePage(key){
  const saved=listViews.get(key);
@@ -705,16 +710,14 @@ async function modulePage(key){
    '<button class="btn btn-ghost" data-action="export">'+iconMarkup("download")+' Baixar CSV</button>';
   const special=isCatalogPage(key);
   const assetOverview=key==="equipment"?
-   '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos de responsabilidade históricos; não representa inventário de bens disponíveis. Os responsáveis citados nos termos não foram definidos como guardiões atuais.</small></div>':
-   key==="vehicles"?
-   '<div class="asset-data-summary"><strong>'+app.rows.length+' veículo(s) individualizados</strong><span>Cadastre placa, chassi ou patrimônio para identificar cada veículo.</span><small>Quantidades previstas ou declaradas no contrato não são registros individuais. Consulte a conferência de quantitativos para comparação de frota.</small></div>':"";
+   '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
   const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
   const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+notesOverview+climateOverview;
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
-  '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
+  '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(key==="vehicles"?"Veículos individualizados":catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
    (special?'<button type="button" class="btn btn-ghost filter-clear" id="clear-list-filters">'+iconMarkup("close")+' Limpar</button>':"")+
   '</div></div>'+
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
