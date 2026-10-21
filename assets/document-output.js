@@ -250,7 +250,7 @@ export async function generatePDF(models){
   section("IDENTIFICAÇÃO E REFERÊNCIAS");
   model.fields.forEach(([name,value])=>label(name,value));
   for(const [h,body] of model.sections){
-   const executionRegister=model.kind==="os"&&h.startsWith("03");
+   const executionRegister=(model.kind==="os"||model.kind==="programacao")&&h.startsWith("03");
    // Mantém título e linhas de preenchimento juntos em uma mesma página.
    if(executionRegister)ensure(wrapText(regular,body,9.2,W-margin*2).length*19+49);
    section(h);
