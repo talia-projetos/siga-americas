@@ -4,7 +4,7 @@ const ref=(key,label,table,display="name",extra={})=>f(key,label,"ref",{table,di
 const options=(...values)=>values.map(x=>({value:x,label:x.replaceAll("_"," ")}));
 // Organização apenas da navegação. Os nomes e IDs dos módulos permanecem idênticos.
 export const groups=[
-  {label:"PLANEJAMENTO",icon:"calendar",items:["coverage","contract_suggestions","field_execution_entries","field_programs","field_plan_items"]},
+  {label:"PLANEJAMENTO",icon:"calendar",items:["coverage","contract_suggestions","field_execution_entries","financial_planning","field_programs","field_plan_items"]},
   {label:"CAMPO E EXECUÇÃO",icon:"field",items:["field_report","field_monitor","work_orders","field_routine_templates","field_routine_records"]},
   {label:"CONTRATO E OBRIGAÇÕES",icon:"contract",items:["contracts","obligations","activity_catalog","service_posts","areas","teams"]},
   {label:"FINANCEIRO",icon:"assets",items:["contract_items","fuel_logs","maintenance","purchases"]},
@@ -33,6 +33,7 @@ export const modules={
     f("pricing_notes","Ressalvas sobre a valoração","textarea",{wide:true}),
     f("notes","Observações / locais / dúvidas","textarea",{wide:true})
   ]},
+  financial_planning:{title:"Planejamento financeiro e clima",icon:"calendar",virtual:true,private:true,description:"Cenários de custeio de novembro a janeiro, frentes candidatas, risco meteorológico e emissão controlada de OS. Não constitui medição ou faturamento."},
   field_programs:{title:"Planejamento mensal de campo",icon:"calendar",table:"field_programs",description:"Programação por mês e frente operacional, com alternativas climáticas. Não representa autorização automática de execução.",columns:["period_month","area_id","main_activity","climate_context","status"],fields:[
    ref("area_id","Frente operacional","operational_areas","code_name",{required:true}),ref("team_id","Equipe real","teams","name"),f("period_month","Competência","date",{required:true}),f("main_activity","Atividade principal","textarea",{required:true,wide:true}),f("safe_alternative","Alternativa de campo diante de impedimento","textarea",{wide:true}),f("climate_context","Condição climática e risco","textarea",{wide:true}),f("status","Situação","select",{options:options("a_validar","aprovado","em_execucao","concluido","suspenso"),default:"a_validar"}),f("notes","Observações e prioridades","textarea",{wide:true})]},
   field_plan_items:{title:"Ações programadas",icon:"clipboard",table:"field_plan_items",description:"Programação de ações executáveis da matriz contratual, associadas ao mês, à frente operacional e às evidências. Equipamentos, diárias, postos e fornecimentos não são ações programadas.",columns:["program_id","activity_id","planned_for","action_status","planned_quantity","executed_quantity"],fields:[
