@@ -1,33 +1,62 @@
-// SIGA · consulta à previsão INMET. Somente a cidade operacional Foz do Iguaçu/PR.
-const allowedOrigin = "https://talia-projetos.github.io";
-const cors = {"Access-Control-Allow-Origin": allowedOrigin,"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info","Access-Control-Allow-Methods":"GET,OPTIONS"};
-const json=(obj,status=200)=>new Response(JSON.stringify(obj),{status,headers:{...cors,"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=900"}});
-function text(x){return String(x??"").trim();}
-function dayEntries(data){
- const city=data?.["4108304"]||data?.["FOZ DO IGUACU"]||data;
- if(!city||typeof city!=="object")return [];
- return Object.entries(city).filter(([date,value])=>/^20\d\d-\d\d-\d\d$/.test(date)&&value&&typeof value==="object").sort(([a],[b])=>a.localeCompare(b)).slice(0,7).map(([date,obj])=>{
-  const periods=Object.values(obj).filter(v=>v&&typeof v==="object");
-  const value=(...keys)=>periods.map(p=>keys.map(k=>p[k])).flat().find(v=>v!==null&&v!==undefined&&String(v)!=="");
-  const desc=text(value("resumo","tempo","descricao","condicao","tempo_manha","tempo_tarde"))||"Previsão disponível no INMET";
-  const mi=value("temp_min","minima","temperatura_minima");
-  const ma=value("temp_max","maxima","temperatura_maxima");
-  return {date,description:desc.slice(0,180),min:mi!=null?Number(mi):null,max:ma!=null?Number(ma):null};
- });
+// SIGA - fontes meteorológicas oficiais: INMET com contingência CPTEC/INPE.
+// Nunca retornar dados gerados ou extrapolações como previsão.
+const cors={"Access-Control-Allow-Origin":"https://talia-projetos.github.io",
+"Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info",
+"Access-Control-Allow-Methods":"GET,OPTIONS"};
+const respond=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:{...cors,"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=900"}});
+const timezone="America/Sao_Paulo";
+const nowDay=()=>new Intl.DateTimeFormat("en-CA",{timeZone:timezone,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const num=v=>v==null||v===""?null:Number.isFinite(Number(v))?Number(v):null;
+const normalize=v=>String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+async function get(url){
+ const c=new AbortController();const t=setTimeout(()=>c.abort(),5200);
+ try{const r=await fetch(url,{signal:c.signal,headers:{"Accept":"application/json, application/xml, text/xml;q=0.9, */*;q=0.8"}});
+ if(!r.ok)throw Error("HTTP "+r.status);return r;}
+ finally{clearTimeout(t);}
 }
-Deno.serve(async (req)=>{
+function inmetDays(input){
+ const data=input?.["4108304"]??input?.["FOZ DO IGUACU"]??input;
+ if(!data||typeof data!=="object")return [];
+ const days=[];
+ for(const [date,period] of Object.entries(data)){
+  if(!/^20\d\d-\d\d-\d\d$/.test(date)||date<nowDay()||!period||typeof period!=="object")continue;
+  const parts=Object.values(period).filter(x=>x&&typeof x==="object");
+  const find=(...keys)=>parts.map(p=>keys.map(k=>p[k])).flat().find(x=>x!==null&&x!==undefined&&String(x).trim()!=="");
+  const desc=find("resumo","tempo","descricao","condicao","tempo_manha","tempo_tarde");
+  if(!desc)continue;
+  days.push({date,description:String(desc).slice(0,160),min:num(find("temp_min","minima","temperatura_minima")),max:num(find("temp_max","maxima","temperatura_maxima"))});
+ }
+ return days.sort((a,b)=>a.date.localeCompare(b.date)).slice(0,7);
+}
+const getTag=(xml,tag)=>xml.match(new RegExp("<"+tag+"(?:\\s[^>]*)?>([\\s\\S]*?)<\\/"+tag+">","i"))?.[1]?.trim()??"";
+function cptecDays(xml){
+ const city=getTag(xml,"nome"),state=getTag(xml,"uf");
+ if(!normalize(city).includes("foz do iguacu")||state.toUpperCase()!=="PR")throw Error("Cidade CPTEC não corresponde a Foz do Iguaçu/PR");
+ const conditions={ec:"Encoberto com chuva",ci:"Chuvas isoladas",c:"Chuva",in:"Instável",pp:"Possibilidade de chuva",cm:"Chuva pela manhã",cn:"Chuva à noite",pt:"Pancadas de chuva à tarde",pm:"Pancadas de chuva pela manhã",np:"Nublado com pancadas",n:"Nublado",pn:"Parcialmente nublado",pnt:"Pancadas de chuva à noite",ps:"Predomínio de sol",e:"Encoberto",t:"Tempestade",cl:"Céu claro"};
+ const days=[...xml.matchAll(/<previsao>([\s\S]*?)<\/previsao>/gi)].map(m=>{
+  const fragment=m[1],date=getTag(fragment,"dia"),key=getTag(fragment,"tempo").toLowerCase();
+  return {date,description:conditions[key]||("Condição CPTEC ("+key+")"),min:num(getTag(fragment,"minima")),max:num(getTag(fragment,"maxima"))};
+ }).filter(d=>/^20\d\d-\d\d-\d\d$/.test(d.date)&&d.date>=nowDay()&&!d.description.endsWith("()"));
+ if(!days.length)throw Error("Nenhuma data atual reconhecida no XML");
+ return days.sort((a,b)=>a.date.localeCompare(b.date)).slice(0,7);
+}
+Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
- if(req.method!=="GET")return json({error:"Método não permitido"},405);
- const ctl=new AbortController();
- const timeout=setTimeout(()=>ctl.abort(),6500);
+ if(req.method!=="GET")return respond({error:"Método não permitido"},405);
+ const errors=[];
  try{
-  const res=await fetch("https://apiprevmet3.inmet.gov.br/previsao/4108304",{signal:ctl.signal,headers:{"Accept":"application/json"}});
-  if(!res.ok)throw Error("HTTP "+res.status);
-  const payload=await res.json();
-  const days=dayEntries(payload);
-  if(!days.length)throw Error("Previsão sem datas reconhecíveis.");
-  return json({source:"INMET",city:"Foz do Iguaçu, PR",source_url:"https://previsao.inmet.gov.br/4108304",retrieved_at:new Date().toISOString(),horizon:"curto_prazo",days});
- }catch(err){
-  return json({source:"INMET",city:"Foz do Iguaçu, PR",days:[],unavailable:true,message:"Fonte oficial temporariamente indisponível; não substituir por previsão não verificada.",source_url:"https://previsao.inmet.gov.br/4108304",reason:String(err).slice(0,140)},503);
- }finally{clearTimeout(timeout);}
+  const response=await get("https://apiprevmet3.inmet.gov.br/previsao/4108304");
+  const days=inmetDays(await response.json());
+  if(days.length)return respond({source:"INMET",city:"Foz do Iguaçu, PR",source_url:"https://previsao.inmet.gov.br/4108304",retrieved_at:new Date().toISOString(),horizon:"curto_prazo",days});
+  errors.push("INMET retornou dados sem datas atuais utilizáveis");
+ }catch(e){errors.push("INMET indisponível: "+String(e).slice(0,100));}
+ for(const protocol of ["https","http"]){
+  try{
+   const url=protocol+"://servicos.cptec.inpe.br/XML/cidade/7dias/-25.5478/-54.5882/previsaoLatLon.xml";
+   const xml=await (await get(url)).text();
+   const days=cptecDays(xml);
+   return respond({source:"CPTEC/INPE",city:"Foz do Iguaçu, PR",source_url:"https://servicos.cptec.inpe.br/XML/",retrieved_at:new Date().toISOString(),horizon:"curto_prazo",days});
+  }catch(e){errors.push("CPTEC "+protocol+" indisponível: "+String(e).slice(0,100));}
+ }
+ return respond({unavailable:true,days:[],city:"Foz do Iguaçu, PR",sources_checked:["INMET","CPTEC/INPE"],message:"INMET e CPTEC/INPE não forneceram previsão atual verificável. Consulte as fontes oficiais antes de liberar o campo.",last_checked:new Date().toISOString()},503);
 });
