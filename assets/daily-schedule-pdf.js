@@ -19,31 +19,27 @@ export function buildDailyScheduleDocument(entry,team,area,price){
   badge:"PROGRAMAÇÃO · NÃO É ORDEM DE SERVIÇO",
   meta:[
    ["Data operacional",date],
-   ["Equipe",pretty(team?.code)+" · "+pretty(team?.name)],
-   ["Situação no SIGA",pretty(labels[entry.block_status]||entry.block_status)]
+   ["Equipe",pretty(team?.code)+" · "+pretty(team?.name)]
   ],
   fields:[
    ["Frente operacional",pretty(area?.code)+" · "+pretty(area?.name)],
    ["Rubrica da tabela de custeio",pretty(item)],
    ["Unidade de medição contratual",pretty(price?.unit)],
-   ["Local de atendimento (a confirmar em campo)",pretty(entry.planned_location)],
-   ["Número de OS",entry.work_order_id?"Vincular à OS registrada no SIGA":"Não emitida · programação preliminar"]
+   ["Local previsto / trecho a confirmar",pretty(entry.planned_location)]
   ],
   sections:[
    ["01  ATIVIDADE PREVISTA",shortService(entry.planned_service)||pretty(price?.name)],
    ["02  ALTERNATIVA / IMPEDIMENTO",
     "Atividade alternativa condicionada à segurança: "+pretty(entry.climate_alternative)+"\n"+
-    blocker+"\n"+
-    "Antes de iniciar: conferir autorização, acesso, condições meteorológicas e risco da frente."],
+    "Situação: "+pretty(labels[entry.block_status]||entry.block_status)+". "+blocker],
    ["03  REGISTRO POSTERIOR DA EQUIPE",
-    "Atividade efetivamente realizada: ______________________________________________\n"+
-    "Local / trecho executado: ___________________________________________________\n"+
-    "Horário de início: ________    Horário de término: ________\n"+
-    "Quantidade efetivamente executada: ____________    Unidade: "+pretty(price?.unit)+"\n"+
-    "Impedimentos / alterações: ___________________________________________________\n"+
-    "Referência de evidências / fotos: ______________________________________________"]
+    "Atividade executada: _______________________________________________________\n"+
+    "Local / trecho: _____________________________________________________________\n"+
+    "Início: ________    Término: ________\n"+
+    "Quantidade executada: ___________    Unidade: "+pretty(price?.unit)+"\n"+
+    "Ocorrências / evidências: ____________________________________________________"]
   ],
-  notice:"Documento operacional de programação para ciência da equipe. Não é uma OS numerada, autorização de execução, comprovação de serviço, registro de medição, aceite contratual ou autorização para trabalho inseguro. Se houver bloqueio, informar à supervisão.",
+  notice:"Programação preliminar para ciência. Não é OS autorizada, comprovação de execução ou medição aprovada. Conferir condições de segurança, autorização e local antes da atividade.",
   signers:[
    ["SUPERVISÃO / PROGRAMAÇÃO","Nome e assinatura"],
    ["CIÊNCIA DO RESPONSÁVEL PELA EQUIPE","Nome e assinatura"]
