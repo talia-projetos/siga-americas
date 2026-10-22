@@ -741,7 +741,14 @@ async function modulePage(key){
   const assetOverview=key==="equipment"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
   const fleetOverview="";
-  const ppeOverview="";
+  const ppeOverview=key==="ppe_items"?(()=>{
+   const total=app.rows.length,ca=app.rows.filter(r=>String(r.ca_number||"").trim()).length,
+    validity=app.rows.filter(r=>r.ca_expires_on).length,
+    expired=app.rows.filter(r=>r.ca_expires_on&&String(r.ca_expires_on)<new Date().toISOString().slice(0,10)).length;
+   return '<div class="notice ppe-readiness"><strong>Conferência de segurança · EPI</strong><p>'+total+
+    ' itens cadastrados · '+ca+' com CA informado · '+validity+' com validade registrada · '+expired+
+    ' com validade vencida no cadastro.</p><p>CA, validade, estado físico, disponibilidade e entrega precisam ser confirmados documentalmente. Ausência de CA no cadastro não significa que o produto esteja dispensado dessa exigência.</p></div>';
+  })():"";
   if(key==="ppe_items")await ppeContractOverview(app.rows); // Carrega mapa de quantitativos sem painel duplicado.
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
