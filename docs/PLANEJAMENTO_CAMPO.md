@@ -66,3 +66,17 @@ Toda semana a supervisão deve ordenar demandas por: (1) segurança e contrato; 
 
 ## 7. Governança dos dados
 O repositório contém código e documentos genéricos, **não a lista nominal de empregados, preços contratuais nem fichas de EPI**. Cadastros nominais e custos residem no Supabase e exigem login; manter backups, perfis mínimos, política de proteção de dados e autorização institucional.
+
+## Programação diária por turnos, postos fixos e emissão em lote (out/2026)
+
+- No módulo **Planejamento financeiro e clima > Escala diária**, cada uma das seis equipes operacionais possui campos separados de **manhã** e **tarde**. A atividade diária original serve apenas como referência, sem distribuir trabalho automaticamente pelos dois turnos.
+- Os **seis postos fixos** do item 3.40 estão no mesmo planejamento, mas **não são seis equipes adicionais**. Cada posto tem manhã e tarde e pode consultar as rotinas contratuais cadastradas. A escala não identifica automaticamente o trabalhador destacado ao posto.
+- Os PDFs diário e mensal incluem equipes, postos, os dois turnos e campos expressos para manifestação do gestor. A impressão é uma **proposta**, não aprovação, execução ou medição.
+- A tabela `daily_shift_plans` registra atividades/locais por turno. Não altera os registros diários originais nem gera execução automaticamente.
+- A aprovação do **dia** só pode ser registrada por usuário com permissão depois de recebida autorização formal do gestor, com **nome, data e referência documental**. O sistema exige atividade e local para ambos os turnos de cada equipe e posto, e impede aprovação com equipe marcada como impedida. A aprovação registrada bloqueia alterações dos turnos correspondentes.
+- **Após** a aprovação formal registrada, a ação **Gerar OS em lote** cria uma OS por equipe/dia e uma OS operacional por posto/dia, incluindo manhã e tarde. Um mesmo lote é idempotente: repetir a ação não deve criar ordens duplicadas.
+- As OS dos postos fixos **não** recebem quantidade diária nem rubrica de cobrança adicional. O item 3.40 permanece de periodicidade mensal. As OS não constituem medição ou validação de execução.
+- O botão **Baixar PDF das OS** exporta o conjunto efetivamente emitido, para distribuição e assinatura conforme fluxo administrativo.
+- Se a programação necessitar alterações após aprovação, deve-se formalizar a revisão antes de modificar a escala; não se presume revogação de aceite pelo simples uso da interface.
+
+Migrações: `202610220002_daily_shift_plans.sql`, `202610220003_daily_approval_batch_os.sql`, `202610220004_avoid_approved_assignment_update.sql`.
