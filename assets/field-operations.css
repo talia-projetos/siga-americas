@@ -169,3 +169,29 @@
  .field-main-form-simple .field-form-actions .btn{min-width:0;flex:1}
 }
 @media(prefers-reduced-motion:reduce){.field-result-pill>span,.field-optional-arrow{transition:none}}
+
+/* Registro semanal: postos fixos e quantificação acessíveis sem abrir detalhes. */
+#main .field-activity-quick>.field-input{margin:0 0 13px}
+#main .field-quick-measure-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 13px;margin:12px 0 8px;padding:12px;background:#f7faf8;border:1px solid #e1ece3;border-radius:10px}
+#main .field-quick-measure-grid .field-input{min-width:0}
+#main .field-quick-measure-grid input,#main .field-quick-measure-grid select{min-width:0;width:100%;box-sizing:border-box}
+#main .field-order-hint{border-left:3px solid #a2c4aa;background:#f4f8f4;padding:8px 10px;margin:8px 0 12px;color:#65816d;font-size:10.5px;line-height:1.55;border-radius:0 6px 6px 0}
+#main .field-result-choice{margin-top:10px}
+#main .field-activity-card>[data-field-post]{margin:0 0 12px}
+#main .technical-inbox{border:1px solid #d9e7dc;border-radius:12px;background:#fff;margin:0 0 16px;overflow:hidden}
+#main .technical-inbox-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:#f7faf7;flex-wrap:wrap}
+#main .technical-inbox-head h3{font-size:14px;color:#2f5a3e;margin:5px 0}
+#main .technical-inbox-head p{font-size:10.5px;line-height:1.6;color:#69806e;margin:0}
+#main .technical-inbox-actions{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+#main .technical-inbox-actions label{display:grid;gap:4px;color:#607c68;font-size:10px;font-weight:700}
+#main .technical-inbox-actions input{min-height:34px;border:1px solid #d6e4d8;border-radius:7px;padding:6px 8px;color:#3a5b45;font-size:11px;background:#fff}
+#main .technical-inbox-actions button{font-size:10px;min-height:34px}
+#main .technical-inbox-stats{display:flex;flex-wrap:wrap;gap:10px;padding:13px 18px}
+#main .technical-inbox-stats span{display:flex;align-items:center;gap:6px;border:1px solid #e4eee5;border-radius:7px;padding:7px 10px;font-size:10px;color:#6e8474}
+#main .technical-inbox-stats strong{font-size:13px;color:#306146;font-variant-numeric:tabular-nums}
+#main .technical-inbox [data-tech-content]>.table-scroll{padding:0 12px 12px}
+#main .technical-inbox td{font-size:10.5px;line-height:1.45;vertical-align:top}
+#main .technical-inbox td small{display:block;margin-top:3px;font-size:9.5px;color:#7d9483}
+#main .technical-inbox-loading,#main .technical-inbox-empty,#main .technical-inbox-note{font-size:10.5px;color:#718777;line-height:1.6;margin:0;padding:12px 18px}
+#main .technical-inbox-note{border-top:1px solid #edf1ed;background:#fafcfa}
+@media(max-width:650px){#main .field-quick-measure-grid{grid-template-columns:1fr}#main .technical-inbox-head{padding:14px}#main .technical-inbox-actions{width:100%}#main .technical-inbox [data-tech-content]>.table-scroll{padding:0 6px 10px}}
