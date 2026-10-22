@@ -14,22 +14,23 @@ const trimDaily=s=>String(s||"").replace(/\s*·\s*programação diária.*$/i,"")
 export async function mountDailyCoverage(root,db,{role,notify}){
  const canManage=["supervisao","gestao","admin"].includes(role);
  root.innerHTML='<p class="document-muted">Carregando equipes, postos fixos e turnos...</p>';
- const [dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes,approvalRes,orderLinksRes]=await Promise.all([
+ const [dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes,shiftRes2,approvalRes,orderLinksRes]=await Promise.all([
   db.from("daily_team_assignments").select("id,work_date,team_id,area_id,contract_item_id,planned_service,planned_location,climate_alternative,block_status,blocker_reason,verified_quantity,work_order_id").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").limit(900),
   db.from("teams").select("id,code,name,active").eq("active",true),
   db.from("operational_areas").select("id,code,name"),
   db.from("contract_items").select("id,code,name,unit,unit_price,source_type").eq("source_type","precos"),
   db.from("service_posts").select("id,code,name,contractual_reference,fixed_positions,verification_status").order("code"),
   db.from("field_routine_templates").select("id,service_post_id,routine_code,title,frequency,execution_guidance,active,validation_status").eq("active",true).limit(150),
-  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").gte("work_date","2026-11-01").lte("work_date","2027-01-31").limit(2200),
+  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").order("id").range(0,999),
+  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").order("id").range(1000,1999),
   db.from("daily_plan_approvals").select("id,work_date,manager_name,approval_reference,approved_on,recorded_by").gte("work_date","2026-11-01").lte("work_date","2027-01-31"),
   db.from("daily_plan_order_links").select("id,work_date,work_order_id,team_assignment_id,service_post_id").gte("work_date","2026-11-01").lte("work_date","2027-01-31").limit(1600)
  ]);
- const error=[dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes,approvalRes,orderLinksRes].find(x=>x.error)?.error;
+ const error=[dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes,shiftRes2,approvalRes,orderLinksRes].find(x=>x.error)?.error;
  if(error){root.innerHTML='<div class="notice warning">Não foi possível carregar a escala por turnos: '+safe(error.message)+'</div>';return}
  const entries=dailyRes.data||[],teams=new Map((teamRes.data||[]).map(x=>[x.id,x])),
   areas=new Map((areaRes.data||[]).map(x=>[x.id,x])),prices=new Map((priceRes.data||[]).map(x=>[x.id,x])),
-  posts=(postRes.data||[]).slice().sort(sorted),routines=routineRes.data||[],plans=shiftRes.data||[];
+  posts=(postRes.data||[]).slice().sort(sorted),routines=routineRes.data||[],plans=[...(shiftRes.data||[]),...(shiftRes2.data||[])];
  const planKey=(kind,id,date,shift)=>kind+":"+id+":"+date+":"+shift;
  const planIndex=new Map(plans.map(p=>[planKey(p.service_post_id?"posto":"equipe",p.service_post_id||p.team_assignment_id,p.work_date,p.shift),p]));
  const approvals=new Map((approvalRes.data||[]).map(p=>[p.work_date,p]));
