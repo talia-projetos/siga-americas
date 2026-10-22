@@ -98,11 +98,11 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
     });
    }
   };
-  root.innerHTML='<section class="finance-planning-shell"><div class="finance-panel-heading"><div><span class="eyebrow">CUSTEIO DO CONTRATO ATUAL</span><h2>Planejamento de novembro a janeiro</h2><p>Três competências com meta gerencial, serviços candidatos e autorização de OS controlada pela supervisão.</p></div></div>'+
-   '<div class="finance-month-tabs" id="finance-month-tabs">'+months.map(([v,label])=>'<button type="button" data-fin-month="'+v+'"'+(v===selected?' aria-current="true"':'')+'>'+label+'</button>').join("")+'</div>'+
-   '<div id="finance-contract-coverage"></div><div id="finance-daily-coverage"></div>'+ 
-   '<details class="planning-observations" id="finance-planning-observations"><summary><span>Observações, metas, custeio e simulações</span><small>Detalhes complementares · recolhido por padrão</small></summary><div id="finance-plan-current"></div></details>'+ 
-   '</section><div id="finance-climate-advisory"></div>';
+  root.innerHTML='<section class="finance-planning-shell planning-workspace"><div class="finance-panel-heading planning-page-head"><div><span class="eyebrow">CUSTEIO DO CONTRATO ATUAL · OPERAÇÃO</span><h2>Planejamento de equipes e postos</h2><p>Manhã e tarde, cobertura contratual e proposta para validação do gestor · novembro/2026 a janeiro/2027.</p></div><div class="planning-page-status"><span class="planning-status-dot"></span> Planejamento para revisão</div></div>'+
+   '<nav class="finance-month-tabs planning-month-switch" id="finance-month-tabs" aria-label="Competência de planejamento">'+months.map(([v,label])=>'<button type="button" data-fin-month="'+v+'"'+(v===selected?' aria-current="true"':'')+'>'+label+'</button>').join("")+'</nav>'+
+   '<div class="planning-main-content"><div id="finance-contract-coverage"></div><div id="finance-daily-coverage"></div></div>'+
+   '<details class="planning-observations" id="finance-planning-observations"><summary><span class="planning-observations-title">Observações e análises complementares</span><small>Meta financeira, propostas, simulações e clima · abrir quando necessário</small></summary><div class="planning-observations-body"><div id="finance-plan-current"></div><div id="finance-climate-advisory"></div></div></details>'+
+   '</section>';
   root.querySelectorAll("[data-fin-month]").forEach(btn=>btn.onclick=()=>{
    selected=btn.dataset.finMonth;root.querySelectorAll("[data-fin-month]").forEach(b=>b.setAttribute("aria-current",String(b===btn)));
    const dailyMonth=root.querySelector("#daily-month");if(dailyMonth){dailyMonth.value=selected.slice(0,7);dailyMonth.dispatchEvent(new Event("change"));}
