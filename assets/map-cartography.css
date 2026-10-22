@@ -1,0 +1,42 @@
+/* SIGA · simbologia cartográfica de inspiração QGIS, preservando Leaflet/Google Maps. */
+#main #dashboard-coverage-map .coverage-map-shell{overflow:visible}
+#main #dashboard-coverage-map .coverage-map-header h2{letter-spacing:-.025em}
+#main #dashboard-coverage-map .coverage-map-canvas{background:#1e3e32}
+#main #dashboard-coverage-map .coverage-map-legend{background:rgba(250,252,249,.96);border:1px solid #d9e6db;box-shadow:0 10px 26px rgba(30,64,41,.12);backdrop-filter:blur(7px)}
+#main #dashboard-coverage-map .coverage-map-legend-items{gap:0}
+#main #dashboard-coverage-map .coverage-map-legend-entry{gap:10px;border-bottom:1px solid #eff2ef;padding:6px 10px;line-height:1.4}
+#main #dashboard-coverage-map .coverage-map-legend-entry:last-child{border-bottom:0}
+#main #dashboard-coverage-map .coverage-map-legend-line{width:27px;min-width:27px;height:15px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:0;opacity:1}
+#main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=area]{
+ border:1.5px solid var(--legend-color);border-radius:2px;
+ background:repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb,var(--legend-color) 20%,transparent) 5px 7px, transparent 7px 11px);
+}
+#main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=rota]{
+ height:0;margin-top:7px;border-top:3px dashed #F4B39C
+}
+#main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=ponto]::after,
+#main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=matriz]::after{
+ content:"";width:10px;height:10px;border-radius:50%;background:var(--legend-color);border:1.5px solid #fdfefd;box-shadow:0 0 0 1px rgba(33,69,47,.24)
+}
+#main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=matriz]::after{background:#25C9A2}
+#main #dashboard-coverage-map .siga-map-popup{display:grid;gap:5px;max-width:285px;font-size:11px;line-height:1.4;color:#395544}
+#main #dashboard-coverage-map .siga-map-popup strong{font-size:13px;color:#225438}
+#main #dashboard-coverage-map .siga-map-popup small{color:#708271}
+#main #dashboard-coverage-map .coverage-map-import{border:1px solid #d9e7da;background:#fcfefc;border-radius:10px;margin:12px 0}
+#main #dashboard-coverage-map .coverage-matrix-preview{padding:12px 14px;border-radius:8px;border:1px solid #d7e8dc;background:#f3f9f4;color:#345d43;margin:12px 0;font-size:11px;line-height:1.55}
+#main #dashboard-coverage-map .coverage-matrix-preview:empty{display:none}
+#main #dashboard-coverage-map .coverage-matrix-preview p{margin:7px 0;color:#657b6a}
+#main #dashboard-coverage-map .coverage-matrix-preview details summary{cursor:pointer;font-size:11px;font-weight:700;padding:4px 0;color:#2e6243}
+#main #dashboard-coverage-map .coverage-matrix-preview ol{max-height:145px;overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 18px;padding-left:24px}
+#main #dashboard-coverage-map .coverage-replace-toggle{display:flex;align-items:flex-start;gap:9px;font-size:11px;color:#66563a;line-height:1.55;margin:10px 0;padding:10px 12px;border:1px solid #eadfcb;border-radius:7px;background:#fffaf1}
+#main #dashboard-coverage-map .coverage-replace-toggle[hidden]{display:none}
+#main #dashboard-coverage-map .coverage-replace-toggle input{margin-top:3px}
+#main #dashboard-coverage-map .coverage-import-note{font-size:10.5px;line-height:1.6;color:#68806e;margin:10px 0}
+#main #dashboard-coverage-map .coverage-map-toolbar [data-open-matrices]{background:#e8f6ef;border-color:#cce3d4;color:#265f40;font-weight:700}
+#main #dashboard-coverage-map .coverage-map-toolbar [data-open-matrices]:hover{background:#daeee0}
+#main #dashboard-coverage-map .coverage-map-toolbar [data-open-matrices]:focus-visible{outline:2px solid #3b8057;outline-offset:2px}
+#main #dashboard-coverage-map .coverage-map-basemap-note{font-size:10px;color:#6b8070;margin:0 12px 6px}
+@media(max-width:720px){
+ #main #dashboard-coverage-map .coverage-matrix-preview ol{grid-template-columns:1fr}
+ #main #dashboard-coverage-map .coverage-map-toolbar [data-open-matrices]{width:auto;flex:1 1 150px}
+}
