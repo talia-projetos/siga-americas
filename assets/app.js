@@ -893,7 +893,7 @@ function fieldInput(f,row){
   inp='<select'+attr+'><option value="">Selecione...</option>'+f.options.map(o=>'<option value="'+escapeHTML(o.value)+'"'+(String(o.value)===String(value)?' selected':'')+'>'+escapeHTML(o.label)+'</option>').join("")+'</select>';
  }else if(f.type==="ref"){
   const options=sortedReferenceOptions((app.refs[f.table]||[]).filter(o=>
-   (f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"))&&
+   (f.key!=="contract_resource_requirement_id"||(app.page==="vehicles"?o.category==="veiculo":app.page==="equipment"?["ferramenta","equipamento"].includes(o.category):true))&&
    (app.page!=="ppe_deliveries"||f.table!=="ppe_items"||/^EPI \/|^Conjunto de proteção/.test(o.category||"")||o.id===value)
   ));
   const noVehicle=f.table==="vehicles"&&!options.length;
