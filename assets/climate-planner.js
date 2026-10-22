@@ -5,9 +5,10 @@ const nr=n=>typeof n==="number"&&Number.isFinite(n)?Math.round(n)+" °C":"—";
 export async function mountWeatherAdvisory(root,db){
  if(!root)return;
  root.innerHTML='<section class="climate-planner-panel"><div class="climate-panel-head"><div><span class="eyebrow">CLIMA E SEGURANÇA</span><h2>Condições para programação de campo</h2><p>Referência: Foz do Iguaçu/PR. Condições por frente dependem de conferência local.</p></div><a href="https://www.simepar.br/simepar/forecast_by_counties/4108304" target="_blank" rel="noopener noreferrer">Previsão Simepar ↗</a></div>'+
- '<div class="climate-seasonal"><div><strong>Novembro/2026</strong><span>Chuva acima da média provável no Oeste do Paraná; planejar janelas secas e reserva técnica.</span></div>'+
- '<div><strong>Dezembro/2026</strong><span>Risco de temporais, calor e redução de dias de trabalho por feriados. Reprogramar frentes expostas.</span></div>'+
- '<div><strong>Janeiro/2027</strong><span>Cenário sazonal de verão, não previsão diária. Atualizar prognóstico antes da emissão das OS.</span></div></div>'+
+ '<p class="climate-disclaimer"><strong>Prognóstico sazonal · Simepar, 09/10/2026:</strong> tendências gerais de precipitação, não previsão por dia, semana ou turno. Atualizar conforme boletins oficiais.</p>'+ 
+ '<div class="climate-seasonal"><div><strong>Novembro/2026</strong><span>Maior probabilidade de acumulados acima da média no Oeste paranaense e de episódios intensos; reservar janelas secas para serviços externos e manter alternativas seguras.</span></div>'+
+ '<div><strong>Dezembro/2026</strong><span>Simepar indica chuva acima da média no Paraná até dezembro e risco de temporais; prever bloqueios para frentes expostas e ajuste por feriados, sem presumir dias de chuva.</span></div>'+
+ '<div><strong>Janeiro/2027</strong><span>Verão sob influência possível do El Niño. Ainda não há prognóstico mensal local verificado nesta consulta; reavaliar os boletins vigentes antes de liberar frentes.</span></div></div>'+
  '<div id="climate-live-result" class="climate-live-result" aria-live="polite">Consultando as fontes oficiais INMET e CPTEC/INPE…</div>'+
  '<p class="climate-disclaimer">A previsão diária é válida apenas no horizonte divulgado pelo INMET. Não equivale a liberação de campo. Suspender ou reprogramar operações sob raios, tempestades, ventos fortes ou solo sem condições seguras, conforme avaliação do responsável.</p>'+
  '<div class="climate-sources">Fontes: <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a> · <a href="https://servicos.cptec.inpe.br/XML/" target="_blank" rel="noopener noreferrer">CPTEC/INPE</a> · <a href="https://www.simepar.br/simepar/post/79386" target="_blank" rel="noopener noreferrer">Simepar: El Niño e chuva até dezembro</a> · <a href="https://portal.inmet.gov.br/normais" target="_blank" rel="noopener noreferrer">Normais climatológicas</a></div></section>';
@@ -42,9 +43,9 @@ export async function mountWeatherAdvisory(root,db){
      '</span><small>'+html(day.description)+'</small></div>').join("")+'</div>';
   }catch(e){
    result.innerHTML='<p class="climate-live-warning">Não foi possível obter uma previsão atual verificável nas fontes oficiais. '+
-    'Consulte <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a> ou '+
+    'O serviço consultou INMET e CPTEC/INPE, mas não recebeu dados atuais utilizáveis (pode retornar 503). Consulte <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a> ou '+
     '<a href="https://servicos.cptec.inpe.br/XML/" target="_blank" rel="noopener noreferrer">CPTEC/INPE</a>. '+
-    'Nenhum dado simulado foi exibido.</p>'+(e?.detail||"");
+    'Nenhum dado simulado foi exibido. A ausência de previsão disponível não autoriza automaticamente serviços ao ar livre.</p>'+(e?.detail||"");
   }finally{
    busy=false;button.disabled=false;
    checked.textContent='Tentativa de atualização: '+new Date().toLocaleString("pt-BR");
