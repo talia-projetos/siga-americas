@@ -40,6 +40,56 @@ function cptecDays(xml){
  if(!days.length)throw Error("Nenhuma data atual reconhecida no XML");
  return days.sort((a,b)=>a.date.localeCompare(b.date)).slice(0,7);
 }
+
+// Serviço de meteorologia pública da Noruega (MET Norway), que utiliza ECMWF IFS
+// para previsões globais. É previsão modelada, não boletim emitido pelo INMET.
+const metLabels={clearsky:"Céu claro",fair:"Poucas nuvens",partlycloudy:"Parcialmente nublado",cloudy:"Nublado",
+ fog:"Neblina",lightrain:"Chuva fraca",rain:"Chuva",heavyrain:"Chuva forte",
+ rainshowers:"Pancadas de chuva",lightrainshowers:"Pancadas fracas",
+ heavyrainshowers:"Pancadas fortes",rainandthunder:"Chuva e trovoadas",
+ rainshowersandthunder:"Pancadas e trovoadas",heavyrainandthunder:"Chuva forte e trovoadas"};
+const metDate=iso=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(iso));
+const metDescription=key=>{
+ const base=String(key||"").replace(/_(day|night|polartwilight)$/,"");
+ if(metLabels[base])return metLabels[base];
+ if(base.includes("thunder"))return "Possibilidade de trovoadas";
+ if(base.includes("rain"))return "Possibilidade de chuva";
+ if(base.includes("cloud"))return "Nebulosidade variável";
+ return "Condição calculada pelo modelo";
+};
+async function metNorwayForecast(){
+ const url="https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=-25.5478&lon=-54.5882";
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+ try{
+  // O provedor exige identificação, atribuição e respeito ao cache.
+  const r=await fetch(url,{signal:controller.signal,headers:{"User-Agent":"SIGA-Americas/1.0 https://talia-projetos.github.io/siga-americas/","Accept":"application/json"}});
+  if(!r.ok)throw Error("MET Norway HTTP "+r.status);
+  const data=await r.json(),raw=data?.properties?.timeseries,updated=data?.properties?.meta?.updated_at;
+  if(!Array.isArray(raw)||!raw.length)throw Error("MET Norway sem série temporal");
+  if(!updated||!Number.isFinite(Date.parse(updated))||Date.now()-Date.parse(updated)>30*3600*1000)throw Error("MET Norway não atualizou previsão recentemente");
+  const groups=new Map();
+  for(const slot of raw){
+   if(!slot?.time||Date.parse(slot.time)<Date.now()-3600*1000)continue;
+   const day=metDate(slot.time);if(day<nowDay())continue;
+   const temp=num(slot.data?.instant?.details?.air_temperature);
+   const code=slot.data?.next_6_hours?.summary?.symbol_code||
+     slot.data?.next_1_hours?.summary?.symbol_code||
+     slot.data?.next_12_hours?.summary?.symbol_code;
+   if(temp===null||!Number.isFinite(Date.parse(slot.time)))continue;
+   if(!groups.has(day))groups.set(day,{date:day,min:temp,max:temp,description:"",firstTime:Infinity});
+   const obj=groups.get(day);obj.min=Math.min(obj.min,temp);obj.max=Math.max(obj.max,temp);
+   const stamp=Date.parse(slot.time);
+   if(code&&stamp<obj.firstTime){obj.firstTime=stamp;obj.description=metDescription(code);}
+  }
+  const days=[...groups.values()].filter(x=>x.description).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,7)
+    .map(({date,min,max,description})=>({date,min:Math.round(min),max:Math.round(max),description}));
+  if(!days.length)throw Error("MET Norway sem dias atuais utilizáveis");
+  return {source:"MET Norway / ECMWF IFS",source_url:"https://api.met.no/weatherapi/locationforecast/2.0/documentation",
+   forecast_type:"modelo_numerico",attribution:"Dados MET Norway (CC BY 4.0), modelo ECMWF IFS; interpretação automatizada pelo SIGA.",
+   city:"Foz do Iguaçu, PR",retrieved_at:new Date().toISOString(),model_updated_at:updated,horizon:"curto_prazo",days};
+ } finally{clearTimeout(timer);}
+}
+
 Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
  if(req.method!=="GET")return respond({error:"Método não permitido"},405);
@@ -75,5 +125,8 @@ Deno.serve(async req=>{
    }
   }catch(e){errors.push("CPTEC busca de município "+protocol+": "+String(e).slice(0,95));}
  }
- return respond({unavailable:true,days:[],city:"Foz do Iguaçu, PR",sources_checked:["INMET","CPTEC/INPE"],message:"Fontes oficiais não responderam com previsão utilizável neste momento.",last_checked:new Date().toISOString(),diagnostics:errors.slice(0,5)},503);
+ // Terceira fonte independente: serviço meteorológico público da Noruega.
+ try{const forecast=await metNorwayForecast();return respond(forecast);}
+ catch(e){errors.push("MET Norway/ECMWF: "+String(e).slice(0,110));}
+ return respond({unavailable:true,days:[],city:"Foz do Iguaçu, PR",sources_checked:["INMET","CPTEC/INPE","MET Norway / ECMWF IFS"],message:"Fontes oficiais não responderam com previsão utilizável neste momento.",last_checked:new Date().toISOString(),diagnostics:errors.slice(0,5)},503);
 });
