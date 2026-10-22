@@ -18,7 +18,8 @@ export const modules={
   resource_check:{title:"Conferência de quantitativos",icon:"check",virtual:true,description:"Tabela 05, veículos e equipamentos previstos: informe apenas a quantidade efetivamente encontrada."},
   contract_suggestions:{title:"Itens contratuais sugeridos",icon:"target",virtual:true,description:"Apoio à decisão com base nos 73 itens da matriz. Prioriza oportunidade de receita registrada, recorrência provável e bloqueadores de segurança, clima e autorizações."},
   coverage:{title:"Cobertura",icon:"target",virtual:true,description:"Exploração técnica de 73 atividades: identificar oportunidades e distinguir programação, execução e inviabilidade."},
-  field_execution_entries:{title:"Execuções registradas",icon:"log",table:"field_execution_entries",description:"Execuções informadas com data, quantidades e valores calculados por item da planilha de preços. Conferência não equivale a faturamento aprovado.",columns:["performed_on","activity_id","activity_label","quantity","unit","estimated_amount","validation_status"],fields:[
+  field_execution_entries:{title:"Execuções registradas",icon:"log",table:"field_execution_entries",description:"Registre execução e fotos a partir da OS. Dados contratuais são herdados, sem refazer o cadastro; medição depende de conferência.",columns:["performed_on","work_order_id","activity_label","quantity","unit","estimated_amount","validation_status"],fields:[
+    ref("work_order_id","OS vinculada","work_orders","reference"),
     f("performed_on","Data de execução","date",{required:true}),
     f("activity_label","Descrição da execução","text",{required:true}),
     ref("activity_id","Atividade da matriz · 73 itens","activity_catalog","code_name",{required:true}),
@@ -29,7 +30,7 @@ export const modules={
     f("execution_status","Situação informada","select",{options:options("executada","parcial","cancelada"),default:"executada"}),
     f("validation_status","Conferência técnica / documental","select",{options:options("a_conferir","validada","glosada"),default:"a_conferir"}),
     f("source_reference","Fonte da informação","text"),
-    f("evidence_ref","Foto, OS ou referência documental","text"),
+    f("evidence_ref","Referência documental adicional (se necessária)","text"),
     f("pricing_notes","Ressalvas sobre a valoração","textarea",{wide:true}),
     f("notes","Observações / locais / dúvidas","textarea",{wide:true})
   ]},
