@@ -3,13 +3,13 @@
 const cors={"Access-Control-Allow-Origin":"https://talia-projetos.github.io",
 "Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info",
 "Access-Control-Allow-Methods":"GET,OPTIONS"};
-const respond=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:{...cors,"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=900"}});
+const respond=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:{...cors,"Content-Type":"application/json; charset=utf-8","Cache-Control":status>=400?"no-store":"public, max-age=600"}});
 const timezone="America/Sao_Paulo";
 const nowDay=()=>new Intl.DateTimeFormat("en-CA",{timeZone:timezone,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const num=v=>v==null||v===""?null:Number.isFinite(Number(v))?Number(v):null;
 const normalize=v=>String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 async function get(url){
- const c=new AbortController();const t=setTimeout(()=>c.abort(),5200);
+ const c=new AbortController();const t=setTimeout(()=>c.abort(),6500);
  try{const r=await fetch(url,{signal:c.signal,headers:{"Accept":"application/json, application/xml, text/xml;q=0.9, */*;q=0.8"}});
  if(!r.ok)throw Error("HTTP "+r.status);return r;}
  finally{clearTimeout(t);}
@@ -58,5 +58,18 @@ Deno.serve(async req=>{
    return respond({source:"CPTEC/INPE",city:"Foz do Iguaçu, PR",source_url:"https://servicos.cptec.inpe.br/XML/",retrieved_at:new Date().toISOString(),horizon:"curto_prazo",days});
   }catch(e){errors.push("CPTEC "+protocol+" indisponível: "+String(e).slice(0,100));}
  }
- return respond({unavailable:true,days:[],city:"Foz do Iguaçu, PR",sources_checked:["INMET","CPTEC/INPE"],message:"INMET e CPTEC/INPE não forneceram previsão atual verificável. Consulte as fontes oficiais antes de liberar o campo.",last_checked:new Date().toISOString()},503);
+ // Contingência documentada pelo CPTEC: buscar o código da localidade e consultar 7 dias.
+ for(const protocol of ["https","http"]){
+  try{
+   const lookup=await (await get(protocol+"://servicos.cptec.inpe.br/XML/listaCidades?city=foz%20do%20iguacu")).text();
+   const candidates=[...lookup.matchAll(/<cidade>([\s\S]*?)<\/cidade>/gi)].map(m=>m[1]);
+   const item=candidates.find(xml=>normalize(getTag(xml,"nome")).includes("foz do iguacu")&&getTag(xml,"uf").toUpperCase()==="PR");
+   const id=item?getTag(item,"id"):"";
+   if(!/^\d{1,7}$/.test(id))throw Error("Localidade não encontrada");
+   const xml=await (await get(protocol+"://servicos.cptec.inpe.br/XML/cidade/7dias/"+id+"/previsao.xml")).text();
+   const days=cptecDays(xml);
+   return respond({source:"CPTEC/INPE",city:"Foz do Iguaçu, PR",source_url:"https://servicos.cptec.inpe.br/XML/",retrieved_at:new Date().toISOString(),horizon:"curto_prazo",days});
+  }catch(e){errors.push("CPTEC busca de município "+protocol+": "+String(e).slice(0,95));}
+ }
+ return respond({unavailable:true,days:[],city:"Foz do Iguaçu, PR",sources_checked:["INMET","CPTEC/INPE"],message:"Fontes oficiais não responderam com previsão utilizável neste momento.",last_checked:new Date().toISOString(),diagnostics:errors.slice(0,5)},503);
 });

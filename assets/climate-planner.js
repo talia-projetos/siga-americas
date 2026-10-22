@@ -12,14 +12,44 @@ export async function mountWeatherAdvisory(root,db){
  '<p class="climate-disclaimer">A previsão diária é válida apenas no horizonte divulgado pelo INMET. Não equivale a liberação de campo. Suspender ou reprogramar operações sob raios, tempestades, ventos fortes ou solo sem condições seguras, conforme avaliação do responsável.</p>'+
  '<div class="climate-sources">Fontes: <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a> · <a href="https://servicos.cptec.inpe.br/XML/" target="_blank" rel="noopener noreferrer">CPTEC/INPE</a> · <a href="https://www.simepar.br/simepar/post/79386" target="_blank" rel="noopener noreferrer">Simepar: El Niño e chuva até dezembro</a> · <a href="https://portal.inmet.gov.br/normais" target="_blank" rel="noopener noreferrer">Normais climatológicas</a></div></section>';
  const result=root.querySelector("#climate-live-result");
- try{
-  const response=await db.functions.invoke("siga-clima-oficial",{method:"GET"});
-  if(response.error||response.data?.unavailable||!Array.isArray(response.data?.days)||!response.data.days.length)throw new Error(response.data?.message||response.error?.message||"Sem dados oficiais");
-  const data=response.data;
-  const days=data.days.slice(0,7);
-  result.innerHTML='<p class="climate-label">Previsão oficial '+html(data.source||"Fonte oficial")+' (curto prazo) · consulta '+html(new Date(data.retrieved_at).toLocaleString("pt-BR"))+'</p>'+
-   '<div class="climate-live-days">'+days.map(day=>'<div><strong>'+html(fmt(day.date))+'</strong><span>'+html(nr(day.min))+' a '+html(nr(day.max))+'</span><small>'+html(day.description)+'</small></div>').join("")+'</div>';
- }catch(e){
-  result.innerHTML='<p class="climate-live-warning">INMET e CPTEC/INPE não disponibilizaram uma previsão atual verificável. Consulte <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a>, <a href="https://www2.cptec.inpe.br/" target="_blank" rel="noopener noreferrer">CPTEC/INPE</a> ou <a href="https://www.simepar.br/simepar/forecast_by_counties/4108304" target="_blank" rel="noopener noreferrer">Simepar</a>. Nenhum dado estimado foi exibido.</p>';
- }
+ const toolbar=document.createElement("div");
+ toolbar.className="climate-refresh-toolbar";
+ toolbar.innerHTML='<button type="button" class="btn btn-secondary" data-refresh-forecast>Atualizar previsão</button>'+
+  '<span data-forecast-last-check aria-live="polite"></span>';
+ result.after(toolbar);
+ const button=toolbar.querySelector("[data-refresh-forecast]"),checked=toolbar.querySelector("[data-forecast-last-check]");
+ let busy=false;
+ const loadForecast=async()=>{
+  if(busy)return;
+  busy=true;button.disabled=true;
+  result.innerHTML='<p class="climate-label">Consultando INMET e CPTEC/INPE…</p>';
+  try{
+   const response=await db.functions.invoke("siga-clima-oficial",{method:"GET"});
+   let data=response.data;
+   if(response.error){
+    try{data=await response.error.context?.json?.()||data}catch{}
+   }
+   if(response.error||data?.unavailable||!Array.isArray(data?.days)||!data.days.length){
+    const diagnostics=Array.isArray(data?.diagnostics)?data.diagnostics:[];
+    const detail=diagnostics.length?'<details class="climate-diagnostic"><summary>Diagnóstico das fontes</summary><p>'+html(diagnostics.join(" · "))+'</p></details>':"";
+    throw {message:data?.message||response.error?.message||"Sem dados atuais",detail};
+   }
+   const days=data.days.slice(0,7),retrieved=new Date(data.retrieved_at||Date.now());
+   result.innerHTML='<p class="climate-label">Previsão oficial '+html(data.source||"Fonte oficial")+
+    ' · Foz do Iguaçu/PR · consulta '+html(retrieved.toLocaleString("pt-BR"))+'</p>'+
+    '<div class="climate-live-days">'+days.map(day=>
+     '<div><strong>'+html(fmt(day.date))+'</strong><span>'+html(nr(day.min))+' a '+html(nr(day.max))+
+     '</span><small>'+html(day.description)+'</small></div>').join("")+'</div>';
+  }catch(e){
+   result.innerHTML='<p class="climate-live-warning">Não foi possível obter uma previsão atual verificável nas fontes oficiais. '+
+    'Consulte <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a> ou '+
+    '<a href="https://servicos.cptec.inpe.br/XML/" target="_blank" rel="noopener noreferrer">CPTEC/INPE</a>. '+
+    'Nenhum dado simulado foi exibido.</p>'+(e?.detail||"");
+  }finally{
+   busy=false;button.disabled=false;
+   checked.textContent='Consulta realizada: '+new Date().toLocaleString("pt-BR");
+  }
+ };
+ button.onclick=loadForecast;
+ await loadForecast();
 }

@@ -225,8 +225,14 @@ export async function generatePDF(models){
  const textLines=(text,size=9.5,opt={})=>{
   const max=opt.width||W-margin*2;const f=opt.bold?bold:regular;
   const lines=wrapText(f,text,size,max),lh=opt.lineHeight||size*1.48;
-  ensure(lines.length*lh+4);
-  for(const chunk of lines){page.drawText(chunk||" ",{x:opt.x||margin,y,size,font:f,color:opt.color||dark});y-=lh;}
+  const total=lines.length*lh+4;
+  // Blocos mensais extensos devem paginar por linha, nunca ultrapassar a margem inferior.
+  if(total<=H-102-bottom)ensure(total);
+  for(const chunk of lines){
+   ensure(lh+4);
+   page.drawText(chunk||" ",{x:opt.x||margin,y,size,font:f,color:opt.color||dark});
+   y-=lh;
+  }
   y-=opt.after??4;
  };
  const label=(name,value)=>{
@@ -244,8 +250,9 @@ export async function generatePDF(models){
  for(const model of models){
   start();
   textLines(model.heading,18,{bold:true,color:dark,lineHeight:23,after:0});
-  textLines(model.subheading,9.3,{color:muted,after:11});
-  textLines(model.badge,8.4,{bold:true,color:green,after:13});
+  if(model.subheading)textLines(model.subheading,9.3,{color:muted,after:11});
+  if(model.badge)textLines(model.badge,8.4,{bold:true,color:green,after:13});
+  if(!model.subheading&&!model.badge)y-=8;
   model.meta.forEach(([name,value])=>label(name,value));
   section("IDENTIFICAÇÃO E REFERÊNCIAS");
   model.fields.forEach(([name,value])=>label(name,value));

@@ -1,6 +1,6 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=20";
+import {groups,modules} from "./modules.js?v=21";
 import {iconMarkup} from "./icons.js?v=5";
 import {renderDashboardAnalytics} from "./analytics.js?v=6";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
@@ -13,8 +13,8 @@ import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=8";
 import {mountCoverageMap} from "./coverage-map.js?v=6";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=4";
-import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=4";
-import {mountWeatherAdvisory} from "./climate-planner.js?v=2";
+import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=5";
+import {mountWeatherAdvisory} from "./climate-planner.js?v=3";
 import {mountQuickVehicle} from "./quick-vehicle.js?v=1";
 
 const el=id=>document.getElementById(id);
@@ -447,6 +447,13 @@ function renderRows(){
   return;
  }
  table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>{
+  if(app.page==="ppe_items"&&key==="contract_required"){
+   const req=app.ppeRequirementMap?.get(row.contract_resource_requirement_id);
+   if(!req)return '<td><span class="muted">Não vinculado</span></td>';
+   const text=req.required_quantity==null?'A dimensionar':
+    new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(req.required_quantity))+' '+String(req.unit||"un");
+   return '<td><span class="ppe-contract-unit">'+escapeHTML(text)+'</span></td>';
+  }
   if(app.page==="field_execution_entries"&&key==="activity_id"&&row.activity_id==null)return '<td><span class="tag gray">Modalidade de poda a definir</span><small>Quantidade anotada, ainda sem rubrica</small></td>';
   if(financial&&key==="code")return '<td data-label="Código"><span class="catalog-code">'+escapeHTML(row.code)+'</span></td>';
   if(financial&&key==="name")return '<td data-label="Atividade / serviço"><span class="catalog-name" title="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</span></td>';
@@ -651,6 +658,33 @@ async function executionSourceNotesPanel(){
   '<div class="table-scroll"><table class="execution-sources-table"><thead><tr><th>Data</th><th>Serviço</th><th>Quantitativos por local e serviço</th><th>Fonte / situação</th><th>Detalhamento</th></tr></thead><tbody>'+original+'</tbody></table></div></details>'+
   '</div></details></section>';
 }
+// A cláusula 6.5 reúne EPI, EPC e acessórios; não confundir referência com estoque conferido.
+async function ppeContractOverview(rows){
+ const {data,error}=await app.db.from("contract_resource_requirements")
+  .select("id,required_quantity,unit,source_ref").eq("category","epi").eq("source_ref","6.5").limit(100);
+ app.ppeRequirementMap=new Map((data||[]).map(r=>[r.id,r]));
+ for(const row of rows){
+  const req=app.ppeRequirementMap.get(row.contract_resource_requirement_id);
+  row.contract_required=req?.required_quantity!=null?Number(req.required_quantity):null;
+ }
+ if(error)return '<div class="notice warning">A relação de EPIs foi carregada, mas a quantidade contratual não pôde ser consultada.</div>';
+
+ const linked=rows.filter(item=>item.contract_resource_requirement_id);
+ const personal=linked.filter(item=>/^EPI \/|^Conjunto de proteção/.test(item.category||"")).length;
+ const others=linked.length-personal;
+ const knownCA=linked.filter(item=>item.ca_number).length;
+ return '<section class="ppe-contract-overview" aria-label="Referência contratual de proteção">'+
+  '<div><span class="eyebrow">CONTRATO EMERGENCIAL IBCE2026 · ITEM 6.5</span>'+
+  '<h2>Relação contratual de proteção</h2>'+
+  '<p>Itens da lista orientativa, classificados para facilitar a consulta. <strong>Cadastro não comprova entrega, estoque disponível ou CA válido.</strong></p></div>'+
+  '<div class="ppe-contract-metrics">'+
+   '<div><strong>'+linked.length+'</strong><span>itens vinculados ao contrato</span></div>'+
+   '<div><strong>'+personal+'</strong><span>EPI / conjuntos protetivos</span></div>'+
+   '<div><strong>'+others+'</strong><span>EPC, acessórios e apoio</span></div>'+
+   '<div><strong>'+knownCA+'</strong><span>CA informado no catálogo</span></div>'+
+  '</div><p class="ppe-contract-note">As quantidades, os tamanhos, o CA quando exigível e a adequação ao risco dependem de levantamento pelo SST. As três exigências de fardamento estão na categoria contratual própria e não foram duplicadas aqui.</p>'+
+  '</section>';
+}
 async function fleetContractPanel(vehicles){
  const {data,error}=await app.db.from("contract_resource_requirements")
   .select("id,item_name,source_ref,required_quantity,observed_quantity,inventory_note")
@@ -707,7 +741,7 @@ async function modulePage(key){
    const allowed=new Set((app.refs.activity_catalog||[]).map(item=>item.id));
    app.rows=app.rows.filter(row=>allowed.has(row.activity_id));
   }
-  if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
+  if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>referenceOrder.compare(String(a.code),String(b.code)));
   if(key==="service_posts")app.rows.sort((a,b)=>String(a.code||"").localeCompare(String(b.code||""),"pt-BR",{numeric:true}));
   const buttons=(privileged()
     ?key==="uniform_deliveries"
@@ -720,9 +754,10 @@ async function modulePage(key){
   const assetOverview=key==="equipment"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
   const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
+  const ppeOverview=key==="ppe_items"?await ppeContractOverview(app.rows):"";
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
-  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+climateOverview;
+  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+ppeOverview+climateOverview;
  const afterTable=key==="field_execution_entries"?notesOverview:"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
@@ -732,7 +767,7 @@ async function modulePage(key){
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
   '<div class="table-scroll"><table class="data-table">'+(key==="contract_items"?'<colgroup><col class="price-col-code"><col class="price-col-name"><col class="price-col-unit"><col class="price-col-quantity"><col class="price-col-price"><col class="price-col-total"><col class="price-col-actions"></colgroup>':'')+'<thead><tr>'+m.columns.map(col=>{
     const numeric=["unit_price","estimated_quantity","estimated_total","required_quantity","observed_quantity"].includes(col);
-    const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)"}[col]||col;
+    const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)",contract_required:"Quantidade contratual"}[col]||col;
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>'+afterTable;
@@ -841,6 +876,14 @@ async function navigate(key){
  }
  else await modulePage(next);
 }
+// Ordenação natural: 3.1, 3.2 ... 3.9, 3.10; também nomes e placas.
+const referenceOrder=new Intl.Collator("pt-BR",{numeric:true,sensitivity:"base"});
+function sortedReferenceOptions(items){
+ return [...items].sort((a,b)=>{
+  const first=v=>String(v.code||v.name||v.item_name||v.plate||v.asset_tag||v.description||"");
+  return referenceOrder.compare(first(a),first(b));
+ });
+}
 function fieldInput(f,row){
  const value=row?.[f.key]??(f.key==="activity_id"?app.prefillActivity:null)??f.default??"";
  const required=f.required?" required":"";
@@ -851,7 +894,7 @@ function fieldInput(f,row){
  if(f.type==="multi_ref"){
   const stored=Array.isArray(value)?value:[];
   const selected=stored.length?stored:(row?.team_id?[row.team_id]:[]);
-  const options=(app.refs[f.table]||[]).filter(o=>o.active!==false||selected.includes(o.id));
+  const options=sortedReferenceOptions((app.refs[f.table]||[]).filter(o=>o.active!==false||selected.includes(o.id)));
   const all=options.length>0&&options.every(o=>selected.includes(o.id));
   const checklist=options.map(o=>'<label class="purchase-sector-option"><input type="checkbox" name="'+escapeHTML(f.key)+'" data-purchase-sector value="'+escapeHTML(o.id)+'"'+(selected.includes(o.id)?' checked':'')+'><span>'+escapeHTML([o.code,o.name].filter(Boolean).join(" · "))+'</span></label>').join("");
   return '<fieldset class="field wide purchase-sector-field"><legend>'+escapeHTML(f.label)+'</legend>'+
@@ -862,7 +905,10 @@ function fieldInput(f,row){
  if(f.type==="select"){
   inp='<select'+attr+'><option value="">Selecione...</option>'+f.options.map(o=>'<option value="'+escapeHTML(o.value)+'"'+(String(o.value)===String(value)?' selected':'')+'>'+escapeHTML(o.label)+'</option>').join("")+'</select>';
  }else if(f.type==="ref"){
-  const options=(app.refs[f.table]||[]).filter(o=>f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"));
+  const options=sortedReferenceOptions((app.refs[f.table]||[]).filter(o=>
+   (f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"))&&
+   (app.page!=="ppe_deliveries"||f.table!=="ppe_items"||/^EPI \/|^Conjunto de proteção/.test(o.category||"")||o.id===value)
+  ));
   const noVehicle=f.table==="vehicles"&&!options.length;
   inp='<select'+attr+'><option value="">'+(noVehicle?'Nenhum veículo individual cadastrado':'Selecione...')+'</option>'+options.map(o=>'<option value="'+escapeHTML(o.id)+'"'+(o.id===value?' selected':'')+'>'+escapeHTML(optionLabel(f.table,o.id,f.display))+'</option>').join("")+'</select>';
  }else if(f.type==="textarea"){

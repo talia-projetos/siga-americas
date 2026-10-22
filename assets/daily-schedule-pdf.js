@@ -1,5 +1,5 @@
 // Impressão da escala diária com a mesma identidade e biblioteca da OS.
-import {generatePDF,downloadDocument} from "./document-output.js?v=6";
+import {generatePDF,downloadDocument} from "./document-output.js?v=7";
 const d=v=>v?new Date(String(v).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"Data não informada";
 const pretty=x=>String(x??"").trim()||"A confirmar";
 const labels={programada:"Programada",remanejada:"Remanejada",impedida:"Impedida",informada:"Execução informada",validada:"Validada"};
@@ -15,8 +15,8 @@ export function buildDailyScheduleDocument(entry,team,area,price){
   kind:"programacao",
   reference:"PROGRAMACAO-"+entry.work_date+"-"+pretty(team?.code),
   heading:"PROGRAMAÇÃO DIÁRIA DE EQUIPE",
-  subheading:"Orientação preliminar de trabalho · layout institucional das OS",
-  badge:"PROGRAMAÇÃO · NÃO É ORDEM DE SERVIÇO",
+  subheading:"",
+  badge:"",
   meta:[
    ["Data operacional",date],
    ["Equipe",pretty(team?.code)+" · "+pretty(team?.name)]
@@ -55,6 +55,59 @@ export async function downloadDailySchedules(entries,teams,areas,prices){
  const iso=String(entries[0].work_date||"data").replaceAll("-","");
  const only=entries.length===1?"_"+String(teams.get(entries[0].team_id)?.code||"equipe"):"_todas_as_equipes";
  const filename="SIGA_Programacao_Diaria_"+iso+only+".pdf";
+ downloadDocument(pdf,filename);
+ return filename;
+}
+
+
+export function buildMonthlyScheduleDocuments(entries,teams,areas,prices,selectedMonth){
+ const monthNames=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+ const [year,mon]=selectedMonth.split("-").map(Number);
+ if(!year||mon<1||mon>12)throw new Error("Competência mensal inválida.");
+ const monthLabel=monthNames[mon-1].replace(/^./,c=>c.toUpperCase())+"/"+year;
+ const teamIds=[...new Set(entries.map(e=>e.team_id))].sort((a,b)=>
+  String(teams.get(a)?.code||"").localeCompare(String(teams.get(b)?.code||""),"pt-BR",{numeric:true}));
+ return teamIds.map(teamId=>{
+  const team=teams.get(teamId)||{},subset=entries.filter(e=>e.team_id===teamId).sort((a,b)=>a.work_date.localeCompare(b.work_date));
+  const area=areas.get(subset[0]?.area_id)||{};
+  const lines=subset.map(e=>{
+   const price=prices.get(e.contract_item_id)||{};
+   const date=String(e.work_date).slice(8,10)+"/"+String(e.work_date).slice(5,7);
+   const location=String(e.planned_location||"Local a conferir").slice(0,100);
+   const service=shortService(e.planned_service||price.name||"Atividade a definir");
+   const status=labels[e.block_status]||"Programada";
+   const warning=e.blocker_reason?" | Motivo: "+e.blocker_reason:"";
+   return date+" · "+String(price.code||"—")+" · "+service+" | "+location+" | "+status+warning;
+  });
+  return {
+   kind:"programacao",
+   reference:"PROGRAMAÇÃO-MENSAL-"+selectedMonth+"-"+String(team.code||teamId),
+   heading:"PROGRAMAÇÃO MENSAL DE EQUIPE",
+   subheading:"",badge:"",
+   meta:[["Competência",monthLabel],["Equipe",String(team.code||"—")+" · "+String(team.name||"Equipe")]],
+   fields:[["Frente operacional",String(area.code||"—")+" · "+String(area.name||"A confirmar")],
+           ["Dias de programação",String(subset.length)],
+           ["Referência financeira","Tabela de custeio do contrato vigente; valores não medidos"]],
+   sections:[
+    ["01  ATIVIDADES POR DATA",lines.join("\n")],
+    ["02  ALTERNATIVAS E BLOQUEADORES",
+     "Atividades alternativas e condições de segurança devem ser conferidas diariamente no SIGA. Dias remanejados ou impedidos estão identificados na relação acima.\n"+
+     "O técnico registra a execução real e informa serviços não previstos; a supervisão verifica e valida."],
+    ["03  CONFERÊNCIA OPERACIONAL",
+     "Alterações de datas, locais ou frentes: ________________________________________\n"+
+     "Impedimentos e justificativas: _______________________________________________\n"+
+     "Referência dos registros / fotos: ______________________________________________"]
+   ],
+   notice:"Programação gerencial preliminar de "+monthLabel+". Não constitui OS emitida, execução comprovada, quantidade medida nem aceite contratual. Serviços e frentes sujeitos à liberação técnica e à segurança do campo.",
+   signers:[["SUPERVISÃO","Nome e assinatura"],["CIÊNCIA DO RESPONSÁVEL PELA EQUIPE","Nome e assinatura"]]
+  };
+ });
+}
+export async function downloadMonthlySchedules(entries,teams,areas,prices,month){
+ if(!entries?.length)throw new Error("Nenhuma equipe programada nesta competência.");
+ const models=buildMonthlyScheduleDocuments(entries,teams,areas,prices,month);
+ const pdf=await generatePDF(models);
+ const filename="SIGA_Programacao_Mensal_"+month.replace("-","")+".pdf";
  downloadDocument(pdf,filename);
  return filename;
 }
