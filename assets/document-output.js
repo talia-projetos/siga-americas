@@ -244,8 +244,9 @@ export async function generatePDF(models){
  for(const model of models){
   start();
   textLines(model.heading,18,{bold:true,color:dark,lineHeight:23,after:0});
-  textLines(model.subheading,9.3,{color:muted,after:11});
-  textLines(model.badge,8.4,{bold:true,color:green,after:13});
+  if(model.subheading)textLines(model.subheading,9.3,{color:muted,after:11});
+  if(model.badge)textLines(model.badge,8.4,{bold:true,color:green,after:13});
+  if(!model.subheading&&!model.badge)y-=8;
   model.meta.forEach(([name,value])=>label(name,value));
   section("IDENTIFICAÇÃO E REFERÊNCIAS");
   model.fields.forEach(([name,value])=>label(name,value));
