@@ -1,5 +1,5 @@
-import {mountWeatherAdvisory} from "./climate-planner.js?v=3";
-import {mountDailyCoverage} from "./daily-coverage.js?v=7";
+import {mountWeatherAdvisory} from "./climate-planner.js?v=5";
+import {mountDailyCoverage} from "./daily-coverage.js?v=8";
 import {mountLowMobilizationBalance} from "./low-resource-panel.js?v=2";
 import {mountTargetFeasibility} from "./financial-target-analysis.js?v=1";
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
