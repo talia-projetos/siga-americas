@@ -301,3 +301,63 @@ export async function generateCompletePack(models){
 export function safeFilename(model){
  return (model.kind==="os"?"OS_":"Termo_")+fileName(model.reference);
 }
+
+
+// Relatório tabular em lote: mesmas linhas do CSV filtrado, sem alterar cadastros.
+// Paginação automática A4 paisagem, com identidade do SIGA e indicação do escopo.
+export async function generateListPDF({title,subtitle="",columns=[],rows=[]}){
+ const lib=await pdfLib(),pdf=await lib.PDFDocument.create();
+ pdf.setTitle(stripPDF(title)+" · SIGA Américas");
+ pdf.setAuthor("PROERG · SIGA Américas");
+ const font=await pdf.embedFont(lib.StandardFonts.Helvetica);
+ const bold=await pdf.embedFont(lib.StandardFonts.HelveticaBold);
+ const W=841.89,H=595.28,pad=34,usable=W-2*pad;
+ const weights=columns.map(c=>Number(c.weight)||(/descri|item|atividade|observa|nome|material|local/i.test(c.label)?2:1));
+ const sum=weights.reduce((a,b)=>a+b,0),widths=weights.map(w=>usable*w/sum);
+ const safe=v=>stripPDF(v).replace(/\n/g," · ");
+ const short=(v,maxWidth,size=7,boldFont=false)=>{
+  const source=safe(v),f=boldFont?bold:font;
+  if(f.widthOfTextAtSize(source,size)<=maxWidth)return source;
+  let out="";
+  for(const word of source){
+   if(f.widthOfTextAtSize(out+word+"…",size)>maxWidth)break;
+   out+=word;
+  }
+  return out+"…";
+ };
+ let page,y,pageNumber=0;
+ const start=()=>{
+  page=pdf.addPage([W,H]);pageNumber++;
+  const green=lib.rgb(.13,.37,.26),grey=lib.rgb(.43,.50,.45);
+  page.drawRectangle({x:0,y:H-8,width:W,height:8,color:green});
+  page.drawText("PROERG",{x:pad,y:H-35,size:15,font:bold,color:green});
+  page.drawText("SIGA AMÉRICAS · RELATÓRIO DE REGISTROS",{x:pad+112,y:H-33,size:9,font:bold,color:grey});
+  page.drawText(short(title,W-pad*2,13,true),{x:pad,y:H-65,size:13,font:bold,color:green});
+  page.drawText(short(subtitle,W-pad*2,8),{x:pad,y:H-82,size:8,font,color:grey});
+  page.drawLine({start:{x:pad,y:40},end:{x:W-pad,y:40},color:lib.rgb(.78,.83,.80),thickness:.7});
+  page.drawText("Relatório de consulta · não constitui inventário físico, aceite ou medição.",{x:pad,y:26,size:7,font,color:grey});
+  page.drawText("Pág. "+pageNumber,{x:W-pad-46,y:26,size:7,font,color:grey});
+  y=H-112;
+  page.drawRectangle({x:pad,y:y-18,width:usable,height:22,color:lib.rgb(.91,.95,.92)});
+  let x=pad;
+  for(let i=0;i<columns.length;i++){
+   page.drawText(short(columns[i].label,widths[i]-9,7.2,true),{x:x+4,y:y-10,size:7.2,font:bold,color:green});
+   x+=widths[i];
+  }
+  y-=27;
+ };
+ start();
+ const body=rows.length?rows:[["Nenhum registro para o filtro selecionado",...Array(Math.max(0,columns.length-1)).fill("")]];
+ for(let i=0;i<body.length;i++){
+  if(y-26<51)start();
+  if(i%2===1)page.drawRectangle({x:pad,y:y-19,width:usable,height:23,color:lib.rgb(.978,.985,.98)});
+  let x=pad;
+  for(let j=0;j<columns.length;j++){
+   const v=body[i][j]??"";
+   page.drawText(short(v,widths[j]-9,7.1),{x:x+4,y:y-10,size:7.1,font,color:lib.rgb(.18,.30,.23)});
+   x+=widths[j];
+  }
+  y-=24;
+ }
+ return new Blob([await pdf.save()],{type:"application/pdf"});
+}
