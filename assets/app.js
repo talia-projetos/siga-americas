@@ -651,6 +651,24 @@ async function executionSourceNotesPanel(){
   '<div class="table-scroll"><table class="execution-sources-table"><thead><tr><th>Data</th><th>Serviço</th><th>Quantitativos por local e serviço</th><th>Fonte / situação</th><th>Detalhamento</th></tr></thead><tbody>'+original+'</tbody></table></div></details>'+
   '</div></details></section>';
 }
+// A cláusula 6.5 reúne EPI, EPC e acessórios; não confundir referência com estoque conferido.
+function ppeContractOverview(rows){
+ const linked=rows.filter(item=>item.contract_resource_requirement_id);
+ const personal=linked.filter(item=>/^EPI \/|^Conjunto de proteção/.test(item.category||"")).length;
+ const others=linked.length-personal;
+ const knownCA=linked.filter(item=>item.ca_number).length;
+ return '<section class="ppe-contract-overview" aria-label="Referência contratual de proteção">'+
+  '<div><span class="eyebrow">CONTRATO EMERGENCIAL IBCE2026 · ITEM 6.5</span>'+
+  '<h2>Relação contratual de proteção</h2>'+
+  '<p>Itens da lista orientativa, classificados para facilitar a consulta. <strong>Cadastro não comprova entrega, estoque disponível ou CA válido.</strong></p></div>'+
+  '<div class="ppe-contract-metrics">'+
+   '<div><strong>'+linked.length+'</strong><span>itens vinculados ao contrato</span></div>'+
+   '<div><strong>'+personal+'</strong><span>EPI / conjuntos protetivos</span></div>'+
+   '<div><strong>'+others+'</strong><span>EPC, acessórios e apoio</span></div>'+
+   '<div><strong>'+knownCA+'</strong><span>CA informado no catálogo</span></div>'+
+  '</div><p class="ppe-contract-note">As quantidades, os tamanhos, o CA quando exigível e a adequação ao risco dependem de levantamento pelo SST. As três exigências de fardamento estão na categoria contratual própria e não foram duplicadas aqui.</p>'+
+  '</section>';
+}
 async function fleetContractPanel(vehicles){
  const {data,error}=await app.db.from("contract_resource_requirements")
   .select("id,item_name,source_ref,required_quantity,observed_quantity,inventory_note")
@@ -720,9 +738,10 @@ async function modulePage(key){
   const assetOverview=key==="equipment"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
   const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
+  const ppeOverview=key==="ppe_items"?ppeContractOverview(app.rows):"";
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
-  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+climateOverview;
+  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+ppeOverview+climateOverview;
  const afterTable=key==="field_execution_entries"?notesOverview:"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
