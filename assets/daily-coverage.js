@@ -4,6 +4,7 @@
 import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=5";
 import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
 import {mountDailyApproval} from "./daily-approval.js?v=1";
+import {mountMaintenanceActionPanel} from "./maintenance-action-panel.js?v=1";
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
 const stateLabels={programada:"Programada",remanejada:"Remanejada",impedida:"Impedida",informada:"Execução informada",validada:"Validada"};
@@ -109,6 +110,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
        e.blocker_reason?'<p>'+safe(e.blocker_reason)+'</p>':"")+
     '</article>';
    }).join("")+'</div>'+
+   '<div id="daily-maintenance-actions"></div>'+
    '<div class="daily-plan-block-title"><h3>Postos fixos · item 3.40</h3><span>Jardineiro por posto nos dias úteis · alocação nominal a conferir</span></div>'+
    '<div class="daily-cover-list">'+shownPosts.map(p=>{
      const rt=postRoutines(p.id),daily=rt.filter(r=>r.frequency==="diaria");
@@ -123,6 +125,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
    }).join("")+'</div>'+
    '<p class="finance-scenario-alert">Calendário-base de segunda a sexta-feira, exceto feriados nacionais de 02/11, 20/11, 25/12 e 01/01. Confirmar feriados locais, escalas especiais e efetiva disponibilidade. Postos fixos não geram medição diária adicional por constarem nesta proposta.</p>'+
    '</section>';
+  void mountMaintenanceActionPanel(root.querySelector("#daily-maintenance-actions"),db,{role,notify});
   mountDailyApproval(root.querySelector("#daily-approval-slot"),db,{date:day,approval,issued,expected:totalBlocks,completed:dayShifts,canManage,notify,teams,areas,prices,
    onApproved:record=>{approvals.set(day,record);draw()},
    onIssued:links=>{orderLinks=[...orderLinks.filter(x=>x.work_date!==day),...links];draw()}
