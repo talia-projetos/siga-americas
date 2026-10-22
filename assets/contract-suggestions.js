@@ -117,9 +117,19 @@ export function summarizeWeekly(matrix,teams,reports,items,plans,programs,week,t
   .map(x=>({...x,report:byReport.get(x.report_id)}));
  const programTeams=new Map(programs.filter(p=>teamIds.has(p.team_id)).map(p=>[p.id,p.team_id]));
  const weeklyPlans=plans.filter(p=>validActivities.has(p.activity_id)&&p.planned_for&&p.planned_for>=week&&p.planned_for<=end&&programTeams.has(p.program_id));
+ const checkedPlans=weeklyPlans.map(p=>{
+   const teamId=programTeams.get(p.program_id);
+   const relevant=weeklyItems.filter(i=>i.report.team_id===teamId &&
+     (i.field_plan_item_id===p.id||(!i.field_plan_item_id&&i.activity_id===p.activity_id)));
+   return {id:p.id,activity_id:p.activity_id,team_id:teamId,
+    informed:relevant.some(i=>i.result==="executada"),
+    validated:relevant.some(i=>i.result==="executada"&&i.report.status==="validado"),
+    partial:relevant.some(i=>i.result==="parcial"),
+    blocked:relevant.some(i=>i.result==="impedida")};
+ });
  const receivedTeams=new Set(submitted.map(x=>x.team_id));
  const validatedTeams=new Set(submitted.filter(x=>x.status==="validado").map(x=>x.team_id));
- return {week,end,teamsShown,weeklyReports,submitted,weeklyItems,weeklyPlans,programTeams,receivedTeams,validatedTeams,
+ return {week,end,teamsShown,weeklyReports,submitted,weeklyItems,weeklyPlans,checkedPlans,programTeams,receivedTeams,validatedTeams,
   informed:new Set(weeklyItems.map(x=>x.activity_id)),
   confirmed:new Set(weeklyItems.filter(x=>x.report.status==="validado").map(x=>x.activity_id)),
   planned:new Set(weeklyPlans.map(x=>x.activity_id)),
@@ -160,12 +170,17 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
   const filter=a=>!search||normalized([a.code,a.name,a.category].join(" ")).includes(normalized(search));
   el("#weekly-feedback").innerHTML='<div class="weekly-period-label"><strong>'+text(formatWeek(week))+' a '+text(formatWeek(d.end))+'</strong>'+
    '<span>'+text(lastUpdate?"Consultado: "+lastUpdate:"Consultando…")+'</span></div>';
+  const completed=d.checkedPlans.filter(x=>x.informed).length;
+  const accepted=d.checkedPlans.filter(x=>x.validated).length;
   const stats=[
-    ["Equipes com relatório enviado",d.receivedTeams.size+" / "+d.teamsShown.length,
-     "Cobertura de envio, não taxa de cumprimento"],
-    ["Atividades informadas",d.informed.size,"Conforme relatórios enviados"],
-    ["Atividades validadas",d.confirmed.size,"Em relatórios validados pela supervisão"],
-    ["Atividades programadas",d.planned.size,"Com data e equipe vinculadas à semana"]
+    ["Relatórios recebidos",d.receivedTeams.size+" / "+d.teamsShown.length,
+     "Equipes com envio semanal"],
+    ["Cumprimento informado",d.checkedPlans.length?(number(100*completed/d.checkedPlans.length)+"%"):"Sem base",
+     d.checkedPlans.length?completed+" de "+d.checkedPlans.length+" ações datadas":"Nenhuma ação com data e equipe na semana"],
+    ["Cumprimento validado",d.checkedPlans.length?(number(100*accepted/d.checkedPlans.length)+"%"):"Sem base",
+     d.checkedPlans.length?accepted+" ação(ões) revisadas pela supervisão":"Sem denominador de programação"],
+    ["Atividades informadas",d.informed.size,
+     d.confirmed.size+" em relatórios validados"]
   ];
   el("#weekly-counters").innerHTML='<div class="weekly-stats">'+stats.map(([label,value,detail])=>
     '<div class="weekly-stat"><small>'+text(label)+'</small><strong>'+text(value)+'</strong><span>'+text(detail)+'</span></div>').join("")+'</div>';
