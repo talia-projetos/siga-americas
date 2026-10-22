@@ -1,110 +1,14 @@
-// SIGA Américas · direcionamento gerencial por matriz de 73 itens.
-// Dados reais: catálogo, preços e apontamentos; recorrência e bloqueios são hipóteses técnicas.
-// A tela não programa automaticamente e não afirma previsão meteorológica.
-// Não vincular itens por número de código: matriz e planilha possuem numeração diferente.
-const money=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v||0));
-const number=v=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2}).format(Number(v||0));
+// SIGA Américas · Prioridades semanais pela metodologia CAPE.
+// Sem relatórios técnicos enviados não se presume cumprimento nem descumprimento.
+// Cumprimento informado e validação da supervisão são indicadores distintos.
+const number=v=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:1}).format(Number(v||0));
 const text=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const normalized=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR")
-  .replace(/[–—]/g,"-").replace(/[^\p{L}\p{N} ]/gu," ").replace(/\s+/g," ").trim();
+const normalized=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").replace(/[^\p{L}\p{N} ]/gu," ").replace(/\s+/g," ").trim();
 const numericCode=v=>Number(String(v||"").split(".")[1])||0;
-const dateBR=v=>v?String(v).slice(8,10)+"/"+String(v).slice(5,7):"—";
-const isAction=code=>{const n=numericCode(code);return n>=1&&n<=57};
-const fixedServices=new Set(["3.7","3.9","3.10"]);
-const priorityNames={high:"Inspeção prioritária",medium:"Avaliar demanda",low:"Planejar sob demanda",blocked:"Bloqueio crítico",support:"Rubrica de apoio",fixed:"Rotina contratual fixa"};
-function analysis(activity){
- const n=normalized(activity.name),code=activity.code;
- const lawn=/corte de gramados|rocada geral|remocao de aparas|manutencao de jardins|controle manual de plantas daninhas|capina seletiva/.test(n);
- const irrigation=/irrigac/.test(n);
- const trees=/poda de arvore|poda de palmeira|corte de arvore|transplante de palmeira|arvores em faixas/.test(n);
- const felling=/corte de arvore/.test(n);
- const machinery=/operacao de trator|gramados|rocada|controle quimico|regularizacao.*superficie/.test(n);
- const heavy=/corte de arvore|transplante|trator|plantio de grama|rocada geral|remocao mecanica/.test(n);
- const waste=/remocao.*entulho|limpeza de cerca|remocao de aparas/.test(n);
- const perennial=/manutencao de jardins|corte de gramados|rocada geral|remocao de aparas|controle manual de plantas daninhas/.test(n);
- const recurrence=perennial?3:waste||irrigation||/poda de arvore.*limpeza|poda de palmeira.*limpeza|poda de cerca viva/.test(n)?2:1;
- const situation=fixedServices.has(code)?"fixed":isAction(code)?"action":"support";
- const motivation=perennial?"Recorrência potencial alta na manutenção de áreas verdes. Vistoriar e medir a área antes de programar."
-  :waste?"A demanda pode reaparecer. Conferir acúmulo, acesso e medição por unidade contratual."
-  :irrigation?"Executar conforme necessidade hídrica observada; chuva pode tornar o serviço dispensável."
-  :felling?"Só considerar após vistoria, diâmetro, autorizações aplicáveis e avaliação de segurança."
-  :trees?"Serviço condicionado à avaliação técnica, local, segurança e eventual autorização."
-  :fixedServices.has(code)?"Serviço de rotina mensal. Não somar novamente à receita eventual sem previsão contratual."
-  :situation==="support"?"Item integrante da matriz, mas não é uma ação operacional autônoma para programação."
-  :"Ocorrência depende de demanda real, vistoria e autorização, quando exigível.";
- return {lawn,irrigation,trees,felling,machinery,heavy,waste,recurrence,situation,motivation};
-}
-function weatherRisk(type,scenario,window){
- if(type.situation==="support")return {status:"support",blocker:"Rubrica de apoio: verificar vínculo a serviço/OS."};
- if(type.situation==="fixed")return {status:"fixed",blocker:"Rotina mensal: verificar cobertura do posto e evitar duplicidade de cobrança."};
- if(scenario==="vento"&&(type.trees||type.machinery||type.heavy))
-   return {status:"blocked",blocker:"Vento forte/temporal: não programar corte, poda ou operação insegura."};
- if(scenario==="chuva"&&(type.machinery||type.trees||type.irrigation||type.heavy))
-   return {status:"blocked",blocker:type.irrigation?"Chuva: confirmar se há necessidade real de irrigar."
-    :"Chuva/solo molhado: adiar ou reavaliar segurança e condições operacionais."};
- if(type.felling)return {status:"blocked",blocker:"Conferir autorização exigível, diâmetro e avaliação de segurança antes de programar."};
- if(scenario==="incerto"&&(type.trees||type.machinery||type.irrigation))
-   return {status:"warning",blocker:"Tempo não confirmado: checar previsão e condições reais antes da liberação."};
- if(window==="curta"&&type.heavy)
-   return {status:"warning",blocker:"Janela operacional reduzida: definir duração, equipe e execução por etapas."};
- if(type.trees)return {status:"warning",blocker:"Conferir segurança, localização, autorizações aplicáveis e equipe capacitada."};
- if(type.irrigation)return {status:"warning",blocker:"Verificar umidade do solo e necessidade hídrica antes da mobilização."};
- return {status:"ready",blocker:"Sem bloqueador presumido; confirmar vistoria, OS, equipe, clima e acesso."};
-}
-function assignPrice(activity,priceByName,entries,priceById){
- const direct=priceByName.get(normalized(activity.name));
- if(direct)return {price:direct,source:"Correspondência exata do serviço"};
- const used=new Set(entries.filter(e=>e.activity_id===activity.id&&e.contract_item_id).map(e=>e.contract_item_id));
- if(used.size===1){const p=priceById.get([...used][0]);if(p)return {price:p,source:"Vínculo registrado nos apontamentos"};}
- return {price:null,source:used.size>1?"Mais de uma rubrica vinculada: conferir":"Sem equivalência contratual confirmada"};
-}
-export function buildSuggestions(matrix,prices,executions,{scenario="incerto",window="normal"}={}){
- const named=new Map(prices.filter(p=>p.source_type==="precos").map(p=>[normalized(p.name),p]));
- const priced=new Map(prices.filter(p=>p.source_type==="precos").map(p=>[p.id,p]));
- return matrix.map(activity=>{
-  const profile=analysis(activity),mapping=assignPrice(activity,named,executions,priced);
-  const own=executions.filter(e=>e.activity_id===activity.id&&e.execution_status!=="cancelada"&&e.validation_status!=="glosada");
-  const days=new Set(own.map(e=>String(e.performed_on).slice(0,10))).size;
-  const sum=own.reduce((s,e)=>s+Number(e.estimated_amount||0),0);
-  const qty=own.reduce((s,e)=>s+Number(e.quantity||0),0);
-  const blocker=weatherRisk(profile,scenario,window);
-  // Ranking explicável: recorrência é heurística, dias e valores são registros reais.
-  // Preços unitários não são comparados como se unidades diferentes fossem equivalentes.
-  const score=profile.recurrence*25+Math.min(days,5)*12+Math.min(27,Math.log10(1+sum)*6)+(mapping.price?4:0);
-  const stop=blocker.status==="blocked"||blocker.status==="fixed"||blocker.status==="support";
-  const tier=stop?blocker.status:score>=78?"high":score>=49?"medium":"low";
-  return {activity,profile,mapping,days,sum,qty,blocker,score,tier};
- });
-}
-const rank=(a,b)=>{
- const order={high:0,medium:1,low:2,fixed:3,support:4,blocked:5};
- return (order[a.tier]-order[b.tier])||b.score-a.score||numericCode(a.activity.code)-numericCode(b.activity.code);
-};
-// Visualização proporcional de valores REGISTRADOS (não medidos nem faturados).
-// Os valores são comparados apenas em R$, nunca entre unidades físicas distintas.
-export function renderRegisteredValueChart(all){
- const rows=all.filter(x=>Number(x.sum)>0).sort((a,b)=>b.sum-a.sum).slice(0,7);
- if(!rows.length)return '<p class="suggest-chart-empty">Ainda não há valores registrados para construir o gráfico.</p>';
- const peak=Math.max(...rows.map(x=>Number(x.sum)),1);
- const total=rows.reduce((sum,x)=>sum+Number(x.sum),0);
- return '<figure class="suggest-value-chart" aria-label="Comparação de valores estimados já registrados por item da matriz de atividades">'+
-  '<div class="suggest-chart-scale"><span>R$ 0</span><span>Maior item: '+money(peak)+'</span></div>'+
-  '<div class="suggest-chart-rows">'+rows.map((x,index)=>{
-   const value=Number(x.sum),pct=100*value/peak;
-   const label=x.activity.code+' · '+x.activity.name;
-   const kind=x.profile.situation==="support"?"Rubrica de apoio":x.profile.situation==="fixed"?"Rotina mensal":"Serviço apontado";
-   return '<div class="suggest-chart-row"><div class="suggest-chart-item"><strong title="'+text(label)+'">'+text(label)+'</strong><small>'+text(kind)+' · '+x.days+' dia(s) com registro</small></div>'+
-    '<div class="suggest-chart-viz"><div class="suggest-chart-track" role="progressbar" aria-label="'+text(label)+'" aria-valuemin="0" aria-valuemax="'+peak.toFixed(2)+'" aria-valuenow="'+value.toFixed(2)+'" aria-valuetext="'+text(money(value))+'">'+
-     '<span class="suggest-chart-bar'+(index===0?' is-largest':'')+'" style="width:'+pct.toFixed(2)+'%"></span></div></div>'+
-    '<strong class="suggest-chart-amount">'+money(value)+'</strong></div>';
-  }).join('')+'</div>'+
-  '<figcaption class="suggest-chart-caption">Valores estimados dos registros vinculados aos itens; incluem apontamentos ainda pendentes de conferência. '+rows.length+' itens exibidos. Não representam faturamento, medição aceita nem previsão de receita.</figcaption></figure>';
-}
-
 const iso=x=>String(x||"").slice(0,10);
 const shiftDay=(s,n)=>{const d=new Date(iso(s)+"T12:00:00");d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const monday=day=>{const d=new Date(iso(day)+"T12:00:00");return shiftDay(iso(day),-((d.getDay()+6)%7))};
-const nowBR=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const nowBR=()=>{const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));return p.year+"-"+p.month+"-"+p.day};
 const formatWeek=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"short"});
 const resultLabels={executada:"Executada (informada)",parcial:"Parcial (informada)",impedida:"Impedida (informada)",nao_aplicavel:"Não aplicável"};
 export function summarizeWeekly(matrix,teams,reports,items,plans,programs,week,teamId=""){
@@ -235,7 +139,7 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
    'Cumprimento depende de atividade com programação datada, relato do técnico e validação.</p>'+
    '<div class="weekly-reference-rows">'+catalog.map(a=>
     '<div><span><strong>'+text(a.code+" · "+a.name)+'</strong><small>'+text(a.category||"Sem categoria")+'</small></span>'+
-    taskButton(a.id)+'</div>').join("")+'</div>'+
+    (numericCode(a.code)<=57?taskButton(a.id):'<small>Rubrica de referência</small>')+'</div>').join("")+'</div>'+
    '<p class="weekly-method">CAPE: Contrato (atividade elegível) → Aptidão (demanda e condições) → Programação (data/equipe) → '+
    'Evidência (relatório enviado, conferência e medição separadas). A falta de relatório não representa comprovação de descumprimento.</p>';
  }
