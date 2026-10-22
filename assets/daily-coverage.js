@@ -173,7 +173,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
    if(!chosen.length){notify("Não há equipe programada na data selecionada.",true);return;}
    setBusy(true);
    try{
-    await downloadDailySchedules(chosen,teams,areas,prices,single?[]:posts,planIndex,single?[]:routines);
+    await downloadDailySchedules(chosen,teams,areas,prices,single?[]:posts,planIndex,single?[]:routines,approvals.get(day)||null);
     notify("PDF de proposta por manhã/tarde gerado para revisão do gestor do contrato.");
    }catch(e){notify("Erro ao gerar PDF: "+(e.message||e),true)}finally{setBusy(false)}
   };
