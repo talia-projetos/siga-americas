@@ -190,7 +190,8 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  }
  function drawForm(){
   const permitted=areasForTeam();
-  if(!permitted.some(a=>a.id===formState.area_id))formState.area_id=permitted[0]?.id||"";
+  if(postsForTeam().length){formState.area_id=selectedPost(formState.service_post_id)?.area_id||"";}
+  else if(!permitted.some(a=>a.id===formState.area_id))formState.area_id=permitted[0]?.id||"";
   const team=teams.find(t=>t.id===selectedTeam);
   const teamField=isTech
    ?'<div class="field-team-indicator"><span>Equipe</span><strong>'+esc(team?[team.code,team.name].filter(Boolean).join(" · "):"Não vinculada")+'</strong><small>Identificada automaticamente pelo login</small><input type="hidden" name="team_id" value="'+esc(selectedTeam)+'"></div>'
@@ -200,9 +201,13 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    '<div class="field-quick-grid">'+
     teamField+
     '<label class="field-input field-week-main"><span>Início da semana *</span><input name="report_date" id="field-week-start" type="date" required value="'+esc(formState.report_date)+'"></label>'+
-    '<label class="field-input"><span>Frente principal *</span><select name="area_id" required>'+optList(permitted,"area",formState.area_id,"Selecione a frente")+'</select></label>'+
+    (postsForTeam().length?
+     '<label class="field-input"><span>Posto fixo principal *</span><select name="service_post_id" required>'+
+       optList(postsForTeam(),"post",formState.service_post_id,"Selecione um dos seis postos")+'</select></label>'+
+       '<input type="hidden" name="area_id" value="'+esc(formState.area_id)+'">':
+     '<label class="field-input"><span>Frente principal *</span><select name="area_id" required>'+optList(permitted,"area",formState.area_id,"Selecione a frente")+'</select></label>')+
    '</div><div class="field-week-summary" id="field-week-summary">'+weekHint(formState.report_date)+' · segunda a domingo</div>'+
-   (permitted.length>1?'<p class="field-area-assignment-info">Sua equipe atende várias frentes. Selecione a frente de cada atividade abaixo.</p>':'')+
+   (postsForTeam().length?'<p class="field-area-assignment-info">Selecione o posto principal do relatório. Cada atividade pode indicar outro posto; a frente operacional é identificada pelo cadastro do posto.</p>':permitted.length>1?'<p class="field-area-assignment-info">Sua equipe atende várias frentes. Selecione a frente de cada atividade abaixo.</p>':'')+
    '</div>'+
    '<div class="field-section field-quick-section"><div class="field-section-head"><span class="field-step">2</span><div><h3>O que foi feito?</h3><p>Registre o resultado observado. Se parcial ou impedido, descreva a pendência e o motivo nos detalhes.</p></div></div>'+
    '<div class="field-activities">'+items.map(itemCard).join("")+'</div>'+
@@ -225,20 +230,63 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   root.querySelectorAll("[data-field-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.fieldTab)));
   root.querySelector("#field-week-start").addEventListener("change",e=>{
    if(!e.target.value)return;
-   const monday=weekStart(e.target.value);
-   e.target.value=monday;
-   formState.report_date=monday;
-   const hint=root.querySelector("#field-week-summary");
-   if(hint)hint.textContent=weekHint(monday)+" · segunda a domingo";
+   capture();
+   const target=weekStart(e.target.value);
+   formState.report_date=target;
+   items=items.map(x=>({...x,work_order_id:"",performed_on:""}));
+   drawForm();
+  });
+  root.querySelector('[name="service_post_id"]')?.addEventListener("change",e=>{
+   const previous=formState.service_post_id;
+   capture();const next=e.target.value,post=selectedPost(next);
+   formState.service_post_id=next;formState.area_id=post?.area_id||"";
+   items=items.map(x=>{
+    const change=!x.service_post_id||x.service_post_id===previous;
+    return change?{...x,service_post_id:next,area_id:post?.area_id||"",work_order_id:"",
+      location:x.location===selectedPost(previous)?.name?(post?.name||""):x.location}:x;
+   });
+   drawForm();
   });
   if(!isTech)root.querySelector('[name="team_id"]').addEventListener("change",e=>{
    capture();selectedTeam=e.target.value;formState.team_id=selectedTeam;formState.area_id="";attendance={};
-   items=items.map(x=>({...x,area_id:"",workers:[]}));drawForm();
+   formState.service_post_id="";items=items.map(x=>({...x,area_id:"",service_post_id:"",work_order_id:"",workers:[]}));drawForm();
   });
   root.querySelectorAll("[data-field-activity]").forEach(select=>select.addEventListener("change",()=>{
-   const card=select.closest("[data-report-item]");
-   const unit=card?.querySelector("[data-field-unit]");
-   if(unit)unit.value=suggestedUnit(select.value);
+   const card=select.closest("[data-report-item]"),unit=card?.querySelector("[data-field-unit]");
+   if(unit&&!unit.value)unit.value=suggestedUnit(select.value);
+   // A atividade é editável: não substituir a escolha do técnico pela descrição da OS.
+  }));
+  root.querySelectorAll("[data-field-post]").forEach(select=>select.addEventListener("change",()=>{
+   const ix=Number(select.closest("[data-report-item]").dataset.reportItem);
+   const next=select.value,prior=items[ix]?.service_post_id,post=selectedPost(next);
+   capture();
+   const oldPost=selectedPost(prior);
+   items[ix]={...items[ix],service_post_id:next,area_id:post?.area_id||"",work_order_id:"",
+    location:(!items[ix].location||items[ix].location===oldPost?.name)?(post?.name||""):items[ix].location};
+   drawForm();
+  }));
+  root.querySelectorAll("[data-field-workday]").forEach(input=>input.addEventListener("change",()=>{
+   const ix=Number(input.closest("[data-report-item]").dataset.reportItem);capture();
+   const current=orders.find(o=>o.id===items[ix].work_order_id);
+   if(current?.due_on&&current.due_on!==items[ix].performed_on)items[ix].work_order_id="";
+   drawForm();
+  }));
+  root.querySelectorAll("[data-field-order]").forEach(select=>select.addEventListener("change",()=>{
+   const ix=Number(select.closest("[data-report-item]").dataset.reportItem),chosen=select.value;
+   capture();const item=items[ix],order=orders.find(o=>o.id===chosen);
+   item.work_order_id=chosen;
+   if(order){
+    const linkedPost=orderLinks.find(l=>l.work_order_id===chosen&&l.service_post_id)?.service_post_id;
+    const post=linkedPost?selectedPost(linkedPost):selectedPost(item.service_post_id||formState.service_post_id);
+    const details=orderPrefill(order,post,suggestedUnit(item.activity_id));
+    if(linkedPost&&!item.service_post_id)item.service_post_id=linkedPost;
+    if(!item.area_id)item.area_id=details.area_id;
+    if(!item.activity_id&&details.activity_id)item.activity_id=details.activity_id;
+    if(!item.location)item.location=details.location;
+    if(!item.unit&&acceptedUnits.has(normalizeUnit(details.unit)))item.unit=normalizeUnit(details.unit);
+    if(!item.performed_on&&order.due_on)item.performed_on=order.due_on;
+   }
+   drawForm();
   }));
   root.querySelector("#field-add-activity").addEventListener("click",()=>{
    capture();items.push(newItem());drawForm();
