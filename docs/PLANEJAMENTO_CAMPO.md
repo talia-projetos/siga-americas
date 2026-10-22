@@ -134,3 +134,29 @@ A carteira operacional de manutenção possui ações identificadas por código,
 
 ### Cenário adicional · eventual recuperação do acumulado outubro-janeiro
 Caso os **R$ 535.252,99** dos registros com status de validação de outubro venham a constituir efetivamente medição aceita e não haja outros ajustes no faturamento ou no saldo, a meta gerencial total de quatro meses (**R$ 3.676.000,00**) exigiria **R$ 3.140.747,01** em novembro, dezembro e janeiro. A média necessária seria **R$ 1.046.915,67/mês**, ou **113,92%** da meta mensal. Sob essa hipótese, o valor nominal ainda não representado pelo registro de outubro na tabela de preços seria **R$ 3.146.702,56**, com diferença teórica de apenas **R$ 5.955,55** acima do total faltante. Não extrapolar esses cálculos para disponibilidade real de saldo, quantitativos aprovados, produtividade, faturamento ou prazo contratual: sem conferência e medição, a recuperação acumulada não está demonstrada.
+
+## CAPE: cobertura contratual e experiência do planejamento (22/10/2026)
+
+A página apresenta primeiro os meses, a cobertura das rubricas contratuais e a escala por manhã/tarde. Equipes e postos são cartões recolhíveis, exibindo 0/2, 1/2 ou 2/2 turnos revisados. A aprovação documental e as OS em lote permanecem após a análise da escala. Metas detalhadas, custo, cenários e previsão meteorológica estão na área recolhível de observações.
+
+**Denominador**: 53 rubricas com preço e unidade na tabela contratual. O catálogo de 73 atividades técnicas é outro universo e não deve ser somado às 53 rubricas. Não relacionar rubrica e atividade apenas por semelhança textual ou número.
+
+Indicadores calculados por competência:
+- **Cobertura planejada (%)** = 100 × número de rubricas contratuais distintas com proposta / 53.
+- **Cobertura quantificada (%)** = 100 × número de rubricas distintas com quantidade proposta maior que zero / 53.
+- **Cobertura com OS (%)** = 100 × número de rubricas distintas com OS vinculada / 53. Isto não significa serviço executado, medição ou faturamento.
+- **Concentração nas três principais (%)** = 100 × propostas cadastradas nas três rubricas mais frequentes / total de propostas da competência.
+- **Cobertura de ações técnicas** é acompanhada à parte pela matriz das 73 ações, somente quando há vínculos explícitos a rubrica e quantificação.
+
+Ciclo **Contrato → Aptidão → Programação → Evidência (CAPE)**:
+1. Identificar a obrigação, unidade e preço contratual.
+2. Verificar demanda/local, aptidão da equipe, equipamentos, segurança, disponibilidade e saldo.
+3. Planejar manhã/tarde e quantidade mensurável sem duplicar ocupação ou preço de posto fixo.
+4. Obter revisão técnica e aprovação documental antes da emissão em lote.
+5. Conferir execução real, evidências e medição, atualizar lacunas e oportunidades a cada semana.
+
+A meta de maior cobertura não significa executar todas as rubricas sem demanda. Priorizar **diversificação viável** dentro da capacidade contratual e reduzir concentração apenas onde houver demanda real, autorizações e condições de segurança.
+
+**Simulação 50–150%**: multiplicar apenas a quantidade aritmética das rubricas variáveis, mantendo os preços originais e as rubricas mensais em 100%. Cenários maiores que a referência distribuída em quatro meses exigem verificação de saldos, produtividade, horas de equipe, insumos e autorização; não geram OS nem receitas na base. O simulador não substitui medição.
+
+Referência observada na base em 22/10/2026: 14 de 53 rubricas com propostas em cada mês de novembro a janeiro (26,4% de cobertura); 0 das 53 com quantidade proposta positiva. Esses dados podem variar com as revisões.
