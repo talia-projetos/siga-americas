@@ -45,6 +45,9 @@ export function mountContractCoverage(root,prices,monthProposals,allProposals,ac
  const variableReference=Math.max(0,totalReference-fixedReference);
  const days=Number(workingDays)||0;
  const expected=metrics.items.length;
+ const ids=new Set(metrics.items.map(x=>x.id));
+ const allDistinct=new Set((allProposals||[]).filter(x=>ids.has(x.contract_item_id)).map(x=>x.contract_item_id));
+ const allQuantified=new Set((allProposals||[]).filter(x=>ids.has(x.contract_item_id)&&isPositive(x.proposed_quantity)).map(x=>x.contract_item_id));
  const bar=(n,d)=>
  '<div class="contract-coverage-meter"><span style="width:'+Math.max(0,Math.min(100,percent(n,d)))+'%"></span></div>';
  root.innerHTML='<section class="contract-coverage-panel" aria-labelledby="coverage-method-title">'+
@@ -59,6 +62,7 @@ export function mountContractCoverage(root,prices,monthProposals,allProposals,ac
    '<div><small>Concentração em três rubricas</small><strong>'+number(metrics.top3Share*100,1)+'%</strong><span>das '+metrics.planned+' propostas do mês</span>'+
    '<small>Reduzir apenas quando houver alternativas realmente aplicáveis</small></div>'+
   '</div>'+
+  '<p class="contract-coverage-accumulated"><strong>Acumulado das competências:</strong> '+allDistinct.size+' de '+expected+' rubricas ('+fraction(allDistinct.size,expected)+') com alguma proposta; '+allQuantified.size+' quantificadas ('+fraction(allQuantified.size,expected)+'). A metodologia é a mesma em todos os meses; os indicadores mensais são recalculados pela competência selecionada.</p>'+
   '<div class="contract-coverage-focus"><div><h4>Onde ampliar a diversidade</h4>'+
   '<p>'+metrics.missing.length+' rubricas sem proposta nesta competência. A lista é de <strong>análise de oportunidades</strong>, não autorização de serviço ou ranking automático de viabilidade.</p></div>'+
   '<button type="button" class="btn btn-secondary" data-coverage-toggle>Consultar todas as '+expected+' rubricas</button></div>'+
