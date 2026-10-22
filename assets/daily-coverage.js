@@ -40,7 +40,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
  const grouped=()=>entries.filter(e=>e.work_date.startsWith(month));
  const dates=()=>[...new Set(grouped().map(e=>e.work_date))].sort();
  const postRoutines=id=>routines.filter(r=>r.service_post_id===id).sort((a,b)=>a.routine_code.localeCompare(b.routine_code,"pt-BR"));
- const dailyValid=(kind,id,date)=>shifts.every(([shift])=>Boolean(getPlan(kind,id,date,shift)?.planned_activity?.trim()));
+ const dailyValid=(kind,id,date)=>shifts.every(([shift])=>{const plan=getPlan(kind,id,date,shift);return Boolean(plan?.planned_activity?.trim()&&plan?.planned_location?.trim())});
  const shiftRows=(kind,id,date)=>{
   return '<div class="daily-shift-grid">'+shifts.map(([shift,label])=>{
    const p=getPlan(kind,id,date,shift),ref=kind==="posto"?postRoutines(id):[];
