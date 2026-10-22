@@ -640,21 +640,13 @@ async function modulePage(key){
   const assetOverview=key==="equipment"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
   const fleetOverview="";
-  const ppeOverview=key==="ppe_items"?(()=>{
-   const total=app.rows.length,ca=app.rows.filter(r=>String(r.ca_number||"").trim()).length,
-    validity=app.rows.filter(r=>r.ca_expires_on).length,
-    expired=app.rows.filter(r=>r.ca_expires_on&&String(r.ca_expires_on)<new Date().toISOString().slice(0,10)).length;
-   return '<div class="notice ppe-readiness"><strong>Conferência de segurança · EPI</strong><p>'+total+
-    ' itens cadastrados · '+ca+' com CA informado · '+validity+' com validade registrada · '+expired+
-    ' com validade vencida no cadastro.</p><p>CA, validade, estado físico, disponibilidade e entrega precisam ser confirmados documentalmente. Ausência de CA no cadastro não significa que o produto esteja dispensado dessa exigência.</p></div>';
-  })():"";
   if(key==="ppe_items")await ppeContractOverview(app.rows); // Carrega mapa de quantitativos sem painel duplicado.
   const technicalInbox=key==="field_execution_entries"?'<div id="technical-execution-inbox"></div>':"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
   const quantityScope=({vehicles:["veiculo"],equipment:["ferramenta","equipamento"],ppe_items:["epi"],uniform_deliveries:["uniforme"]})[key];
   const quantityOverview=quantityScope?'<div id="category-quantity-slot"></div>':"";
   const stockOverview=key==="stock_items"?'<p class="notice stock-stocknote"><strong>Conferência de estoque:</strong> informe a quantidade física e a evidência nesta aba. O saldo por movimentações só usa entradas e saídas documentadas; sem registros, permanece indisponível. A contagem não cria movimentação.</p>':"";
-  const overview=technicalInbox+(special?catalogOverview(key,app.rows):"")+quantityOverview+stockOverview+assetOverview+fleetOverview+ppeOverview+climateOverview;
+  const overview=technicalInbox+(special?catalogOverview(key,app.rows):"")+quantityOverview+stockOverview+assetOverview+fleetOverview+climateOverview;
  const afterTable="";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
