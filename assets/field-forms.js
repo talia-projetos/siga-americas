@@ -1,4 +1,5 @@
 import {iconMarkup} from "./icons.js?v=4";
+import {teamFixedPosts,allowedTeamAreas,relevantOrders,autoMatchOrder,orderPrefill} from "./field-os-assist.js?v=1";
 // SIGA Américas · Formulário de campo para técnicos das equipes
 // Reproduz os campos do 05_Execucao e agrega presença, OS, local e itens da matriz 73.
 // O envio de um relatório não encerra ordens de serviço nem gera medições automáticas.
@@ -48,20 +49,22 @@ function optList(items,kind,chosen="",empty="Selecione…"){
 export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Preparando formulário de campo…</p></div>';
  const isTech=role==="tecnico";
- let teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks,priceItems,executionRefs;
+ let teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks,priceItems,executionRefs,servicePosts,orderLinks;
  try{
-  [teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks,priceItems,executionRefs]=await Promise.all([
+  [teams,areas,activities,workers,orders,reports,programs,planItems,teamAreaLinks,priceItems,executionRefs,servicePosts,orderLinks]=await Promise.all([
    list(db,"teams","id,code,name,active"),
    list(db,"operational_areas","id,code,name,active"),
    list(db,"activity_catalog","id,code,name"),
    list(db,"employees","id,name,team_id,active"),
-   list(db,"work_orders","id,reference,team_id,area_id,status",400),
-   list(db,"field_daily_reports","id,team_id,area_id,report_date,report_period,period_start,period_end,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",200),
-   list(db,"field_programs","id,area_id,period_month,status",150),
+   list(db,"work_orders","id,reference,team_id,area_id,status,due_on,activity_id,location,quantity,unit,contract_item_id",600),
+   list(db,"field_daily_reports","id,team_id,area_id,service_post_id,report_date,report_period,period_start,period_end,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",200),
+   list(db,"field_programs","id,area_id,team_id,period_month,status",150),
    list(db,"field_plan_items","id,program_id,activity_id",500),
    list(db,"team_operational_areas","team_id,area_id,active",70),
    list(db,"contract_items","id,name,unit,source_type",120),
-   list(db,"field_execution_entries","activity_id,contract_item_id",600)
+   list(db,"field_execution_entries","activity_id,contract_item_id",600),
+    list(db,"service_posts","id,code,name,area_id",30),
+    list(db,"daily_plan_order_links","id,work_order_id,service_post_id,work_date",1200)
   ]);
  }catch(e){root.innerHTML='<div class="notice danger">Falha ao consultar dados do formulário: '+esc(e.message)+'</div>';return;}
  const unitsByActivity=new Map();
@@ -90,11 +93,19 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  }
  let tab="novo",draftId=null,currentReport=null,detailId=null;
  let selectedTeam=isTech?teamId:"";
- let formState={report_date:weekStart(BRtoday()),team_id:selectedTeam,area_id:"",shift:"integral",team_leader:"",
+ let formState={report_date:weekStart(BRtoday()),team_id:selectedTeam,area_id:"",service_post_id:"",shift:"integral",team_leader:"",
     weather:"nao_informado",field_conditions:"",equipment_used:"",general_notes:"",impediments:""};
  let attendance={};let optionalOpen=false;let items=[newItem()];
- function newItem(){return {id:null,area_id:"",activity_id:"",work_order_id:"",field_plan_item_id:null,result:"executada",location:"",quantity:"",unit:"",hours_worked:"",notes:"",evidence_ref:"",workers:[]}}
- function areasForTeam(){return areas.filter(a=>teamAreaLinks.some(link=>link.team_id===selectedTeam&&link.area_id===a.id&&link.active!==false));}
+ function newItem(){return {id:null,area_id:"",service_post_id:"",performed_on:"",activity_id:"",work_order_id:"",field_plan_item_id:null,result:"executada",location:"",quantity:"",unit:"",hours_worked:"",notes:"",evidence_ref:"",workers:[]}}
+ function activeTeam(){return teams.find(t=>t.id===selectedTeam)||null;}
+ function postsForTeam(){return teamFixedPosts(activeTeam(),servicePosts);}
+ function areasForTeam(){return allowedTeamAreas(activeTeam(),areas,teamAreaLinks,servicePosts);}
+ function selectedPost(postId){return servicePosts.find(p=>p.id===postId)||null;}
+ function orderCandidates(item){
+  return relevantOrders({orders,links:orderLinks,teamId:selectedTeam,teamCode:activeTeam()?.code,
+   postId:item.service_post_id||formState.service_post_id,areaId:item.area_id||formState.area_id,
+   week:weekStart(formState.report_date),workedOn:item.performed_on});
+ }
  function workersForTeam(){return workers.filter(x=>x.team_id===selectedTeam).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"))}
  function capture(){
   const f=root.querySelector("#field-entry-form");if(!f)return;
@@ -107,7 +118,9 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   });
   items=[...root.querySelectorAll("[data-report-item]")].map(card=>({
    id:card.dataset.itemId||null,
-   area_id:card.querySelector("[data-field-area]")?.value||formState.area_id,
+   area_id:card.querySelector("[data-field-area]")?.value||selectedPost(card.querySelector("[data-field-post]")?.value)?.area_id||formState.area_id,
+   service_post_id:card.querySelector("[data-field-post]")?.value||(activeTeam()?.code==="EQ06"?formState.service_post_id:""),
+   performed_on:card.querySelector("[data-field-workday]")?.value||"",
    activity_id:card.querySelector("[data-field-activity]")?.value||"",
    work_order_id:card.querySelector("[data-field-order]")?.value||"",
    result:card.querySelector("[data-field-result]:checked")?.value||"executada",
