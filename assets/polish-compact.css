@@ -1786,3 +1786,96 @@
 #main .target-simulation-result{font-size:12px;line-height:1.5;color:#345d44;font-weight:650;padding:10px;background:#fff;border-radius:7px}
 @media(max-width:950px){#main .target-feasibility-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){#main .maintenance-workplan-list{grid-template-columns:1fr}#main .target-feasibility-kpis{grid-template-columns:1fr}}
+
+/* SIGA / planejamento: hierarquia visual e operação por cartões recolhíveis */
+#main .planning-workspace{background:#f8faf8;border:1px solid #e0e9e3;overflow:visible;box-shadow:0 8px 26px rgba(30,65,42,.04)}
+#main .planning-page-head{padding:24px 24px 17px;align-items:center}
+#main .planning-page-head h2{font-size:clamp(20px,2.15vw,27px);font-weight:760;letter-spacing:-.03em;line-height:1.16}
+#main .planning-page-head p{max-width:670px;font-size:12px;line-height:1.55;color:#698072}
+#main .planning-page-status{white-space:nowrap;display:flex;align-items:center;gap:8px;border:1px solid #d7e5d9;background:#fff;border-radius:999px;padding:8px 13px;color:#40674f;font-size:10px;font-weight:700}
+#main .planning-status-dot{width:7px;height:7px;flex-shrink:0;border-radius:50%;background:#ca9942}
+#main .planning-month-switch{display:flex;gap:5px;margin:0 22px 16px;padding:5px;border:1px solid #dfe9e0;background:#edf3ee;border-radius:11px;max-width:max-content}
+#main .planning-month-switch button{border:0!important;margin:0;white-space:nowrap;min-height:38px;padding:9px 18px!important;border-radius:8px!important;font-size:11px;font-weight:700;line-height:1.2;background:transparent;color:#657b6b;box-shadow:none!important}
+#main .planning-month-switch button[aria-current=true]{background:#fff!important;color:#285c3d!important;box-shadow:0 2px 8px rgba(38,80,50,.09)!important}
+#main .planning-month-switch button:focus-visible,#main .daily-plan-accordion>summary:focus-visible{outline:2px solid #438263;outline-offset:2px}
+#main .planning-main-content{display:flex;flex-direction:column;gap:0}
+#main .contract-coverage-panel{margin:0 22px 18px;padding:18px 20px;background:#fff;border:1px solid #dfe8e1;border-radius:12px;min-width:0}
+#main .contract-coverage-header{display:flex;align-items:start;justify-content:space-between;gap:15px}
+#main .contract-coverage-header h3{font-size:17px;color:#2e533d;letter-spacing:-.015em;margin:5px 0}
+#main .contract-coverage-header p{max-width:750px;margin:0;color:#748779;font-size:11px;line-height:1.6}
+#main .contract-coverage-month{font-size:14px;font-weight:750;color:#315a41;padding:9px 12px;border-radius:9px;background:#f2f7f3;white-space:nowrap}
+#main .contract-coverage-month small{display:block;margin-top:3px;font-size:10px;font-weight:450;color:#708676}
+#main .contract-coverage-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0 12px}
+#main .contract-coverage-kpis>div{min-width:0;background:#f8fbf8;border:1px solid #e5eee6;border-radius:9px;padding:12px 14px}
+#main .contract-coverage-kpis small{display:block;color:#768879;font-size:10px;line-height:1.4}
+#main .contract-coverage-kpis strong{display:inline-block;font-size:22px;font-weight:780;color:#285b3e;letter-spacing:-.03em;margin:5px 8px 6px 0;font-variant-numeric:tabular-nums}
+#main .contract-coverage-kpis span:not(.contract-coverage-meter span){font-size:10px;color:#60796a}
+#main .contract-coverage-meter{height:5px;background:#e3eee6;border-radius:999px;margin-top:9px;overflow:hidden}
+#main .contract-coverage-meter>span{display:block;height:100%;background:#4a9870;border-radius:inherit;min-width:0;transition:width .2s ease}
+#main .contract-coverage-focus{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0 0;border-top:1px solid #edf1ee}
+#main .contract-coverage-focus h4{font-size:11px;color:#315b3d;margin:0 0 5px}
+#main .contract-coverage-focus p{font-size:10px;line-height:1.5;color:#6f8174;margin:0}
+#main .contract-coverage-focus button{font-size:10px;flex-shrink:0}
+#main .contract-coverage-list{margin-top:12px}
+#main .contract-coverage-list[hidden]{display:none!important}
+#main .contract-coverage-method,#main .contract-scenario{margin-top:10px;padding:10px 13px;border:1px solid #e6eee7;border-radius:8px;background:#fbfdfb}
+#main .contract-coverage-method summary,#main .contract-scenario summary{cursor:pointer;color:#386448;font-size:11px;font-weight:700}
+#main .contract-coverage-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px;margin-top:9px}
+#main .contract-coverage-steps p,#main .contract-scenario p{font-size:10.5px;color:#647869;line-height:1.65}
+#main .contract-scenario input[type=range]{width:min(350px,100%);vertical-align:middle}
+#main .contract-scenario-result{border-radius:8px;background:#eef5ee;padding:12px;margin:10px 0;font-size:11px;line-height:1.6;color:#345a40}
+#main .contract-scenario-result strong{color:#2b6343}
+#main .contract-coverage-chip{font-size:10px;white-space:nowrap;padding:4px 7px;border-radius:6px;background:#f0f2ef;color:#607065}
+#main .contract-coverage-chip.candidate{background:#fff6e9;color:#936b2f}
+#main .contract-coverage-chip.quantified{background:#e5f4e8;color:#397148}
+#main .planning-workspace .daily-coverage-shell{margin:0 22px 20px;border-radius:12px;box-shadow:0 3px 12px rgba(33,70,46,.035)}
+#main .daily-cover-top{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding-bottom:14px}
+#main .daily-cover-top h2{font-size:19px;letter-spacing:-.02em}
+#main .daily-cover-top p{max-width:650px;line-height:1.55}
+#main .daily-pdf-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:end}
+#main .daily-pdf-actions button{font-size:10px;min-height:35px;padding:7px 11px}
+#main .daily-cover-shifts .daily-cover-kpis{padding:0 20px 11px;gap:9px;grid-template-columns:repeat(3,minmax(0,1fr))}
+#main .daily-cover-overview>div{background:#f7faf7;border:1px solid #e8eee8}
+#main .daily-overview-progress{height:5px;background:#e7eee8;border-radius:999px;overflow:hidden;margin:0 20px 16px}
+#main .daily-overview-progress>span{display:block;height:100%;background:#54a575;border-radius:inherit;transition:width .2s}
+#main .daily-cover-shifts .daily-cover-selects{grid-template-columns:repeat(3,minmax(0,1fr));margin:0 20px 10px;padding:14px;background:#f6f9f6;border:1px solid #e6ede6;border-radius:10px;gap:12px}
+#main .daily-cover-shifts .daily-cover-selects>label:first-child{display:none}
+#main .daily-cover-shifts .daily-cover-selects select{min-height:40px;background:#fff;border-radius:8px;border:1px solid #dae5db;color:#395944}
+#main .daily-plan-block-title{margin:20px 20px 10px}
+#main .daily-plan-block-title h3{font-size:13px}
+#main .daily-cover-list{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 20px 15px;gap:10px;align-items:start}
+#main .daily-plan-accordion{display:block;padding:0!important;overflow:hidden;border-radius:10px;box-shadow:0 1px 4px rgba(40,75,50,.025);background:#fff}
+#main .daily-plan-accordion[open]{border-color:#a6cdb4;box-shadow:0 2px 10px rgba(35,88,51,.07)}
+#main .daily-plan-accordion>.daily-cover-card-head{cursor:pointer;display:flex;align-items:center;gap:9px;margin:0!important;padding:14px 15px!important;border-bottom:0!important;list-style:none;user-select:none}
+#main .daily-plan-accordion>.daily-cover-card-head::-webkit-details-marker{display:none}
+#main .daily-plan-accordion[open]>.daily-cover-card-head{border-bottom:1px solid #e8ede8!important;background:#f8fbf8}
+#main .daily-plan-accordion>.daily-cover-card-head>div:first-child{min-width:0}
+#main .daily-plan-accordion>.daily-cover-card-head strong{font-size:12px;line-height:1.35}
+#main .daily-card-status{display:flex;align-items:center;gap:7px;flex-shrink:0}
+#main .daily-card-count{font-size:10px;color:#75877a;white-space:nowrap;font-variant-numeric:tabular-nums}
+#main .daily-card-chevron{font-size:19px;line-height:1;color:#75917e;transform:rotate(0);transition:transform .2s}
+#main .daily-plan-accordion[open] .daily-card-chevron{transform:rotate(180deg)}
+#main .daily-plan-card-content{padding:10px 14px 14px}
+#main .daily-plan-card-content>p{font-size:10.5px;color:#637b68;line-height:1.5;margin:7px 0}
+#main .daily-plan-card-content .daily-shift-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#main .daily-plan-card-content .daily-shift{background:#f9fcfa;border:1px solid #e4eee6}
+#main .daily-plan-card-content .daily-shift textarea{line-height:1.5;font-size:11px}
+#main .daily-maintenance-wrapper{margin:2px 20px 16px;border:1px solid #d9e8dd;background:#f5faf6;border-radius:10px;overflow:hidden}
+#main .daily-maintenance-wrapper>summary{cursor:pointer;padding:14px 17px;display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:12px;color:#315e42}
+#main .daily-maintenance-wrapper>summary span{font-size:10px;color:#788c7a}
+#main .daily-maintenance-wrapper .maintenance-workplan{margin:0;border:0;background:#fff;border-radius:0}
+#main .daily-plan-guidance{margin:5px 20px 20px;border:1px solid #e4ece4;border-radius:8px;padding:11px 14px;background:#fbfcfb}
+#main .daily-plan-guidance summary{font-size:10px;font-weight:700;color:#58745e;cursor:pointer}
+#main .daily-plan-guidance p{font-size:10px;line-height:1.6;color:#687b6d}
+#main .planning-observations{margin:0 22px 24px;background:#fff;border:1px solid #dfe8e1;border-radius:11px;overflow:hidden}
+#main .planning-observations>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;list-style:none;padding:17px 20px;color:#356044;background:#f2f7f2}
+#main .planning-observations>summary::-webkit-details-marker{display:none}
+#main .planning-observations-title{font-size:13px;font-weight:750}
+#main .planning-observations>summary small{font-size:10px;color:#748a79}
+#main .planning-observations[open]>summary{border-bottom:1px solid #dfebe1}
+#main .planning-observations-body{padding:16px}
+#main .planning-observations-body #finance-plan-current{min-width:0}
+#main .planning-observations-body .climate-planner-panel{margin-top:16px}
+@media(max-width:1150px){#main .contract-coverage-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#main .daily-cover-list{grid-template-columns:1fr}#main .daily-pdf-actions{justify-content:flex-start}}
+@media(max-width:760px){#main .planning-page-head{padding:18px 15px}#main .planning-page-status{display:none}#main .planning-month-switch{max-width:none;overflow:auto;margin:0 13px 14px}#main .planning-month-switch button{padding:10px!important;flex:1}#main .contract-coverage-panel,#main .planning-workspace .daily-coverage-shell,#main .planning-observations{margin-left:12px;margin-right:12px}#main .contract-coverage-panel{padding:14px}#main .contract-coverage-focus,#main .contract-coverage-header{flex-wrap:wrap}#main .contract-coverage-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#main .contract-coverage-steps{grid-template-columns:1fr}#main .daily-cover-shifts .daily-cover-selects{grid-template-columns:1fr;margin:0 13px 9px}#main .daily-cover-shifts .daily-cover-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#main .daily-cover-list{padding:0 13px 13px}#main .daily-plan-card-content .daily-shift-grid{grid-template-columns:1fr}#main .daily-card-count{display:none}#main .planning-observations>summary{display:block}#main .planning-observations>summary small{display:block;margin-top:4px}}
+@media(prefers-reduced-motion:reduce){#main .daily-card-chevron,#main .contract-coverage-meter>span,#main .daily-overview-progress>span{transition:none}}
