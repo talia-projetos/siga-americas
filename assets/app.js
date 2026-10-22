@@ -447,6 +447,13 @@ function renderRows(){
   return;
  }
  table.innerHTML=rows.map(row=>'<tr>'+m.columns.map(key=>{
+  if(app.page==="ppe_items"&&key==="contract_required"){
+   const req=app.ppeRequirementMap?.get(row.contract_resource_requirement_id);
+   if(!req)return '<td><span class="muted">Não vinculado</span></td>';
+   const text=req.required_quantity==null?'A dimensionar':
+    new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(req.required_quantity))+' '+String(req.unit||"un");
+   return '<td><span class="ppe-contract-unit">'+escapeHTML(text)+'</span></td>';
+  }
   if(app.page==="field_execution_entries"&&key==="activity_id"&&row.activity_id==null)return '<td><span class="tag gray">Modalidade de poda a definir</span><small>Quantidade anotada, ainda sem rubrica</small></td>';
   if(financial&&key==="code")return '<td data-label="Código"><span class="catalog-code">'+escapeHTML(row.code)+'</span></td>';
   if(financial&&key==="name")return '<td data-label="Atividade / serviço"><span class="catalog-name" title="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</span></td>';
@@ -652,7 +659,16 @@ async function executionSourceNotesPanel(){
   '</div></details></section>';
 }
 // A cláusula 6.5 reúne EPI, EPC e acessórios; não confundir referência com estoque conferido.
-function ppeContractOverview(rows){
+async function ppeContractOverview(rows){
+ const {data,error}=await app.db.from("contract_resource_requirements")
+  .select("id,required_quantity,unit,source_ref").eq("category","epi").eq("source_ref","6.5").limit(100);
+ app.ppeRequirementMap=new Map((data||[]).map(r=>[r.id,r]));
+ for(const row of rows){
+  const req=app.ppeRequirementMap.get(row.contract_resource_requirement_id);
+  row.contract_required=req?.required_quantity!=null?Number(req.required_quantity):null;
+ }
+ if(error)return '<div class="notice warning">A relação de EPIs foi carregada, mas a quantidade contratual não pôde ser consultada.</div>';
+
  const linked=rows.filter(item=>item.contract_resource_requirement_id);
  const personal=linked.filter(item=>/^EPI \/|^Conjunto de proteção/.test(item.category||"")).length;
  const others=linked.length-personal;
@@ -738,7 +754,7 @@ async function modulePage(key){
   const assetOverview=key==="equipment"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
   const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
-  const ppeOverview=key==="ppe_items"?ppeContractOverview(app.rows):"";
+  const ppeOverview=key==="ppe_items"?await ppeContractOverview(app.rows):"";
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
   const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+ppeOverview+climateOverview;
@@ -751,7 +767,7 @@ async function modulePage(key){
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
   '<div class="table-scroll"><table class="data-table">'+(key==="contract_items"?'<colgroup><col class="price-col-code"><col class="price-col-name"><col class="price-col-unit"><col class="price-col-quantity"><col class="price-col-price"><col class="price-col-total"><col class="price-col-actions"></colgroup>':'')+'<thead><tr>'+m.columns.map(col=>{
     const numeric=["unit_price","estimated_quantity","estimated_total","required_quantity","observed_quantity"].includes(col);
-    const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)"}[col]||col;
+    const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)",contract_required:"Quantidade contratual"}[col]||col;
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>'+afterTable;
