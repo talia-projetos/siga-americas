@@ -1,5 +1,6 @@
 import {mountWeatherAdvisory} from "./climate-planner.js?v=3";
-import {mountDailyCoverage} from "./daily-coverage.js?v=4";
+import {mountDailyCoverage} from "./daily-coverage.js?v=5";
+import {mountLowMobilizationBalance} from "./low-resource-panel.js?v=1";
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const currency=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const qty=n=>Number(n||0).toLocaleString("pt-BR",{maximumFractionDigits:3});
@@ -45,7 +46,9 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
     '<p class="finance-scenario-alert"><strong>Não é previsão de faturamento:</strong> dividir o custeio por quatro produz um limite matemático de comparação, não um calendário executável. Os trabalhos sem área delimitada, autorização, disponibilidade e medição permanecem sem quantidade. Saldo contratual e execução de outubro precisam ser reconciliados antes de aprovação.</p>'+
     '<div class="finance-panel-heading"><h3>Propostas operacionais com datas indicativas</h3><span>'+monthTasks.length+' ações candidatas</span></div>'+
     '<div class="table-scroll"><table class="finance-planning-table"><thead><tr><th>Data</th><th>Serviço e local</th><th>Unidade / preço</th><th>Quantidade</th><th>Situação</th><th>Critérios</th><th>Ação</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
+    '<div id="low-resource-balance"></div>'+
     '<details class="finance-reference-table"><summary>Conferir todas as '+prices.length+' rubricas da tabela de custeio · distribuição teórica em quatro meses</summary><div class="table-scroll"><table class="finance-planning-table"><thead><tr><th>Código</th><th>Rubrica vigente</th><th>Referência mensal teórica</th><th>Parcela do custeio</th></tr></thead><tbody>'+quote+'</tbody></table></div></details>';
+   mountLowMobilizationBalance(root.querySelector("#low-resource-balance"),prices,monthTasks,target,expected);
    if(canWrite){
     const getTask=id=>monthTasks.find(v=>v.id===id);
     const qtyInput=id=>root.querySelector('tr[data-proposal="'+id+'"] .monthly-qty');
