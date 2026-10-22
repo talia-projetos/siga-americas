@@ -43,15 +43,15 @@ export async function mountDailyCoverage(root,db,{role,notify}){
  const dates=()=>[...new Set(grouped().map(e=>e.work_date))].sort();
  const postRoutines=id=>routines.filter(r=>r.service_post_id===id).sort((a,b)=>a.routine_code.localeCompare(b.routine_code,"pt-BR"));
  const selectedRoutine=(ref,date,shift)=>{
+  // Uma rotina semanal ou mensal exige indicação efetiva da supervisão;
+  // não presumir uma data fixa de execução com base no dia da semana.
   if(!ref.length)return null;
-  const dow=new Date(date+"T12:00:00").getDay(),dom=Number(date.slice(8,10));
-  let code=shift==="manha"?"D1":"D2";
-  if(shift==="tarde"&&dow===2)code="S1";
-  if(shift==="tarde"&&dow===3){
-   const week=Math.ceil(dom/7);
-   if(week<=3)code="M"+week;
-  }
-  return ref.find(r=>r.routine_code===code)||ref.find(r=>r.routine_code===(shift==="manha"?"D1":"D2"))||ref[0];
+  const dailyCode=shift==="manha"?"D1":"D2";
+  return ref.find(r=>r.routine_code===dailyCode)||null;
+ };
+ const routineLabel=r=>{
+  const frequency={diaria:"Diária",semanal:"Semanal",mensal:"Mensal"}[r.frequency]||r.frequency;
+  return frequency+" · "+r.title+" ("+r.routine_code+")";
  };
  const dailyValid=(kind,id,date)=>shifts.every(([shift])=>{const plan=getPlan(kind,id,date,shift);return Boolean(plan?.review_status==="revisado"&&plan?.planned_activity?.trim()&&plan?.planned_location?.trim())});
  const shiftRows=(kind,id,date)=>{
@@ -63,7 +63,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
      '<label>Local / trecho<input class="daily-shift-location" maxlength="300" value="'+safe(p?.planned_location||"")+'" placeholder="Local a confirmar"></label>'+
      '<label>Orientação / observação<input class="daily-shift-note" maxlength="1000" value="'+safe(p?.supervisor_note||"")+'" placeholder="Opcional"></label>'+
      (kind==="posto"&&ref.length?'<label>Rotina contratual sugerida<select class="daily-routine-choice"><option value="">Sem rotina específica</option>'+
-       ref.map(r=>'<option value="'+safe(r.id)+'"'+(routine?.id===r.id?' selected':'')+'>'+safe(r.routine_code+' · '+r.title+' ('+r.frequency+')')+'</option>').join("")+'</select></label>':"")+
+       ref.map(r=>'<option value="'+safe(r.id)+'"'+(routine?.id===r.id?' selected':'')+'>'+safe(routineLabel(r))+'</option>').join("")+'</select></label>':"")+
      '<button class="btn btn-secondary" type="button" data-save-shift>Revisar e salvar '+label.toLowerCase()+'</button>':
      '<p><strong>Atividade:</strong> '+safe(p?.planned_activity||"A definir pela supervisão")+'</p>'+
      '<p><strong>Local:</strong> '+safe(p?.planned_location||"A confirmar")+'</p>'+
@@ -124,6 +124,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
    }).join("")+'</div>'+
    '<details class="daily-maintenance-wrapper"'+(maintenanceOpened?' open':'')+'><summary><strong>Carteira de manutenção global</strong><span>Prioridades, pendências e rotinas · abrir acompanhamento</span></summary><div id="daily-maintenance-actions"></div></details>'+
    '<div class="daily-plan-block-title"><h3>2 · Postos fixos · item 3.40</h3><span>Rotinas próprias, sem duplicação de efetivo</span></div>'+
+   '<p class="daily-routine-legend"><strong>Legenda das rotinas:</strong> <b>D1</b> Conservação de jardins (diária) · <b>D2</b> Rastelamento (diária) · <b>S1</b> Vasos e jardineiras (semanal) · <b>M1–M3</b> Rotinas mensais. Frequência não determina automaticamente o dia de realização.</p>'+
    '<div class="daily-cover-list">'+shownPosts.map(p=>{
      const rt=postRoutines(p.id),daily=rt.filter(r=>r.frequency==="diaria");
      return '<details class="daily-cover-card daily-fixed-post daily-plan-accordion" data-post-id="'+safe(p.id)+'"'+(openCards.has('posto:'+p.id)?' open':'')+'><summary class="daily-cover-card-head"><div><strong>Posto '+safe(p.code)+' · '+safe(p.name)+'</strong>'+
@@ -132,7 +133,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
        '<p class="daily-activity-title"><small>Rotinas diárias de referência:</small> '+safe(daily.map(r=>r.title).join(" · ")||"Consultar modelo contratual")+'</p>'+
        shiftRows("posto",p.id,day)+
        '<details class="daily-plan-details"><summary>Rotinas e orientações do posto ('+rt.length+')</summary><ul>'+
-       rt.map(r=>'<li><strong>'+safe(r.routine_code+' · '+r.title)+'</strong> <small>'+safe(r.frequency)+' · '+safe(r.execution_guidance||"")+'</small></li>').join("")+
+       rt.map(r=>'<li><strong>'+safe(routineLabel(r))+'</strong> <small>'+safe(r.execution_guidance||"")+'</small></li>').join("")+
        '</ul></details></div></details>';
    }).join("")+'</div>'+
    '<div id="daily-approval-slot"></div>'+ 
