@@ -38,7 +38,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
  let orderLinks=orderLinksRes.data||[];
  const getPlan=(kind,id,date,shift)=>planIndex.get(planKey(kind,id,date,shift));
  let month="2026-11",day=null,teamFilter="",postFilter="",generatingPDF=false,busy=false;
- const openCards=new Set();let initialCardSet=false;
+ const openCards=new Set();let initialCardSet=false,maintenanceOpened=false;
  const grouped=()=>entries.filter(e=>e.work_date.startsWith(month));
  const dates=()=>[...new Set(grouped().map(e=>e.work_date))].sort();
  const postRoutines=id=>routines.filter(r=>r.service_post_id===id).sort((a,b)=>a.routine_code.localeCompare(b.routine_code,"pt-BR"));
@@ -122,7 +122,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
        e.blocker_reason?'<p>'+safe(e.blocker_reason)+'</p>':"")+
     '</div></details>';
    }).join("")+'</div>'+
-   '<details class="daily-maintenance-wrapper"><summary><strong>Carteira de manutenção global</strong><span>Prioridades, pendências e rotinas · abrir acompanhamento</span></summary><div id="daily-maintenance-actions"></div></details>'+
+   '<details class="daily-maintenance-wrapper"'+(maintenanceOpened?' open':'')+'><summary><strong>Carteira de manutenção global</strong><span>Prioridades, pendências e rotinas · abrir acompanhamento</span></summary><div id="daily-maintenance-actions"></div></details>'+
    '<div class="daily-plan-block-title"><h3>2 · Postos fixos · item 3.40</h3><span>Rotinas próprias, sem duplicação de efetivo</span></div>'+
    '<div class="daily-cover-list">'+shownPosts.map(p=>{
      const rt=postRoutines(p.id),daily=rt.filter(r=>r.frequency==="diaria");
@@ -138,7 +138,14 @@ export async function mountDailyCoverage(root,db,{role,notify}){
    '<div id="daily-approval-slot"></div>'+ 
    '<details class="daily-plan-guidance"><summary>Critérios para aprovação e cuidados do planejamento</summary><p>O gestor deve confirmar horários, alocação nominal, segurança, local e documentação. Os postos fixos não são equipes adicionais; rotinas cadastradas são referência, não execução comprovada. A escala-base exclui os feriados nacionais de 02/11, 20/11, 25/12 e 01/01; conferir feriados locais e situações especiais. Exportar PDF não constitui aceite nem OS autorizada.</p></details>'+
    '</section>';
-  void mountMaintenanceActionPanel(root.querySelector("#daily-maintenance-actions"),db,{role,notify});
+  const maintenanceWrapper=root.querySelector(".daily-maintenance-wrapper");
+  const loadMaintenance=()=>{
+   if(!maintenanceWrapper.open||maintenanceWrapper.dataset.loaded)return;
+   maintenanceWrapper.dataset.loaded="true";
+   void mountMaintenanceActionPanel(root.querySelector("#daily-maintenance-actions"),db,{role,notify});
+  };
+  if(maintenanceOpened)loadMaintenance();
+  maintenanceWrapper.addEventListener("toggle",()=>{maintenanceOpened=maintenanceWrapper.open;loadMaintenance()});
   mountDailyApproval(root.querySelector("#daily-approval-slot"),db,{date:day,approval,issued,expected:totalBlocks,completed:dayShifts,canManage,notify,teams,areas,prices,
    onApproved:record=>{approvals.set(day,record);draw()},
    onIssued:links=>{orderLinks=[...orderLinks.filter(x=>x.work_date!==day),...links];draw()}
