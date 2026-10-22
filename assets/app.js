@@ -742,6 +742,7 @@ async function modulePage(key){
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
   const fleetOverview="";
   const ppeOverview="";
+  if(key==="ppe_items")await ppeContractOverview(app.rows); // Carrega mapa de quantitativos sem painel duplicado.
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
   const quantityScope=({vehicles:["veiculo"],equipment:["ferramenta","equipamento"],ppe_items:["epi"],uniform_deliveries:["uniforme"]})[key];
