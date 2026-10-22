@@ -1,5 +1,6 @@
 // Programação diária por equipe: disponibilidade planejada não significa execução.
-import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=3";
+import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=4";
+import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
 const stateLabels={programada:"Programada",remanejada:"Remanejada",impedida:"Impedida",informada:"Execução informada",validada:"Validada"};
@@ -10,7 +11,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
   db.from("daily_team_assignments").select("id,work_date,team_id,area_id,contract_item_id,planned_service,planned_location,climate_alternative,block_status,blocker_reason,verified_quantity,work_order_id").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").limit(900),
   db.from("teams").select("id,code,name,active").eq("active",true),
   db.from("operational_areas").select("id,code,name"),
-  db.from("contract_items").select("id,code,name,unit,source_type").eq("source_type","precos")
+  db.from("contract_items").select("id,code,name,unit,unit_price,source_type").eq("source_type","precos")
  ]);
  const error=[daily,teamRes,areaRes,priceRes].find(x=>x.error)?.error;
  if(error){root.innerHTML='<div class="notice warning">Não foi possível carregar a escala diária: '+safe(error.message)+'</div>';return}
@@ -42,12 +43,16 @@ export async function mountDailyCoverage(root,db,{role,notify}){
      [...teams.values()].sort((a,b)=>a.code.localeCompare(b.code)).map(t=>'<option value="'+safe(t.code)+'"'+(t.code===teamFilter?' selected':'')+'>'+safe(t.code)+' · '+safe(t.name)+'</option>').join("")+'</select></label></div>'+
    '<div class="daily-cover-list">'+selected.map(e=>{
     const t=teams.get(e.team_id)||{},a=areas.get(e.area_id)||{},c=prices.get(e.contract_item_id)||{},locked=e.block_status==="validada";
+    const secondary=secondaryCandidates([...prices.values()],e,a);
     return '<article class="daily-cover-card" data-daily-id="'+safe(e.id)+'"><div class="daily-cover-card-head"><div><strong>'+safe(t.code||"—")+' · '+safe(t.name||"Equipe")+'</strong>'+
      '<small>'+safe(a.name||"A conferir")+' · Rubrica '+safe(c.code||"—")+' · '+safe(c.unit||"—")+'</small></div>'+
      '<span class="status-chip" data-status="'+safe(e.block_status)+'">'+safe(stateLabels[e.block_status]||e.block_status)+'</span></div>'+
      '<p class="daily-activity-title">'+safe(String(e.planned_service||"").replace(/\s*·\s*programação diária.*$/i,""))+'</p>'+
      '<p class="daily-place"><strong>Local previsto</strong><span>'+safe(e.planned_location)+'</span></p>'+
-     '<details class="daily-plan-details"><summary>Alternativa e orientações</summary><p>'+safe(e.climate_alternative)+'</p></details>'+
+     '<details class="daily-plan-details"><summary>Alternativa e orientações</summary><p><strong>Alternativa operacional:</strong> '+safe(e.climate_alternative)+'</p>'+
+      '<p><strong>Opções contratuais de menor mobilização, condicionadas à necessidade real:</strong></p>'+
+      (secondary.length?'<ul class="daily-secondary-prices">'+secondary.map(p=>'<li><strong>'+safe(priceLabel(p))+'</strong><small>'+safe(p.requirements)+'</small></li>').join("")+'</ul>':'<p>Sem correspondência contratual sugerida para esta frente.</p>')+
+      '<small>Valores por unidade contratual. Não representam medição, receita garantida ou margem; chuva severa e bloqueios de segurança impedem a atividade.</small></details>'+
      (canManage&&!locked?'<div class="daily-cover-actions"><label>Situação<select class="daily-new-status" aria-label="Situação da equipe">'+
      ['programada','remanejada','impedida'].map(v=>'<option value="'+v+'"'+(e.block_status===v?' selected':'')+'>'+safe(stateLabels[v])+'</option>').join("")+'</select></label>'+
      '<label class="daily-reason-wrap" '+(e.block_status==="programada"?"hidden":"")+' >Motivo / providência<textarea class="daily-reason" rows="2" placeholder="Descreva o bloqueador e a alternativa adotada">'+safe(e.blocker_reason||"")+'</textarea></label>'+
