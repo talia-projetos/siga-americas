@@ -6,9 +6,9 @@ const options=(...values)=>values.map(x=>({value:x,label:x.replaceAll("_"," ")})
 export const groups=[
   {label:"PLANEJAMENTO",icon:"calendar",items:["coverage","contract_suggestions","field_execution_entries","financial_planning","field_programs","field_plan_items"]},
   {label:"CAMPO E EXECUÇÃO",icon:"field",items:["field_report","field_monitor","work_orders","field_routine_templates","field_routine_records"]},
-  {label:"CONTRATO E OBRIGAÇÕES",icon:"contract",items:["contracts","obligations","activity_catalog","service_posts","areas","teams"]},
+  {label:"CONTRATO E OBRIGAÇÕES",icon:"contract",items:["contracts","obligations","contract_resource_requirements","activity_catalog","service_posts","areas","teams"]},
   {label:"FINANCEIRO",icon:"assets",items:["contract_items","fuel_logs","maintenance","purchases"]},
-  {label:"PATRIMÔNIO E MATERIAIS",icon:"supplies",items:["resource_check","contract_resource_requirements","vehicles","equipment","responsibility_terms","stock_items","stock_movements"]},
+  {label:"PATRIMÔNIO E MATERIAIS",icon:"supplies",items:["vehicles","equipment","responsibility_terms","stock_items","stock_movements"]},
   {label:"PESSOAS E SEGURANÇA",icon:"people",items:["employees","ppe_items","ppe_deliveries","uniform_deliveries"]}
 ];
 export const modules={
@@ -79,7 +79,7 @@ export const modules={
     ref("employee_id","Colaborador","employees","name",{required:true}),ref("ppe_item_id","EPI","ppe_items","name",{required:true}),f("delivered_on","Data de entrega","date",{required:true}),f("quantity","Quantidade","number",{required:true,step:"1"}),f("receipt_ref","Comprovante / ficha de entrega"),f("notes","Observações / estado de uso","textarea",{wide:true})]},
   uniform_deliveries:{title:"Fardamentos",icon:"shirt",table:"uniform_deliveries",private:true,description:"Confira os tamanhos por equipe e registre kits de nove peças em lote, preservando cada entrega individual.",columns:["delivered_on","employee_id","item_type","size","quantity"],fields:[
     ref("employee_id","Colaborador","employees","name",{required:true}),f("item_type","Peça","select",{options:[{value:"camisa_uv",label:"Camisa manga longa UV"},{value:"camisa_polo",label:"Camisa polo"},{value:"calca_tatica",label:"Calça tática UV"},{value:"outro",label:"Outra"}],required:true}),f("size","Tamanho","text",{required:true}),f("quantity","Quantidade","number",{required:true,step:"1"}),f("delivered_on","Data de entrega","date",{required:true}),f("receipt_ref","Comprovante"),f("notes","Observações","textarea",{wide:true})]},
-  stock_items:{title:"Itens de estoque",icon:"boxes",table:"stock_items",description:"Materiais, unidades, estoque mínimo e controle de reposição.",columns:["sku","name","unit","min_quantity","active"],fields:[
+  stock_items:{title:"Itens de estoque",icon:"boxes",table:"stock_items",description:"Materiais, unidades, estoque mínimo e contagem física separada das movimentações.",columns:["sku","name","unit","min_quantity","ledger_balance","counted_quantity","counted_at","active"],fields:[
     f("sku","Código interno","text",{required:true}),f("name","Material","text",{required:true}),f("unit","Unidade","select",{options:options("un","par","litro","kg","caixa","metro"),required:true}),f("min_quantity","Estoque mínimo","number",{step:"0.001",default:0}),f("active","Ativo","boolean",{default:true})]},
   stock_movements:{title:"Movimentação de estoque",icon:"arrows",table:"stock_movements",private:true,description:"Entradas e saídas documentadas. Saldo calculado pelas movimentações, nunca editado manualmente.",columns:["occurred_on","stock_item_id","movement_type","quantity","team_id"],fields:[
     ref("stock_item_id","Item de estoque","stock_items","name",{required:true}),f("occurred_on","Data","date",{required:true}),f("movement_type","Tipo de movimentação","select",{options:[{value:"entrada",label:"Entrada"},{value:"saida",label:"Saída"}],required:true}),f("quantity","Quantidade","number",{required:true,step:"0.001"}),ref("team_id","Equipe destino/origem","teams","name"),f("document_ref","Comprovante / autorização"),f("notes","Observações","textarea",{wide:true})]},
