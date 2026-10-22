@@ -43,14 +43,12 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Carregando dados semanais…</p></div>';
  const initial=await Promise.all([
   db.from("activity_catalog").select("id,code,name,category").order("code").limit(150),
-  db.from("teams").select("id,code,name,active").eq("active",true).order("code"),
-  db.from("field_programs").select("id,team_id").limit(300),
-  db.from("field_plan_items").select("id,program_id,activity_id,planned_for,planned_quantity,action_status").limit(800)
+  db.from("teams").select("id,code,name,active").eq("active",true).order("code")
  ]);
  for(const r of initial)if(r.error)throw r.error;
- const [matrix,teams,programs,plans]=initial.map(x=>x.data||[]);
+ const [matrix,teams]=initial.map(x=>x.data||[]);
  const byActivity=new Map(matrix.map(x=>[x.id,x])),byTeam=new Map(teams.map(x=>[x.id,x]));
- let week=monday(nowBR()),team="",search="",reports=[],items=[],lastUpdate="",requestId=0,loading=false;
+ let week=monday(nowBR()),team="",search="",reports=[],items=[],programs=[],plans=[],lastUpdate="",requestId=0,loading=false;
  root.innerHTML='<section class="weekly-panel">'+
   '<header class="weekly-head"><div><span class="eyebrow">CAPE · CICLO SEMANAL</span><h2>Prioridades da semana</h2>'+
   '<p>Atividades programadas, cumprimento informado pelos técnicos e validação da supervisão.</p></div>'+
@@ -62,7 +60,7 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
    teams.map(t=>'<option value="'+text(t.id)+'">'+text(t.code+" · "+t.name)+'</option>').join("")+'</select></label>'+
   '<label>Buscar<input id="weekly-search" type="search" placeholder="Código, serviço ou categoria"></label>'+
   '<button class="btn btn-secondary" id="weekly-reload" type="button">Atualizar dados</button></div>'+
-  '<div id="weekly-feedback" aria-live="polite"></div><div id="weekly-counters"></div><div id="weekly-work"></div>'+
+  '<div id="weekly-feedback" aria-live="polite"></div><div id="weekly-counters"></div><div id="weekly-teams"></div><div id="weekly-work"></div>'+
   '<details class="weekly-reference"><summary><strong>Catálogo técnico e critérios CAPE</strong><small>'+matrix.length+' itens apenas como referência</small></summary>'+
   '<div id="weekly-reference-list"></div></details></section>';
  const el=q=>root.querySelector(q);
@@ -88,6 +86,16 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
   ];
   el("#weekly-counters").innerHTML='<div class="weekly-stats">'+stats.map(([label,value,detail])=>
     '<div class="weekly-stat"><small>'+text(label)+'</small><strong>'+text(value)+'</strong><span>'+text(detail)+'</span></div>').join("")+'</div>';
+  const reportPerTeam=new Map(d.weeklyReports.map(r=>[r.team_id,r]));
+  el("#weekly-teams").innerHTML='<div class="weekly-team-strip">'+
+    d.teamsShown.map(t=>{
+     const rep=reportPerTeam.get(t.id),states={validado:"Validado",enviado:"Enviado",rascunho:"Rascunho",devolvido:"Devolvido"};
+     return '<button type="button" class="weekly-team-pill '+text(rep?.status||"missing")+'" data-weekly-team="'+text(t.id)+'" title="Filtrar equipe '+text(t.code)+'">'+
+       '<strong>'+text(t.code)+'</strong><span>'+text(states[rep?.status]||"Sem envio")+'</span></button>';
+    }).join("")+'</div>';
+  el("#weekly-teams").querySelectorAll("[data-weekly-team]").forEach(button=>button.onclick=()=>{
+    team=button.dataset.weeklyTeam;render();
+  });
   const activityIds=new Set([...d.informed,...d.planned]);
   const rows=[...activityIds].map(id=>{
    const activity=byActivity.get(id),linked=d.weeklyItems.filter(x=>x.activity_id===id);
@@ -147,10 +155,22 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
   const token=++requestId,selected=week;loading=true;el("#weekly-reload").disabled=true;
   el("#weekly-feedback").textContent="Consultando os relatórios da semana…";
   try{
-   const rep=await db.from("field_daily_reports").select("id,team_id,report_period,period_start,period_end,status,submitted_at,reviewed_at")
-    .eq("report_period","semanal").eq("period_start",selected).limit(300);
-   if(rep.error)throw rep.error;
+   const [rep,scheduled]=await Promise.all([
+     db.from("field_daily_reports").select("id,team_id,report_period,period_start,period_end,status,submitted_at,reviewed_at")
+       .eq("report_period","semanal").eq("period_start",selected).limit(500),
+     db.from("field_plan_items").select("id,program_id,activity_id,planned_for,planned_quantity,action_status")
+       .gte("planned_for",selected).lte("planned_for",shiftDay(selected,6)).limit(1000)
+   ]);
+   if(rep.error)throw rep.error;if(scheduled.error)throw scheduled.error;
+   if((scheduled.data||[]).length>=1000)throw Error("Limite de programações semanais atingido; a consulta precisa ser paginada.");
    const localReports=rep.data||[],ids=localReports.map(x=>x.id);
+   const localPlans=scheduled.data||[];
+   const programIds=[...new Set(localPlans.map(p=>p.program_id).filter(Boolean))];
+   let localPrograms=[];
+   if(programIds.length){
+     const pr=await db.from("field_programs").select("id,team_id").in("id",programIds).limit(1000);
+     if(pr.error)throw pr.error;localPrograms=pr.data||[];
+   }
    let localItems=[];
    if(ids.length){
     for(let i=0;i<ids.length;i+=100){
@@ -160,7 +180,7 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
     }
    }
    if(token!==requestId||selected!==week)return;
-   reports=localReports;items=localItems;
+   reports=localReports;items=localItems;plans=localPlans;programs=localPrograms;
    lastUpdate=new Date().toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});render();
   }catch(e){if(token===requestId){el("#weekly-feedback").innerHTML='<div class="weekly-error">Não foi possível atualizar: '+text(e.message||e)+'</div>';notify(String(e.message||e),true)}}
   finally{if(token===requestId){loading=false;el("#weekly-reload").disabled=false}}
