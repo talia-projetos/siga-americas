@@ -223,7 +223,7 @@ export async function generatePDF(models){
  };
  const ensure=needed=>{if(y-needed<bottom)start();};
  // Datas e turnos da programação mensal: verde e negrito, inclusive quando o texto quebra.
- const isScheduleLine=line=>/^(?:\\d{2}\/\\d{2}\/\\d{4}|MANHÃ:|TARDE:)/i.test(String(line).trim());
+ const isScheduleLine=line=>/^(?:\d{2}\/\d{2}\/\d{4}|MANHÃ:|TARDE:)/i.test(String(line).trim());
  const textLines=(text,size=9.5,opt={})=>{
   const max=opt.width||W-margin*2,lh=opt.lineHeight||size*1.48;
   const groups=stripPDF(text).split("\n").map(raw=>{
