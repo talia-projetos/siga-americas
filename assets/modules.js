@@ -16,7 +16,7 @@ export const modules={
   field_report:{title:"Registro semanal de campo",icon:"clipboard",virtual:true,description:"Relatórios semanais das equipes, com atividades realizadas por frente e validação da supervisão."},
   field_monitor:{title:"Acompanhamento das equipes",icon:"people",virtual:true,description:"Painel da supervisão para acompanhar, validar e devolver relatórios de campo."},
   resource_check:{title:"Conferência de quantitativos",icon:"check",virtual:true,description:"Tabela 05, veículos e equipamentos previstos: informe apenas a quantidade efetivamente encontrada."},
-  contract_suggestions:{title:"Itens contratuais sugeridos",icon:"target",virtual:true,description:"Apoio à decisão com base nos 73 itens da matriz. Prioriza oportunidade de receita registrada, recorrência provável e bloqueadores de segurança, clima e autorizações."},
+  contract_suggestions:{title:"Prioridades da semana",icon:"target",virtual:true,description:"Acompanhamento dinâmico das atividades programadas e dos relatórios semanais informados pelos técnicos, com validação separada pela supervisão."},
   coverage:{title:"Cobertura",icon:"target",virtual:true,description:"Exploração técnica de 73 atividades: identificar oportunidades e distinguir programação, execução e inviabilidade."},
   field_execution_entries:{title:"Execuções registradas",icon:"log",table:"field_execution_entries",description:"Execuções informadas com data, quantidades e valores calculados por item da planilha de preços. Conferência não equivale a faturamento aprovado.",columns:["performed_on","activity_id","activity_label","quantity","unit","estimated_amount","validation_status"],fields:[
     f("performed_on","Data de execução","date",{required:true}),
