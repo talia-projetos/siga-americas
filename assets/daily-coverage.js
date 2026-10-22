@@ -1,5 +1,5 @@
 // Programação diária por equipe: disponibilidade planejada não significa execução.
-import {downloadDailySchedules} from "./daily-schedule-pdf.js?v=2";
+import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=2";
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
 const stateLabels={programada:"Programada",remanejada:"Remanejada",impedida:"Impedida",informada:"Execução informada",validada:"Validada"};
@@ -28,7 +28,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
   root.innerHTML='<section class="daily-coverage-shell">'+
    '<div class="finance-panel-heading daily-cover-top"><div><span class="eyebrow">PROGRAMAÇÃO DE CAMPO</span><h2>Escala diária das equipes</h2>'+
    '<p>Atividade principal, alternativa segura e bloqueio quando necessário.</p></div>'+
-   '<div class="daily-pdf-actions"><button type="button" class="btn btn-primary" id="daily-pdf-all">PDF do dia · 6 equipes</button>'+
+   '<div class="daily-pdf-actions"><button type="button" class="btn btn-primary" id="daily-pdf-month">PDF do mês</button><button type="button" class="btn btn-secondary" id="daily-pdf-all">PDF do dia · 6 equipes</button>'+
    (teamFilter?'<button type="button" class="btn btn-secondary" id="daily-pdf-selected">PDF da equipe</button>':"")+
    '</div></div>'+
    '<div class="daily-cover-kpis daily-cover-overview">'+
@@ -66,17 +66,32 @@ export async function mountDailyCoverage(root,db,{role,notify}){
    const chosen=single?onDay.filter(x=>teams.get(x.team_id)?.code===teamFilter):onDay;
    if(!chosen.length){notify("Não há programação para a seleção.",true);return;}
    generatingPDF=true;
-   root.querySelectorAll("#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=true;b.setAttribute("aria-busy","true")});
+   root.querySelectorAll("#daily-pdf-month,#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=true;b.setAttribute("aria-busy","true")});
    try{
     await downloadDailySchedules(chosen,teams,areas,prices);
     notify("PDF da programação gerado. Confira o conteúdo antes de distribuir às equipes.");
    }catch(error){notify("Não foi possível gerar o PDF: "+(error.message||String(error)),true);}
    finally{
     generatingPDF=false;
-    root.querySelectorAll("#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=false;b.removeAttribute("aria-busy")});
+    root.querySelectorAll("#daily-pdf-month,#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=false;b.removeAttribute("aria-busy")});
    }
   };
   root.querySelector("#daily-pdf-all").onclick=()=>printSelected(false);
+  root.querySelector("#daily-pdf-month").onclick=async()=>{
+   if(generatingPDF)return;
+   const monthly=entries.filter(e=>e.work_date.startsWith(month));
+   if(!monthly.length){notify("Não há escala mensal nesta competência.",true);return;}
+   generatingPDF=true;
+   root.querySelectorAll("#daily-pdf-month,#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=true;b.setAttribute("aria-busy","true")});
+   try{
+    await downloadMonthlySchedules(monthly,teams,areas,prices,month);
+    notify("PDF mensal consolidado, com uma programação por equipe. Confira antes de distribuir.");
+   }catch(error){notify("Não foi possível gerar o PDF mensal: "+(error.message||String(error)),true);}
+   finally{
+    generatingPDF=false;
+    root.querySelectorAll("#daily-pdf-month,#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=false;b.removeAttribute("aria-busy")});
+   }
+  };
   if(teamFilter)root.querySelector("#daily-pdf-selected").onclick=()=>printSelected(true);
   root.querySelectorAll(".daily-new-status").forEach(select=>select.onchange=()=>{
    const wrap=select.closest(".daily-cover-actions")?.querySelector(".daily-reason-wrap");
