@@ -725,7 +725,7 @@ async function modulePage(key){
    const allowed=new Set((app.refs.activity_catalog||[]).map(item=>item.id));
    app.rows=app.rows.filter(row=>allowed.has(row.activity_id));
   }
-  if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>Number(String(a.code).split(".")[1])-Number(String(b.code).split(".")[1]));
+  if(["contract_items","activity_catalog"].includes(key))app.rows.sort((a,b)=>referenceOrder.compare(String(a.code),String(b.code)));
   if(key==="service_posts")app.rows.sort((a,b)=>String(a.code||"").localeCompare(String(b.code||""),"pt-BR",{numeric:true}));
   const buttons=(privileged()
     ?key==="uniform_deliveries"
@@ -860,6 +860,14 @@ async function navigate(key){
  }
  else await modulePage(next);
 }
+// Ordenação natural: 3.1, 3.2 ... 3.9, 3.10; também nomes e placas.
+const referenceOrder=new Intl.Collator("pt-BR",{numeric:true,sensitivity:"base"});
+function sortedReferenceOptions(items){
+ return [...items].sort((a,b)=>{
+  const first=v=>String(v.code||v.name||v.item_name||v.plate||v.asset_tag||v.description||"");
+  return referenceOrder.compare(first(a),first(b));
+ });
+}
 function fieldInput(f,row){
  const value=row?.[f.key]??(f.key==="activity_id"?app.prefillActivity:null)??f.default??"";
  const required=f.required?" required":"";
@@ -870,7 +878,7 @@ function fieldInput(f,row){
  if(f.type==="multi_ref"){
   const stored=Array.isArray(value)?value:[];
   const selected=stored.length?stored:(row?.team_id?[row.team_id]:[]);
-  const options=(app.refs[f.table]||[]).filter(o=>(o.active!==false||selected.includes(o.id))&&(app.page!=="ppe_deliveries"||f.table!=="ppe_items"||/^EPI \/|^Conjunto de proteção/.test(o.category||"")||selected.includes(o.id)));
+  const options=sortedReferenceOptions((app.refs[f.table]||[]).filter(o=>o.active!==false||selected.includes(o.id)));
   const all=options.length>0&&options.every(o=>selected.includes(o.id));
   const checklist=options.map(o=>'<label class="purchase-sector-option"><input type="checkbox" name="'+escapeHTML(f.key)+'" data-purchase-sector value="'+escapeHTML(o.id)+'"'+(selected.includes(o.id)?' checked':'')+'><span>'+escapeHTML([o.code,o.name].filter(Boolean).join(" · "))+'</span></label>').join("");
   return '<fieldset class="field wide purchase-sector-field"><legend>'+escapeHTML(f.label)+'</legend>'+
@@ -881,7 +889,10 @@ function fieldInput(f,row){
  if(f.type==="select"){
   inp='<select'+attr+'><option value="">Selecione...</option>'+f.options.map(o=>'<option value="'+escapeHTML(o.value)+'"'+(String(o.value)===String(value)?' selected':'')+'>'+escapeHTML(o.label)+'</option>').join("")+'</select>';
  }else if(f.type==="ref"){
-  const options=(app.refs[f.table]||[]).filter(o=>f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"));
+  const options=sortedReferenceOptions((app.refs[f.table]||[]).filter(o=>
+   (f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"))&&
+   (app.page!=="ppe_deliveries"||f.table!=="ppe_items"||/^EPI \/|^Conjunto de proteção/.test(o.category||"")||o.id===value)
+  ));
   const noVehicle=f.table==="vehicles"&&!options.length;
   inp='<select'+attr+'><option value="">'+(noVehicle?'Nenhum veículo individual cadastrado':'Selecione...')+'</option>'+options.map(o=>'<option value="'+escapeHTML(o.id)+'"'+(o.id===value?' selected':'')+'>'+escapeHTML(optionLabel(f.table,o.id,f.display))+'</option>').join("")+'</select>';
  }else if(f.type==="textarea"){
