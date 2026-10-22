@@ -11,6 +11,14 @@ export function mountTargetFeasibility(root,prices,proposals,goal,{octoberValida
  const variableReference=Math.max(0,monthlyRef-fixedReference);
  const measuredQty=proposals.filter(p=>Number(p.proposed_quantity)>0).length;
  const monthlyProposed=proposals.reduce((sum,p)=>sum+(Number(p.proposed_quantity||0)*Number(prices.find(x=>x.id===p.contract_item_id)?.unit_price||0)),0);
+ const catchUp=(octoberValidated===null||!Number.isFinite(Number(octoberValidated)))?null:(()=>{
+  const fourMonthGoal=4*goal,remainingGoal=Math.max(0,fourMonthGoal-Number(octoberValidated)),
+   monthlyToRecover=remainingGoal/3,remainingReference=tableTotal-Number(octoberValidated),
+   projectedWithoutRecovery=Number(octoberValidated)+3*goal;
+  return {fourMonthGoal,remainingGoal,monthlyToRecover,remainingReference,projectedWithoutRecovery,
+   monthlyTargetRatio:goal?100*monthlyToRecover/goal:0,
+   unverifiedHeadroom:remainingReference-remainingGoal};
+ })();
  const targetRows=[.99,1,1.01].map(factor=>{
   const value=goal*factor,needed=value-fixedReference,ratio=variableReference?100*needed/variableReference:NaN;
   return {factor,value,needed,ratio,referenceReachable:value<=monthlyRef};
@@ -36,6 +44,14 @@ export function mountTargetFeasibility(root,prices,proposals,goal,{octoberValida
   (octoberValidated===null?'':'<p class="finance-scenario-alert">Outubro/2026: '+fmt(octoberValidated)+
    ' em apontamentos com status de validação, equivalente a '+pct(goal?100*octoberValidated/goal:0)+
    ' da meta; não é faturamento comprovado ou saldo financeiro disponível para novembro.</p>')+
+  (catchUp?'<div class="finance-scenario-alert"><strong>Recuperação acumulada das quatro competências (apenas cenário):</strong> '+
+    'se '+fmt(octoberValidated)+' de outubro forem aceitos como medição, o objetivo agregado seria '+
+    fmt(catchUp.fourMonthGoal)+'. Ainda seriam necessários '+fmt(catchUp.remainingGoal)+
+    ' em novembro, dezembro e janeiro, ou '+fmt(catchUp.monthlyToRecover)+
+    ' por mês ('+pct(catchUp.monthlyTargetRatio)+' da meta mensal). '+
+    'O valor contratual teórico que restaria é '+fmt(catchUp.remainingReference)+
+    ', diferença de apenas '+fmt(catchUp.unverifiedHeadroom)+
+    ' acima do necessário. Isso demandaria aproveitar praticamente todo o saldo da tabela, não constituindo cenário operacional comprovado.</div>':'')+
   '<details><summary>Simular capacidade de converter o potencial variável em serviços mensuráveis</summary>'+
    '<p class="finance-scenario-alert">É uma sensibilidade aritmética da tabela, não estimativa de campo. Mantenha custos, disponibilidade de pessoal, chuva, saldos contratuais e duplicidade de medição fora do montante elegível.</p>'+
    '<label>Percentual da referência variável hipoteticamente executável <input type="range" data-feasible-variable min="0" max="100" step="1" value="80"></label>'+
