@@ -23,8 +23,9 @@ export function summarizeWeekly(matrix,teams,reports,items,plans,programs,week,t
  const weeklyPlans=plans.filter(p=>validActivities.has(p.activity_id)&&p.planned_for&&p.planned_for>=week&&p.planned_for<=end&&programTeams.has(p.program_id));
  const checkedPlans=weeklyPlans.map(p=>{
    const teamId=programTeams.get(p.program_id);
+   const sameActivityPlans=weeklyPlans.filter(q=>q.activity_id===p.activity_id&&programTeams.get(q.program_id)===teamId);
    const relevant=weeklyItems.filter(i=>i.report.team_id===teamId &&
-     (i.field_plan_item_id===p.id||(!i.field_plan_item_id&&i.activity_id===p.activity_id)));
+     (i.field_plan_item_id===p.id||(!i.field_plan_item_id&&sameActivityPlans.length===1&&i.activity_id===p.activity_id)));
    return {id:p.id,activity_id:p.activity_id,team_id:teamId,
     informed:relevant.some(i=>i.result==="executada"),
     validated:relevant.some(i=>i.result==="executada"&&i.report.status==="validado"),
