@@ -28,7 +28,7 @@ const privileged=()=>["admin","gestao","supervisao"].includes(app.role);
 // Não afeta dados contratuais nem filtros usados em outras telas.
 const listViews=new Map();
 // Estado documental separado: nunca filtrar registros com dados da transcrição.
-const executionNoteFilterState={search:"",date:"",quantity:"missing"};
+
 function rememberListView(key=app.page){
  if(!modules[key]?.table||key==="uniform_deliveries"||key!==app.page||!el("list-search"))return;
  const main=el("main"),workspace=document.querySelector(".workspace");
@@ -561,107 +561,6 @@ async function documentCenterPage(){
   });
  }catch(error){if(app.page==="document_center")
    el("document-center-root").innerHTML=errorBanner(friendlyError(error));}
-}
-// Transcrições do caderno são evidências preliminares, não medições nem receitas.
-async function executionSourceNotesPanel(){
- const [raw,split,priced]=await Promise.all([
-  app.db.from("field_execution_source_notes")
-   .select("source_key,performed_on,activity_text,location_text,quantity_text,raw_excerpt,photo_refs,review_status")
-   .order("performed_on",{ascending:false,nullsFirst:false}).limit(200),
-  app.db.from("field_execution_note_locations")
-   .select("source_key,line_key,performed_on,location_name,service_name,quantity_reported,contract_unit,candidate_price_codes,original_quantity_note,allocation_status,verification_status,review_note")
-   .order("performed_on",{ascending:false,nullsFirst:false}).order("location_name",{ascending:true}).limit(500),
-  app.db.from("contract_items")
-   .select("code,unit,source_type").eq("source_type","precos").limit(100)
- ]);
- if(raw.error)return '<div class="notice warning">Não foi possível consultar os apontamentos do caderno: '+escapeHTML(friendlyError(raw.error))+'</div>';
- if(split.error)return '<div class="notice warning">Não foi possível consultar a separação dos locais: '+escapeHTML(friendlyError(split.error))+'</div>';
- if(priced.error)return '<div class="notice warning">A tabela de custeio não pôde ser consultada. Os apontamentos não foram exibidos para evitar associação de unidades incorretas.</div>';
- const notes=raw.data||[],lines=split.data||[],prices=priced.data||[];
- const missingQuantification=lines.filter(line=>line.quantity_reported==null).length;
- const quantifiedWithoutDate=lines.filter(line=>line.quantity_reported!=null&&!line.performed_on).length;
- const noteMap=new Map(notes.map(n=>[n.source_key,n]));
- const priceMap=new Map(prices.map(p=>[p.code,p]));
- const date=x=>x?new Date(x+"T12:00:00").toLocaleDateString("pt-BR"):"Data a conferir";
- const formatQty=n=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(n));
- const sourceStatus=x=>x==="a_conferir"?"A conferir":x==="classificado"?"Classificado":"Descartado";
- const entries=lines.map(line=>{
-  const codes=(line.candidate_price_codes||[]).filter(x=>priceMap.has(x));
-  const uniqueUnits=[...new Set(codes.map(code=>priceMap.get(code)?.unit).filter(Boolean))];
-  const refUnit=uniqueUnits.length===1?uniqueUnits[0]:null;
-  const consistent=Boolean(refUnit)&&(!line.contract_unit||refUnit.toLocaleLowerCase("pt-BR")===line.contract_unit.toLocaleLowerCase("pt-BR"));
-  const unit=consistent?refUnit:null;
-  const hasQty=line.quantity_reported!==null&&line.quantity_reported!==undefined;
-  const indicatedUnit=String(line.contract_unit||"").trim();
-  const quantity=hasQty?formatQty(line.quantity_reported)+(unit?" "+unit:indicatedUnit?" "+indicatedUnit+" (rubrica pendente)":" (unidade a conferir)"):"—";
-  const status=!hasQty?"Quantificação pendente":!line.performed_on?"Data a informar":line.verification_status==="conferido"?"Conferido documentalmente":"Quantidade transcrita";
-  const source=noteMap.get(line.source_key);
-  const candidateText=codes.length?"Rubricas possíveis: "+codes.join(", "):"Rubrica a identificar";
-  const note=[line.original_quantity_note,line.review_note].filter(Boolean).join(" · ");
-  const searchable=[line.location_name,line.service_name,line.original_quantity_note,source?.photo_refs,source?.raw_excerpt].filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");
-  return '<tr data-exec-note-date="'+escapeHTML(line.performed_on||"sem_data")+'" data-exec-note-query="'+escapeHTML(searchable)+'" data-exec-note-has-quantity="'+(hasQty?"1":"0")+'">'+
-   '<td>'+escapeHTML(date(line.performed_on))+'</td>'+
-   '<td><strong>'+escapeHTML(line.location_name)+'</strong></td>'+
-   '<td><strong>'+escapeHTML(line.service_name)+'</strong><small>'+escapeHTML(candidateText)+'</small></td>'+
-   '<td class="execution-note-qty"><strong>'+escapeHTML(quantity)+'</strong><small>'+escapeHTML(status)+'</small></td>'+
-   '<td><strong>'+escapeHTML(unit||"A classificar")+'</strong><small>'+escapeHTML(source?.photo_refs||"")+'</small></td>'+
-   '<td><details><summary>Conferir origem</summary><p>'+escapeHTML(note||"Sem observação")+'</p></details></td></tr>';
- }).join("");
- // Exiba cada quantitativo junto do seu local, nunca como cadeia corrida entre frentes.
- // O texto manuscrito original continua preservado na área "Ver transcrição".
- const linesBySource=new Map();
- lines.forEach(line=>{
-  const group=linesBySource.get(line.source_key)||[];
-  group.push(line);
-  linesBySource.set(line.source_key,group);
- });
- const breakdownFor=n=>{
-  const group=linesBySource.get(n.source_key)||[];
-  if(!group.length)return '<span class="execution-source-empty">A individualizar; consultar anotação original</span>';
-  const repeatedNotes=new Set();
-  return '<div class="execution-source-breakdown">'+group.map(line=>{
-   const hasNumber=line.quantity_reported!==null&&line.quantity_reported!==undefined;
-   const codes=(line.candidate_price_codes||[]).filter(code=>priceMap.has(code));
-   const uniqueUnits=[...new Set(codes.map(code=>priceMap.get(code)?.unit).filter(Boolean))];
-   const compatible=uniqueUnits.length===1&&(!line.contract_unit||uniqueUnits[0].toLowerCase()===line.contract_unit.toLowerCase());
-   const amount=hasNumber?
-    formatQty(Math.ceil(Number(line.quantity_reported)))+' '+(compatible?uniqueUnits[0]:line.contract_unit?line.contract_unit+' (rubrica pendente)':'(unidade a conferir)'):
-    'Medida pendente';
-   const literal=String(line.original_quantity_note||"").trim();
-   const displayLiteral=!hasNumber&&literal&&!/sem (área|quantidade|medida|volume)|não apurad/i.test(literal);
-   // Um total compartilhado por várias localidades (ex.: 5 cargas) só pode
-   // aparecer uma vez por anotação: nunca replicar como se fosse a soma de cada área.
-   const showLiteral=displayLiteral&&!repeatedNotes.has(literal);
-   if(showLiteral)repeatedNotes.add(literal);
-   return '<div class="execution-source-split-item">'+
-    '<strong>'+escapeHTML(amount)+'</strong>'+
-    '<span>'+escapeHTML(line.service_name||"Serviço não identificado")+' · '+escapeHTML(line.location_name||"Local a confirmar")+'</span>'+
-    (showLiteral?'<small>Nota de campo: '+escapeHTML(literal)+'</small>':'')+
-    '</div>';
-  }).join("")+'</div>';
- };
- const original=notes.map(n=>'<tr>'+
-  '<td>'+escapeHTML(date(n.performed_on))+'</td>'+
-  '<td><strong>'+escapeHTML(n.activity_text||"")+'</strong><small>'+escapeHTML(n.location_text||"")+'</small></td>'+
-  '<td>'+breakdownFor(n)+'</td>'+
-  '<td><strong>'+escapeHTML(sourceStatus(n.review_status))+'</strong><small>'+escapeHTML(n.photo_refs||"")+'</small></td>'+
-  '<td><details><summary>Ver transcrição literal</summary><p>'+escapeHTML(n.quantity_text||"")+'</p><p>'+escapeHTML(n.raw_excerpt||"")+'</p></details></td></tr>').join("");
- const selectedDate=executionNoteFilterState.date||"",selectedKind=executionNoteFilterState.quantity||"missing";
- const days=[...new Set(lines.map(x=>x.performed_on).filter(Boolean))].sort().reverse();
- const dates='<option value="">Todas as datas</option>'+days.map(d=>'<option value="'+escapeHTML(d)+'"'+(d===selectedDate?" selected":"")+'>'+escapeHTML(date(d))+'</option>').join("")+
-  '<option value="sem_data"'+(selectedDate==="sem_data"?" selected":"")+'>Sem data</option>';
- return '<section class="execution-sources-panel"><details class="execution-sources-details">'+
-  '<summary><span><span class="eyebrow">CONFERÊNCIA DOCUMENTAL</span><strong>Pendências de quantificação dos apontamentos</strong><small>'+missingQuantification+' sem quantidade · '+quantifiedWithoutDate+' com quantidade, mas sem data · '+notes.length+' conjuntos de origem</small></span><span class="execution-sources-chevron" aria-hidden="true"></span></summary>'+
-  '<div class="execution-sources-content"><p><strong>Registros quantificados com data estão em Registros cadastrados. Aqui, o filtro inicial destaca apenas os sem quantificação. Use “Com quantitativo, sem data” para corrigir a data sem duplicar lançamentos.</strong> Unidades vinculadas exclusivamente à tabela de preços do contrato vigente.</p><p> Quantitativos aqui são apenas os escritos no caderno, sem medição, confirmação de escopo ou precificação. Áreas de roçada e corte de gramado exigem ha; cargas de entulho precisam de m³; horas de equipe não são automaticamente H/h. As 73 atividades da matriz permanecem separadas para o contrato subsequente.</p>'+
-  '<div class="execution-location-filters"><label>Buscar local ou serviço<input id="execution-location-search" type="search" placeholder="Local, serviço ou foto..." value="'+escapeHTML(executionNoteFilterState.search||"")+'"></label>'+
-  '<label>Data<select id="execution-location-date">'+dates+'</select></label>'+
-  '<label>Quantidade<select id="execution-location-quantity"><option value="all"'+(selectedKind==="all"?" selected":"")+'>Todas</option><option value="reported"'+(selectedKind==="reported"?" selected":"")+'>Com quantitativo (todas)</option><option value="undated"'+(selectedKind==="undated"?" selected":"")+'>Com quantitativo, sem data</option><option value="missing"'+(selectedKind==="missing"?" selected":"")+'>Sem quantificação</option></select></label>'+
-  '<span id="execution-locations-shown">'+lines.length+' linhas</span></div>'+
-  '<div class="table-scroll execution-locations-scroll"><table class="execution-sources-table execution-locations-table"><thead><tr><th>Data</th><th>Local</th><th>Serviço</th><th>Quantitativo</th><th>Unidade / fonte</th><th>Conferência</th></tr></thead><tbody>'+entries+'</tbody></table></div>'+
-  '<details class="execution-original-notes"><summary>Consultar as '+notes.length+' anotações de origem (quantitativos separados por local)</summary>'+
-  '<p class="execution-original-warning">Quantidades transcritas, ainda não confirmadas em campo. Volumes e cargas sem data ou sem localização específica não são medição. Um total anotado para vários locais não deve ser somado novamente em cada local.</p>'+ 
-  '<div class="table-scroll"><table class="execution-sources-table"><thead><tr><th>Data</th><th>Serviço</th><th>Quantitativos por local e serviço</th><th>Fonte / situação</th><th>Detalhamento</th></tr></thead><tbody>'+original+'</tbody></table></div></details>'+
-  '</div></details></section>';
 }
 // A cláusula 6.5 reúne EPI, EPC e acessórios; não confundir referência com estoque conferido.
 async function ppeContractOverview(rows){
