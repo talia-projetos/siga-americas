@@ -34,7 +34,7 @@ export function mountDailyApproval(root,db,{date,approval,issued=[],expected=0,c
   '<small>OS programadas não comprovam execução, medição, aceite ou disponibilização de pessoal.</small>'+
  '</section>';
  const dateInput=root.querySelector("#daily-approval-date");
- if(dateInput)dateInput.value=new Date().toISOString().slice(0,10);
+ if(dateInput){const now=new Date();dateInput.value=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");}
  let busy=false;
  root.querySelector("[data-register-day-approval]")?.addEventListener("click",async e=>{
   if(busy||!ready||approval)return;
