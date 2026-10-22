@@ -8,24 +8,25 @@ const R=6371008.8;
 const METER=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2});
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const n=x=>METER.format(x);
-// Uma cor exclusiva por área identificada no KML institucional, sem alterar o traçado.
-// Cartografia SIGA: materiais e paisagens de Itaipu (ardósia, musgo, terra,
-// aço e madeira). Tonalidades sóbrias, suficientemente distintas sobre satélite.
+// Paleta categórica SIGA: distinção entre as dez áreas institucionais na imagem satélite.
+// As cores escolhidas em novas importações e todas as geometrias são preservadas.
+const ROUTE_COLOR="#FFA65B";
+const MATRIX_COLOR="#23CBA0";
 const areaPalette={
- "area da central hidreletrica de itaipu - br":"#C5B58C", // areia / concreto
- "pti":"#80A8B7",                           // aço azulado
- "vila a":"#86B38F",                        // verde-mata
- "vila b":"#C49573",                        // argila
- "vila c":"#9D98B1",                        // ardósia violeta
- "rbv 1":"#72A69F",                         // petróleo esverdeado
- "rbv 2":"#B7A587",                         // pedra terrosa
- "rbv 3":"#AAB57D",                         // oliva
- "rbv 4":"#B77E73",                         // óxido / ferrugem
- "centro executivo e gramadao":"#9AB0A8" // cinza-sálvia
+ "area da central hidreletrica de itaipu - br":"#F6CB6A", // dourado
+ "pti":"#65A7ED",                            // azul
+ "vila a":"#73C989",                         // verde
+ "vila b":"#E88F67",                         // terracota
+ "vila c":"#B99BE7",                         // lilás
+ "rbv 1":"#50BFB3",                          // turquesa
+ "rbv 2":"#E982A0",                          // rosa
+ "rbv 3":"#A9C56A",                          // oliva
+ "rbv 4":"#D39AD6",                          // orquídea
+ "centro executivo e gramadao":"#7CC8DC"   // ciano
 };
-const fallbackPalette=["#85ABA2","#BCA785","#8FAFB7","#AB967B","#9DAF83","#9C98B1","#BA897C"];
+const fallbackPalette=["#9DBAEB","#F0B66A","#78C6AA","#E6A3B1","#ABB786","#C0A4E8","#85C6D9"];
 const areaKey=value=>String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
- .replace(/["']/g,"").toLowerCase().replace(/\s+/g," ").trim();
+ .toLowerCase().replace(/[^a-z0-9\s-]/g,"").replace(/\s+/g," ").trim();
 const featureName=(feature,layer)=>String(feature?.properties?.name||feature?.properties?.Name||
  feature?.properties?.trecho||layer?.name||"Geometria sem nome").trim();
 const areaColor=name=>{
@@ -35,8 +36,8 @@ const areaColor=name=>{
  return fallbackPalette[hash%fallbackPalette.length];
 };
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||""))?String(value).toUpperCase():null;
-const colorForFeature=(feature,layer)=>validColor(feature?.properties?._siga_import_color)||
- (layer?.reference_scope==="matrizes"?"#28CDA7":areaColor(featureName(feature,layer)));
+const colorForFeature=(feature,layer)=>symbolType(feature,layer)==="matriz"?MATRIX_COLOR:
+ validColor(feature?.properties?._siga_import_color)||areaColor(featureName(feature,layer));
 const symbolType=(feature,layer)=>{
  const geom=feature?.geometry?.type||"";
  if(/Polygon/.test(geom))return "area";
@@ -248,7 +249,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
     if(!feature.geometry)continue;
     const kind=symbolType(feature,layer),name=kind==="matriz"?"Árvores matrizes":
       kind==="rota"?(layer.name||"Rota"):kind==="area"?featureName(feature,layer):layer.name||"Pontos";
-    const color=colorForFeature(feature,layer),key=kind+"|"+areaKey(name)+"|"+color;
+    const color=kind==="rota"?ROUTE_COLOR:colorForFeature(feature,layer),key=kind+"|"+areaKey(name)+"|"+color;
     if(!items.has(key))items.set(key,{name,color,kind});
    }
   }
@@ -259,7 +260,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    '" style="--legend-color:'+entry.color+'" aria-hidden="true"></span><span>'+esc(entry.name)+'</span></div>'
   ).join("");
  }
- // SVG com hachuras diagonais de opacidade 20%, sem rasterizar os polígonos.
+ // Hachuras SVG discretas e legíveis sobre satélite, sem alterar geometrias.
  // O padrão fica no renderer SVG do Leaflet e acompanha zoom e deslocamento.
  function hatchPolygon(featureLayer,color){
   const path=featureLayer._path,svg=path?.ownerSVGElement;
@@ -274,11 +275,11 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    pattern.setAttribute("patternUnits","userSpaceOnUse");pattern.setAttribute("patternTransform","rotate(45)");
    const under=document.createElementNS(ns,"rect");
    under.setAttribute("width","9");under.setAttribute("height","9");
-   under.setAttribute("fill",color);under.setAttribute("fill-opacity",".055");
+   under.setAttribute("fill",color);under.setAttribute("fill-opacity",".085");
    const dash=document.createElementNS(ns,"path");
    dash.setAttribute("d","M0 0V9");
    dash.setAttribute("stroke",color);dash.setAttribute("stroke-width","1.7");
-   dash.setAttribute("stroke-opacity",".20");
+   dash.setAttribute("stroke-opacity",".30");
    pattern.append(under,dash);defs.appendChild(pattern);
   }
   path.setAttribute("fill","url(#"+id+")");
@@ -290,16 +291,16 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   const layer=maps.geoJSON(l.geometry,{
    style:feature=>{
     const c=colorForFeature(feature,l),kind=symbolType(feature,l);
-    if(kind==="area")return {color:c,weight:1.6,opacity:.94,fill:true,fillColor:c,fillOpacity:.08,className:"siga-area-hatched"};
-    if(kind==="rota")return {color:"#F4B39C",weight:3.1,opacity:.95,dashArray:"9 6",lineCap:"round",fill:false,className:"siga-route-dashed"};
+    if(kind==="area")return {color:c,weight:2.1,opacity:1,fill:true,fillColor:c,fillOpacity:.085,className:"siga-area-hatched"};
+    if(kind==="rota")return {color:ROUTE_COLOR,weight:3.1,opacity:1,dashArray:"9 6",lineCap:"round",fill:false,className:"siga-route-dashed"};
     // O GeoJSON reaplica o estilo mesmo após pointToLayer: pontos não podem herdar o tracejado.
     return {color:"#FFFFFF",weight:kind==="matriz"?.8:1.05,opacity:1,fill:true,
-     fillColor:kind==="matriz"?"#23CBA0":c,fillOpacity:1,
+     fillColor:kind==="matriz"?MATRIX_COLOR:c,fillOpacity:1,
      dashArray:null,dashOffset:null,lineCap:"round",lineJoin:"round"};
    },
    pointToLayer:(feature,latlng)=>{
     const kind=symbolType(feature,l),isMatrix=kind==="matriz",
-     c=isMatrix?"#23CBA0":colorForFeature(feature,l);
+     c=isMatrix?MATRIX_COLOR:colorForFeature(feature,l);
     return maps.circleMarker(latlng,{
      pane:isMatrix?"siga-matrix-points":"siga-other-points",
      radius:radiusAtZoom(map.getZoom(),isMatrix),
@@ -343,7 +344,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   const mapData=new google.maps.Data({map:gMap});
   mapData.addGeoJson(l.geometry);
   const strokeFor=feature=>validColor(feature.getProperty("_siga_import_color"))||
-    (l.reference_scope==="matrizes"?"#25C9A2":areaColor(feature.getProperty("name")||feature.getProperty("Name")||
+    (l.reference_scope==="matrizes"?MATRIX_COLOR:areaColor(feature.getProperty("name")||feature.getProperty("Name")||
     feature.getProperty("trecho")||l.name));
   mapData.setStyle(feature=>{
    const type=feature.getGeometry()?.getType()||"";
@@ -354,20 +355,20 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
      path:google.maps.SymbolPath.CIRCLE,
      scale:isMatrix?Math.max(2.8,Math.min(3.9,(gMap?.getZoom()||12)*.25)):
       Math.max(4,Math.min(5.5,(gMap?.getZoom()||12)*.35)),
-     fillColor:isMatrix?"#23CBA0":color,fillOpacity:1,
+     fillColor:isMatrix?MATRIX_COLOR:color,fillOpacity:1,
      strokeColor:"#FFFFFF",strokeWeight:isMatrix?.8:1.15,strokeOpacity:1
     },zIndex:isMatrix?10:9};
    }
-   if(/Polygon/.test(type))return {strokeColor:color,strokeWeight:1.6,strokeOpacity:.94,
-    fillColor:color,fillOpacity:.09,zIndex:3};
-   return {strokeColor:"#F4B39C",strokeWeight:2.7,strokeOpacity:.45,zIndex:5};
+   if(/Polygon/.test(type))return {strokeColor:color,strokeWeight:2.1,strokeOpacity:1,
+    fillColor:color,fillOpacity:.12,zIndex:3};
+   return {strokeColor:ROUTE_COLOR,strokeWeight:2.7,strokeOpacity:.55,zIndex:5};
   });
   // Google Data não suporta hachura nativa; conserva a área sutil e o tracejado de rotas.
   const decorations=[];
   const linePart=(coords,name)=>{
    const path=coords.map(c=>({lat:c[1],lng:c[0]}));
    const line=new google.maps.Polyline({map:gMap,path,strokeOpacity:0,geodesic:false,
-    icons:[{icon:{path:"M 0,-1 0,1",strokeColor:"#F4B39C",strokeOpacity:.96,strokeWeight:2.5,scale:2},
+    icons:[{icon:{path:"M 0,-1 0,1",strokeColor:ROUTE_COLOR,strokeOpacity:1,strokeWeight:2.5,scale:2},
       offset:"0",repeat:"15px"}],zIndex:6});
    line.addListener("click",event=>new google.maps.InfoWindow({
     content:'<strong>'+esc(name)+'</strong><br>Rota georreferenciada · traçado indicativo',

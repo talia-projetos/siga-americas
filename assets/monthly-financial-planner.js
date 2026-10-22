@@ -1,5 +1,5 @@
 import {mountWeatherAdvisory} from "./climate-planner.js?v=8";
-import {mountDailyCoverage} from "./daily-coverage.js?v=12";
+import {mountDailyCoverage} from "./daily-coverage.js?v=13";
 import {mountLowMobilizationBalance} from "./low-resource-panel.js?v=2";
 import {mountContractCoverage} from "./contract-coverage.js?v=3";
 const FIXED_MONTHLY=new Set(["3.7","3.9","3.10","3.40"]);

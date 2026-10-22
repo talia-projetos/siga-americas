@@ -1,7 +1,7 @@
 /* SIGA · simbologia cartográfica de inspiração QGIS, preservando Leaflet/Google Maps. */
 #main #dashboard-coverage-map .coverage-map-shell{overflow:visible}
 #main #dashboard-coverage-map .coverage-map-header h2{letter-spacing:-.025em}
-#main #dashboard-coverage-map .coverage-map-canvas{background:#1e3e32}
+#main #dashboard-coverage-map .coverage-map-canvas{background:#183F3A}
 #main #dashboard-coverage-map .coverage-map-legend{background:rgba(250,252,249,.96);border:1px solid #d9e6db;box-shadow:0 10px 26px rgba(30,64,41,.12);backdrop-filter:blur(7px)}
 #main #dashboard-coverage-map .coverage-map-legend-items{gap:0}
 #main #dashboard-coverage-map .coverage-map-legend-entry{gap:10px;border-bottom:1px solid #eff2ef;padding:6px 10px;line-height:1.4}
@@ -9,16 +9,16 @@
 #main #dashboard-coverage-map .coverage-map-legend-line{width:27px;min-width:27px;height:15px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:0;opacity:1}
 #main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=area]{
  border:1.5px solid var(--legend-color);border-radius:2px;
- background:repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb,var(--legend-color) 20%,transparent) 5px 7px, transparent 7px 11px);
+ background:repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb,var(--legend-color) 35%,transparent) 5px 7px, transparent 7px 11px);
 }
 #main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=rota]{
- height:0;margin-top:7px;border-top:3px dashed #F4B39C
+ height:0;margin-top:7px;border-top:3px dashed #FFA65B
 }
 #main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=ponto]::after,
 #main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=matriz]::after{
  content:"";width:10px;height:10px;border-radius:50%;background:var(--legend-color);border:1.5px solid #fdfefd;box-shadow:0 0 0 1px rgba(33,69,47,.24)
 }
-#main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=matriz]::after{background:#25C9A2}
+#main #dashboard-coverage-map .coverage-map-legend-line[data-symbol=matriz]::after{background:#23CBA0}
 #main #dashboard-coverage-map .siga-map-popup{display:grid;gap:5px;max-width:285px;font-size:11px;line-height:1.4;color:#395544}
 #main #dashboard-coverage-map .siga-map-popup strong{font-size:13px;color:#225438}
 #main #dashboard-coverage-map .siga-map-popup small{color:#708271}
