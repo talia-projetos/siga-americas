@@ -17,6 +17,7 @@ import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=5";
 import {mountWeatherAdvisory} from "./climate-planner.js?v=3";
 import {mountQuickVehicle} from "./quick-vehicle.js?v=1";
 import {mountCategoryQuantities} from "./category-quantities.js?v=1";
+import {generateListPDF,downloadDocument} from "./document-output.js?v=8";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -734,7 +735,8 @@ async function modulePage(key){
         '<button class="btn btn-secondary" data-action="create">'+iconMarkup("plus")+' Entrega individual</button>'
       :'<button class="btn btn-primary" data-action="create">'+iconMarkup("plus")+' Novo registro</button>'
     :"")+
-   '<button class="btn btn-ghost" data-action="export">'+iconMarkup("download")+' Baixar CSV</button>';
+   '<div class="export-dropdown"><button type="button" class="btn btn-ghost" data-action="exportToggle" aria-expanded="false" aria-haspopup="true">'+iconMarkup("download")+' Exportar ▾</button>'+
+   '<div class="export-options" hidden><button type="button" data-action="exportCSV">Baixar CSV</button><button type="button" data-action="exportPDF">Baixar PDF em lote</button></div></div>';
   const special=isCatalogPage(key);
   const assetOverview=key==="equipment"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
@@ -1084,6 +1086,9 @@ function exportCSV(){
  const link=document.createElement("a"),url=URL.createObjectURL(new Blob(["\ufeff"+output],{type:"text/csv;charset=utf-8"}));link.href=url;link.download=m.table+"_"+new Date().toISOString().slice(0,10)+".csv";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 document.addEventListener("click",async e=>{
+ document.querySelectorAll(".export-dropdown .export-options").forEach(list=>{
+  if(!e.target.closest(".export-dropdown")){list.hidden=true;list.previousElementSibling?.setAttribute("aria-expanded","false")}
+ });
  const menu=el("profile-menu");
  if(menu?.open&&!e.target.closest("#profile-menu"))menu.open=false;
  const navButton=e.target.closest("[data-nav]");if(navButton){await navigate(navButton.dataset.nav);return;}
