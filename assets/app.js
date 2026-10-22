@@ -1,6 +1,6 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=20";
+import {groups,modules} from "./modules.js?v=21";
 import {iconMarkup} from "./icons.js?v=5";
 import {renderDashboardAnalytics} from "./analytics.js?v=6";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
@@ -13,8 +13,8 @@ import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=8";
 import {mountCoverageMap} from "./coverage-map.js?v=6";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=4";
-import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=4";
-import {mountWeatherAdvisory} from "./climate-planner.js?v=2";
+import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=5";
+import {mountWeatherAdvisory} from "./climate-planner.js?v=3";
 import {mountQuickVehicle} from "./quick-vehicle.js?v=1";
 
 const el=id=>document.getElementById(id);
