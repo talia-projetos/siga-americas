@@ -1989,3 +1989,18 @@
 #main .weekly-team-pill:hover{border-color:#a0c8a9;background:#edf7ee}
 #main .weekly-team-pill:focus-visible{outline:2px solid #438563;outline-offset:2px}
 @media(max-width:700px){#main .weekly-team-strip{margin:-2px 14px 16px}#main .weekly-team-pill{flex:1 1 110px;justify-content:center}}
+
+/* Panorama por competência: informação de decisão sem recriar o antigo painel de cenários */
+#main .planning-workspace .finance-three-months{margin:15px 0 22px;padding:15px 17px 12px;border:1px solid #dfeade;border-radius:10px;background:#fbfdfb}
+#main .planning-workspace .finance-three-months>.finance-panel-heading{margin:0 0 10px;display:flex;align-items:flex-start;justify-content:space-between}
+#main .planning-workspace .finance-three-months>.finance-panel-heading h3{font-size:14px;margin:0 0 4px;color:#315e43}
+#main .planning-workspace .finance-three-months>.finance-panel-heading p{font-size:10.5px;line-height:1.5;margin:0;color:#728777}
+#main .planning-workspace .finance-three-months table{margin:0;min-width:680px}
+#main .planning-workspace .finance-three-months th{white-space:normal}
+#main .planning-workspace .finance-three-months td{vertical-align:middle;font-variant-numeric:tabular-nums}
+#main .planning-workspace .finance-three-months td strong{display:block;color:#305d42;font-weight:730;white-space:nowrap}
+#main .planning-workspace .finance-three-months td small{display:block;line-height:1.45;margin-top:3px;font-size:9.5px;color:#7e9583}
+#main .planning-workspace .finance-three-months tr.finance-current-month td{background:#eef6ef}
+#main .planning-workspace .finance-three-months-note{font-size:10px;color:#778676;line-height:1.65;margin:10px 0 0}
+#main .planning-workspace .finance-reference-table .finance-three-months-note{padding:8px 13px;margin:4px 0 9px;border-radius:7px;background:#f7faf7;border:1px solid #e7eee7}
+@media(max-width:700px){#main .planning-workspace .finance-three-months{padding:12px;margin:12px 0 17px}#main .planning-workspace .finance-three-months table{min-width:660px}}
