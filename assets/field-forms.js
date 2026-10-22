@@ -25,7 +25,7 @@ const periodLabel=r=>r.report_period==="semanal"&&r.period_start
 const weekHint=date=>"De "+dateBR(weekStart(date))+" a "+dateBR(weekEnd(weekStart(date)));
 
 const statuses={rascunho:"Rascunho",enviado:"Aguardando validação",validado:"Validado",devolvido:"Devolvido para ajuste"};
-const results={executada:"Executada",parcial:"Parcial",impedida:"Impedida",nao_aplicavel:"Não aplicável"};
+const results={nao_informado:"A definir",executada:"Executada",parcial:"Parcial",impedida:"Impedida",nao_aplicavel:"Não aplicável"};
 const escOpt=(value,text,active)=>'<option value="'+esc(value)+'"'+(String(value)===String(active)?" selected":"")+'>'+esc(text)+'</option>';
 const UNIT_OPTIONS=[
  ["un","un · unidade"],["m","m · metro"],["m²","m² · metro quadrado"],
@@ -59,7 +59,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    list(db,"work_orders","id,reference,team_id,area_id,status,due_on,activity_id,location,quantity,unit,contract_item_id",600),
    list(db,"field_daily_reports","id,team_id,area_id,service_post_id,report_date,report_period,period_start,period_end,shift,status,reported_by,team_leader,weather,field_conditions,equipment_used,team_size,general_notes,impediments,created_at",200),
    list(db,"field_programs","id,area_id,team_id,period_month,status",150),
-   list(db,"field_plan_items","id,program_id,activity_id",500),
+   list(db,"field_plan_items","id,program_id,activity_id,planned_for",500),
    list(db,"team_operational_areas","team_id,area_id,active",70),
    list(db,"contract_items","id,name,unit,source_type",120),
    list(db,"field_execution_entries","activity_id,contract_item_id",600),
@@ -118,6 +118,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   });
   items=[...root.querySelectorAll("[data-report-item]")].map(card=>({
    id:card.dataset.itemId||null,
+   field_plan_item_id:items[Number(card.dataset.reportItem)]?.field_plan_item_id||null,
    area_id:card.querySelector("[data-field-area]")?.value||selectedPost(card.querySelector("[data-field-post]")?.value)?.area_id||formState.area_id,
    service_post_id:card.querySelector("[data-field-post]")?.value||(activeTeam()?.code==="EQ06"?formState.service_post_id:""),
    performed_on:card.querySelector("[data-field-workday]")?.value||"",
@@ -312,7 +313,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   root.innerHTML=topbar()+'<div class="field-history"><div class="field-history-head"><h3>Relatórios por semana</h3><p>Consulte os envios, os rascunhos e a análise da supervisão.</p></div>'+
   (own.length?own.map(r=>{
    const team=teams.find(x=>x.id===r.team_id),area=areas.find(x=>x.id===r.area_id),post=selectedPost(r.service_post_id);
-   return '<article class="field-history-item"><div><strong>'+esc(periodLabel(r))+' · '+esc(team?.name||"Equipe")+'</strong><p>'+esc(area?.name||"Frente não identificada")+'</p></div>'+fmtStatus(r.status)+'<div class="field-history-buttons"><button type="button" class="table-action" data-view-report="'+esc(r.id)+'">Detalhes '+iconMarkup("arrow")+'</button>'+
+   return '<article class="field-history-item"><div><strong>'+esc(periodLabel(r))+' · '+esc(team?.name||"Equipe")+'</strong><p>'+esc(post?'Posto '+post.code+' · '+post.name:area?.name||"Frente não identificada")+'</p></div>'+fmtStatus(r.status)+'<div class="field-history-buttons"><button type="button" class="table-action" data-view-report="'+esc(r.id)+'">Detalhes '+iconMarkup("arrow")+'</button>'+
    (["rascunho","devolvido"].includes(r.status)&&r.reported_by===user.id?'<button type="button" class="table-action" data-resume-report="'+esc(r.id)+'">Retomar</button>':"")+'</div></article>';
   }).join(""):'<div class="empty-state">Ainda não há relatórios de campo cadastrados.</div>')+
   '</div>';
@@ -328,7 +329,14 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
     list(db,"field_daily_attendance","id,employee_id,presence_status,report_id",500)
    ]);
    const parts=i.filter(r=>r.report_id===id);const pres=a.filter(x=>x.report_id===id);
-   const reportLine=parts.map(x=>{const activity=activities.find(y=>y.id===x.activity_id);return '<li><strong>'+esc(activity?.code||"—")+' · '+esc(activity?.name||"Atividade")+'</strong> — '+esc(results[x.result]||x.result)+(x.quantity!==null?' · '+esc(x.quantity||"")+' '+esc(x.unit||""):"")+' · '+esc((areas.find(a=>a.id===x.area_id)?.name||"Frente não informada")+(x.location?" · "+x.location:""))+'</li>'}).join("");
+   const reportLine=parts.map(x=>{
+    const activity=activities.find(y=>y.id===x.activity_id),post=selectedPost(x.service_post_id),os=orders.find(w=>w.id===x.work_order_id);
+    const place=post?"Posto "+post.code+" · "+post.name:(areas.find(a=>a.id===x.area_id)?.name||"Frente não informada");
+    const detail=[results[x.result]||x.result,x.performed_on?dateBR(x.performed_on):"",
+      x.quantity!=null?String(x.quantity)+" "+(x.unit||""):"",
+      os?"OS "+os.reference:"",place,x.location].filter(Boolean).join(" · ");
+    return '<li><strong>'+esc(activity?.code||"—")+' · '+esc(activity?.name||"Atividade")+'</strong> — '+esc(detail)+'</li>';
+   }).join("");
    root.innerHTML='<div class="field-history-detail"><button class="btn btn-ghost" id="field-back-history">'+iconMarkup("arrow")+' Histórico</button><h2>Relatório · '+esc(periodLabel(report))+'</h2><p>'+fmtStatus(report.status)+'</p><h3>Atividades</h3><ul>'+reportLine+'</ul><h3>Trabalhadores</h3><p>'+(pres.length?pres.filter(x=>x.presence_status==="presente").length+' presentes; '+pres.filter(x=>x.presence_status==="ausente").length+' ausentes; '+pres.filter(x=>x.presence_status==="folga").length+' em folga.':'Presença não informada.')+'</p><h3>Impedimentos</h3><p>'+esc(report.impediments||"Não informados")+'</p><h3>Observações</h3><p>'+esc(report.general_notes||"Não informadas")+'</p></div>';
    root.querySelector("#field-back-history").addEventListener("click",drawHistory);
   }catch(e){notify(e.message,true)}
@@ -411,7 +419,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    }
    const payload=items.map(x=>({
      id:crypto.randomUUID(),report_id:draftId,activity_id:x.activity_id,area_id:x.area_id||f.area_id,service_post_id:x.service_post_id||null,performed_on:x.performed_on||null,work_order_id:x.work_order_id||null,
-     field_plan_item_id:(()=>{const area=x.area_id||f.area_id;const program=programs.find(p=>p.team_id===selectedTeam&&p.area_id===area&&String(p.period_month).slice(0,7)===monday.slice(0,7));const matches=program?planItems.filter(p=>p.program_id===program.id&&p.activity_id===x.activity_id):[];return x.field_plan_item_id|| (matches.length===1?matches[0].id:null);})(),
+     field_plan_item_id:(()=>{const area=x.area_id||f.area_id;const program=programs.find(p=>p.team_id===selectedTeam&&p.area_id===area&&String(p.period_month).slice(0,7)===monday.slice(0,7));const matches=program?planItems.filter(p=>p.program_id===program.id&&p.activity_id===x.activity_id&&p.planned_for>=monday&&p.planned_for<=sunday&&(!x.performed_on||p.planned_for===x.performed_on)):[];return x.field_plan_item_id|| (matches.length===1?matches[0].id:null);})(),
      result:x.result,location:x.location||null,quantity:x.quantity===""?null:Number(x.quantity),
      unit:x.unit||null,hours_worked:x.hours_worked===""?null:Number(x.hours_worked),
      notes:x.notes||null,evidence_ref:x.evidence_ref||null
