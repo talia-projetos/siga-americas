@@ -8,6 +8,7 @@ import {mountInventoryCheck} from "./resource-check.js?v=6";
 import {mountUniformManager} from "./uniform-bulk.js?v=10";
 import {mountFieldReport} from "./field-forms.js?v=6";
 import {mountFieldMonitor} from "./field-monitor.js?v=4";
+import {mountTechnicalExecutionInbox} from "./technical-execution-inbox.js?v=1";
 import {renderFinancialIndicator} from "./execution-metrics.js?v=6";
 import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=8";
@@ -749,13 +750,13 @@ async function modulePage(key){
     ' com validade vencida no cadastro.</p><p>CA, validade, estado físico, disponibilidade e entrega precisam ser confirmados documentalmente. Ausência de CA no cadastro não significa que o produto esteja dispensado dessa exigência.</p></div>';
   })():"";
   if(key==="ppe_items")await ppeContractOverview(app.rows); // Carrega mapa de quantitativos sem painel duplicado.
-  const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
+  const technicalInbox=key==="field_execution_entries"?'<div id="technical-execution-inbox"></div>':"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
   const quantityScope=({vehicles:["veiculo"],equipment:["ferramenta","equipamento"],ppe_items:["epi"],uniform_deliveries:["uniforme"]})[key];
   const quantityOverview=quantityScope?'<div id="category-quantity-slot"></div>':"";
   const stockOverview=key==="stock_items"?'<p class="notice stock-stocknote"><strong>Conferência de estoque:</strong> informe a quantidade física e a evidência nesta aba. O saldo por movimentações só usa entradas e saídas documentadas; sem registros, permanece indisponível. A contagem não cria movimentação.</p>':"";
-  const overview=(special?catalogOverview(key,app.rows):"")+quantityOverview+stockOverview+assetOverview+fleetOverview+ppeOverview+climateOverview;
- const afterTable=key==="field_execution_entries"?notesOverview:"";
+  const overview=technicalInbox+(special?catalogOverview(key,app.rows):"")+quantityOverview+stockOverview+assetOverview+fleetOverview+ppeOverview+climateOverview;
+ const afterTable="";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
   '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(key==="vehicles"?"Veículos individualizados":catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
@@ -772,26 +773,7 @@ async function modulePage(key){
   if(key==="field_programs")mountWeatherAdvisory(el("planning-climate-live"),app.db);
   // Identificação de veículo usa delegação global para funcionar após salvar a conferência.
   // Repõe os controles visuais antes de instalar eventos; não apenas o predicado da lista.
-  if(key==="field_execution_entries"){
-   const term=el("execution-location-search"),day=el("execution-location-date"),amount=el("execution-location-quantity");
-   const showLocations=()=>{
-    executionNoteFilterState.search=term.value;
-    executionNoteFilterState.date=day.value;
-    executionNoteFilterState.quantity=amount.value;
-    const q=term.value.toLocaleLowerCase("pt-BR").trim();
-    let count=0;
-    el("main").querySelectorAll("[data-exec-note-query]").forEach(row=>{
-     const matches=(!q||row.dataset.execNoteQuery.includes(q))&&
-      (!day.value||row.dataset.execNoteDate===day.value)&&
-      (amount.value==="all"||(amount.value==="reported"&&row.dataset.execNoteHasQuantity==="1")||(amount.value==="undated"&&row.dataset.execNoteHasQuantity==="1"&&row.dataset.execNoteDate==="sem_data")||(amount.value==="missing"&&row.dataset.execNoteHasQuantity==="0"));
-     row.hidden=!matches;
-     if(matches)count++;
-    });
-    el("execution-locations-shown").textContent=count+" linha(s)";
-   };
-   [term,day,amount].forEach(input=>input?.addEventListener(input===term?"input":"change",showLocations));
-   showLocations();
-  }
+  if(key==="field_execution_entries")void mountTechnicalExecutionInbox(el("technical-execution-inbox"),app.db);
   el("list-search").value=app.search;
   el("main").querySelectorAll("[data-list-filter]").forEach(filter=>{
    filter.value=app.filters[filter.dataset.listFilter]??"";
