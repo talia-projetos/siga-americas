@@ -455,13 +455,16 @@ function renderRows(){
     new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(req.required_quantity))+' '+String(req.unit||"un");
    return '<td><span class="ppe-contract-unit">'+escapeHTML(text)+'</span></td>';
   }
+  if(app.page==="stock_items"&&key==="ledger_balance")return '<td>'+(row.ledger_balance==null?'<span class="muted">Sem movimentações</span>':escapeHTML(new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(row.ledger_balance)))+'</td>';
+  if(app.page==="stock_items"&&key==="counted_quantity")return '<td><div class="stock-count-cell"><input type="number" min="0" step="any" inputmode="decimal" data-stock-count="'+escapeHTML(row.id)+'" aria-label="Quantidade física de '+escapeHTML(row.name)+'" placeholder="A conferir" value="'+escapeHTML(row.counted_quantity??"")+'" '+(!privileged()?"disabled":"")+'><input type="text" maxlength="250" data-stock-evidence="'+escapeHTML(row.id)+'" aria-label="Local e evidência de '+escapeHTML(row.name)+'" placeholder="Local e evidência" value="'+escapeHTML(row.count_evidence||"")+'" '+(!privileged()?"disabled":"")+'></div></td>';
+  if(app.page==="stock_items"&&key==="counted_at")return '<td>'+escapeHTML(row.counted_at?new Date(row.counted_at).toLocaleDateString("pt-BR"):"Não conferido")+'</td>';
   if(app.page==="field_execution_entries"&&key==="activity_id"&&row.activity_id==null)return '<td><span class="tag gray">Modalidade de poda a definir</span><small>Quantidade anotada, ainda sem rubrica</small></td>';
   if(financial&&key==="code")return '<td data-label="Código"><span class="catalog-code">'+escapeHTML(row.code)+'</span></td>';
   if(financial&&key==="name")return '<td data-label="Atividade / serviço"><span class="catalog-name" title="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</span></td>';
   const klass=financial&&["estimated_quantity","unit_price","estimated_total"].includes(key)?' class="numeric-cell"':"";
   const mobileLabel=financial?({unit:"Unidade contratual",estimated_quantity:"Quantidade estimada",unit_price:"Valor unitário",estimated_total:"Total estimado"}[key]||key):null;
   return '<td'+(mobileLabel?' data-label="'+escapeHTML(mobileLabel)+'"':'')+klass+'>'+fieldValue(key,row[key])+'</td>';
- }).join("")+'<td'+(financial?' data-label="Ações"':'')+'>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">'+iconMarkup('file')+' Editar</button>':'<span class="muted">Consulta</span>')+'</td></tr>').join("");
+ }).join("")+'<td'+(financial?' data-label="Ações"':'')+'>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">'+iconMarkup('file')+' Editar</button>'+(app.page==="stock_items"?'<button class="table-action" data-save-stock="'+escapeHTML(row.id)+'">Salvar contagem</button>':""):'<span class="muted">Consulta</span>')+'</td></tr>').join("");
 }
 async function coveragePage(){
  app.page="coverage";app.search="";nav();header("coverage");
@@ -708,6 +711,16 @@ async function modulePage(key){
   const {data,error}=await query.limit(500);
   if(error)throw error;
   app.rows=data||[];
+  if(key==="stock_items"){
+   const movements=await app.db.from("stock_movements").select("stock_item_id,movement_type,quantity").limit(3000);
+   if(movements.error)throw movements.error;
+   const balance=new Map(),have=new Set();
+   for(const r of movements.data||[]){
+    have.add(r.stock_item_id);
+    balance.set(r.stock_item_id,(balance.get(r.stock_item_id)||0)+(r.movement_type==="entrada"?1:-1)*Number(r.quantity||0));
+   }
+   app.rows=app.rows.map(r=>({...r,ledger_balance:have.has(r.id)?balance.get(r.id):null}));
+  }
   // As rubricas não operacionais permanecem no banco e na matriz completa, mas não nesta tela nem no CSV.
   if(key==="field_plan_items"){
    const allowed=new Set((app.refs.activity_catalog||[]).map(item=>item.id));
@@ -726,12 +739,13 @@ async function modulePage(key){
   const assetOverview=key==="equipment"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
   const fleetOverview="";
-  const ppeOverview=key==="ppe_items"?await ppeContractOverview(app.rows):"";
+  const ppeOverview="";
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
   const quantityScope=({vehicles:["veiculo"],equipment:["ferramenta","equipamento"],ppe_items:["epi"],uniform_deliveries:["uniforme"]})[key];
   const quantityOverview=quantityScope?'<div id="category-quantity-slot"></div>':"";
-  const overview=(special?catalogOverview(key,app.rows):"")+quantityOverview+assetOverview+fleetOverview+ppeOverview+climateOverview;
+  const stockOverview=key==="stock_items"?'<p class="notice stock-stocknote"><strong>Conferência de estoque:</strong> informe a quantidade física e a evidência nesta aba. O saldo por movimentações só usa entradas e saídas documentadas; sem registros, permanece indisponível. A contagem não cria movimentação.</p>':"";
+  const overview=(special?catalogOverview(key,app.rows):"")+quantityOverview+stockOverview+assetOverview+fleetOverview+ppeOverview+climateOverview;
  const afterTable=key==="field_execution_entries"?notesOverview:"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
@@ -741,7 +755,7 @@ async function modulePage(key){
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
   '<div class="table-scroll"><table class="data-table">'+(key==="contract_items"?'<colgroup><col class="price-col-code"><col class="price-col-name"><col class="price-col-unit"><col class="price-col-quantity"><col class="price-col-price"><col class="price-col-total"><col class="price-col-actions"></colgroup>':'')+'<thead><tr>'+m.columns.map(col=>{
     const numeric=["unit_price","estimated_quantity","estimated_total","required_quantity","observed_quantity"].includes(col);
-    const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)",contract_required:"Quantidade contratual"}[col]||col;
+    const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)",contract_required:"Quantidade contratual",ledger_balance:"Saldo movimentado",counted_quantity:"Contagem física",counted_at:"Data da contagem"}[col]||col;
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>'+afterTable;
@@ -1078,6 +1092,25 @@ document.addEventListener("click",async e=>{
  if(action==="create")await openForm();
  if(action==="uniformBatch"&&app.page==="uniform_deliveries"&&privileged())await uniformPage();
  if(action==="export")exportCSV();
+ const saveStock=e.target.closest("[data-save-stock]");
+ if(saveStock&&app.page==="stock_items"){
+  const row=app.rows.find(r=>r.id===saveStock.dataset.saveStock);
+  if(!row||!privileged())return;
+  const raw=el("main").querySelector('[data-stock-count="'+row.id+'"]')?.value.trim()||"";
+  const evidence=el("main").querySelector('[data-stock-evidence="'+row.id+'"]')?.value.trim()||"";
+  const amount=Number(raw.replace(",","."));
+  if(!raw||!Number.isFinite(amount)||amount<0){notify("Informe uma quantidade válida.",true);return}
+  if(evidence.length<5){notify("Informe local e evidência da contagem.",true);return}
+  saveStock.disabled=true;
+  try{
+   const counted_at=new Date().toISOString();
+   const {error}=await app.db.from("stock_items").update({counted_quantity:amount,counted_at,count_evidence:evidence}).eq("id",row.id);
+   if(error)throw error;
+   Object.assign(row,{counted_quantity:amount,counted_at,count_evidence:evidence});
+   renderRows();notify("Contagem física salva sem alterar as movimentações.");
+  }catch(err){notify(friendlyError(err),true)}
+  finally{saveStock.disabled=false}
+ }
  if(action==="planActivity"){const id=e.target.closest("[data-activity-id]")?.dataset.activityId;if(id){app.prefillActivity=id;await navigate("field_plan_items");await openForm();}}
  if(action==="editExecution"){const id=e.target.closest("[data-execution-id]")?.dataset.executionId;if(id&&privileged()){await navigate("field_execution_entries");await openForm(id);}}
  if(action==="logout")await logout();
