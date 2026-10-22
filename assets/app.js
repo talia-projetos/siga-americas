@@ -16,6 +16,7 @@ import {mountContractSuggestions} from "./contract-suggestions.js?v=4";
 import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=5";
 import {mountWeatherAdvisory} from "./climate-planner.js?v=3";
 import {mountQuickVehicle} from "./quick-vehicle.js?v=1";
+import {mountCategoryQuantities} from "./category-quantities.js?v=1";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -685,35 +686,6 @@ async function ppeContractOverview(rows){
   '</div><p class="ppe-contract-note">As quantidades, os tamanhos, o CA quando exigível e a adequação ao risco dependem de levantamento pelo SST. As três exigências de fardamento estão na categoria contratual própria e não foram duplicadas aqui.</p>'+
   '</section>';
 }
-async function fleetContractPanel(vehicles){
- const {data,error}=await app.db.from("contract_resource_requirements")
-  .select("id,item_name,source_ref,required_quantity,observed_quantity,inventory_note")
-  .eq("category","veiculo").order("item_name").limit(100);
- if(error)return '<div class="notice warning">Não foi possível consultar a relação contratual de frota: '+escapeHTML(friendlyError(error))+'</div>';
- const rows=data||[];
- const quant=n=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0}).format(Number(n||0));
- const projected=rows.reduce((sum,r)=>sum+Number(r.required_quantity||0),0);
- const informed=rows.filter(r=>r.observed_quantity!==null&&r.observed_quantity!==undefined);
- const declared=informed.reduce((sum,r)=>sum+Number(r.observed_quantity||0),0);
- const linked=vehicles.filter(v=>v.contract_resource_requirement_id);
- const absent=rows.length===0;
- return '<section class="fleet-contract-panel" aria-labelledby="fleet-contract-heading">'+
-  '<div class="fleet-contract-header"><div><span class="eyebrow">FROTA · REFERÊNCIA CONTRATUAL 6.1</span><h2 id="fleet-contract-heading">Lista de veículos por tipo</h2><p>O contrato indica os tipos e quantidades. Para criar um cadastro individual com placa, chassi ou patrimônio, selecione <strong>Identificar veículo</strong> na linha correspondente.</p></div></div>'+
-  '<div class="fleet-contract-kpis">'+
-   '<div><span>Unidades previstas</span><strong>'+quant(projected)+'</strong><small>Em '+rows.length+' categorias contratuais</small></div>'+
-   '<div><span>Quantidades informadas</span><strong>'+quant(declared)+'</strong><small>Soma parcial de '+informed.length+' categorias, sem identificação individual</small></div>'+
-   '<div><span>Cadastros individuais</span><strong>'+quant(vehicles.length)+'</strong><small>'+quant(linked.length)+' vinculados às categorias contratuais</small></div></div>'+
-  '<div class="table-scroll fleet-contract-scroll"><table class="fleet-contract-table"><thead><tr><th>Veículo / tipo contratual</th><th>Previsto</th><th>Informado</th><th>Anotações</th><th>Cadastro</th></tr></thead><tbody>'+
-   rows.map(r=>{
-    const reported=r.observed_quantity===null||r.observed_quantity===undefined?'A conferir':quant(r.observed_quantity);
-    return '<tr><td><strong>'+escapeHTML(r.item_name)+'</strong><small>'+escapeHTML(r.source_ref||"")+'</small></td>'+
-     '<td class="fleet-number">'+quant(r.required_quantity)+'</td><td class="fleet-number">'+reported+'</td>'+
-     '<td class="fleet-note">'+(r.inventory_note?escapeHTML(r.inventory_note)+'<small>Referência informada, não validada</small>':'<span class="muted">—</span>')+'</td>'+
-     '<td>'+(privileged()?'<button type="button" class="table-action fleet-add" data-fleet-add="'+escapeHTML(r.id)+'">Identificar veículo</button>':'<span class="muted">Consulta</span>')+'</td></tr>';
-   }).join("")+
-  '</tbody></table></div>'+
-  '<p class="fleet-contract-foot">15 unidades informadas não significam 15 veículos conferidos. Placas, chassis e patrimônio dependem dos cadastros individuais.</p></section>';
-}
 async function modulePage(key){
  const saved=listViews.get(key);
  app.page=key;
@@ -753,11 +725,13 @@ async function modulePage(key){
   const special=isCatalogPage(key);
   const assetOverview=key==="equipment"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
-  const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
+  const fleetOverview="";
   const ppeOverview=key==="ppe_items"?await ppeContractOverview(app.rows):"";
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
-  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+ppeOverview+climateOverview;
+  const quantityScope=({vehicles:["veiculo"],equipment:["ferramenta","equipamento"],ppe_items:["epi"],uniform_deliveries:["uniforme"]})[key];
+  const quantityOverview=quantityScope?'<div id="category-quantity-slot"></div>':"";
+  const overview=(special?catalogOverview(key,app.rows):"")+quantityOverview+assetOverview+fleetOverview+ppeOverview+climateOverview;
  const afterTable=key==="field_execution_entries"?notesOverview:"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
@@ -771,6 +745,7 @@ async function modulePage(key){
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>'+afterTable;
+  if(quantityScope)await mountCategoryQuantities(el("category-quantity-slot"),app.db,{categories:quantityScope,canWrite:privileged(),notify,individuals:app.rows.length});
   if(key==="field_programs")mountWeatherAdvisory(el("planning-climate-live"),app.db);
   if(key==="vehicles")el("main").querySelectorAll("[data-fleet-add]").forEach(button=>button.addEventListener("click",async()=>{
     await openForm();
