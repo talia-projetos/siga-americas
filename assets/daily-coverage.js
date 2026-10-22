@@ -41,17 +41,28 @@ export async function mountDailyCoverage(root,db,{role,notify}){
  const grouped=()=>entries.filter(e=>e.work_date.startsWith(month));
  const dates=()=>[...new Set(grouped().map(e=>e.work_date))].sort();
  const postRoutines=id=>routines.filter(r=>r.service_post_id===id).sort((a,b)=>a.routine_code.localeCompare(b.routine_code,"pt-BR"));
+ const selectedRoutine=(ref,date,shift)=>{
+  if(!ref.length)return null;
+  const dow=new Date(date+"T12:00:00").getDay(),dom=Number(date.slice(8,10));
+  let code=shift==="manha"?"D1":"D2";
+  if(shift==="tarde"&&dow===2)code="S1";
+  if(shift==="tarde"&&dow===3){
+   const week=Math.ceil(dom/7);
+   if(week<=3)code="M"+week;
+  }
+  return ref.find(r=>r.routine_code===code)||ref.find(r=>r.routine_code===(shift==="manha"?"D1":"D2"))||ref[0];
+ };
  const dailyValid=(kind,id,date)=>shifts.every(([shift])=>{const plan=getPlan(kind,id,date,shift);return Boolean(plan?.review_status==="revisado"&&plan?.planned_activity?.trim()&&plan?.planned_location?.trim())});
  const shiftRows=(kind,id,date)=>{
   return '<div class="daily-shift-grid">'+shifts.map(([shift,label])=>{
-   const p=getPlan(kind,id,date,shift),ref=kind==="posto"?postRoutines(id):[];
+   const p=getPlan(kind,id,date,shift),ref=kind==="posto"?postRoutines(id):[],routine=kind==="posto"?selectedRoutine(ref,date,shift):null;
    return '<div class="daily-shift" data-shift-kind="'+kind+'" data-shift-id="'+safe(id)+'" data-shift-date="'+safe(date)+'" data-shift="'+shift+'">'+
     '<div class="daily-shift-head"><strong>'+label+'</strong><span class="daily-shift-state '+(p?.review_status==="revisado"?"is-saved":"is-pending")+'">'+(p?.review_status==="revisado"?"Turno revisado":p?"Rascunho · revisar":"A definir / conferir")+'</span></div>'+
     (canManage&&!approvals.has(date)?'<label>Atividade prevista<textarea class="daily-shift-activity" maxlength="600" rows="2" placeholder="Definir atividade deste turno">'+safe(p?.planned_activity||"")+'</textarea></label>'+
      '<label>Local / trecho<input class="daily-shift-location" maxlength="300" value="'+safe(p?.planned_location||"")+'" placeholder="Local a confirmar"></label>'+
      '<label>Orientação / observação<input class="daily-shift-note" maxlength="1000" value="'+safe(p?.supervisor_note||"")+'" placeholder="Opcional"></label>'+
-     (kind==="posto"&&ref.length?'<label>Rotinas contratuais como referência<select class="daily-routine-choice"><option value="">Escolher rotina para preencher a atividade…</option>'+
-       ref.map(r=>'<option value="'+safe(r.id)+'">'+safe(r.routine_code+' · '+r.title+' ('+r.frequency+')')+'</option>').join("")+'</select></label>':"")+
+     (kind==="posto"&&ref.length?'<label>Rotina contratual sugerida<select class="daily-routine-choice"><option value="">Sem rotina específica</option>'+
+       ref.map(r=>'<option value="'+safe(r.id)+'"'+(routine?.id===r.id?' selected':'')+'>'+safe(r.routine_code+' · '+r.title+' ('+r.frequency+')')+'</option>').join("")+'</select></label>':"")+
      '<button class="btn btn-secondary" type="button" data-save-shift>Revisar e salvar '+label.toLowerCase()+'</button>':
      '<p><strong>Atividade:</strong> '+safe(p?.planned_activity||"A definir pela supervisão")+'</p>'+
      '<p><strong>Local:</strong> '+safe(p?.planned_location||"A confirmar")+'</p>'+
