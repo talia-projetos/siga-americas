@@ -222,28 +222,63 @@ export async function generatePDF(models){
   y=H-102;
  };
  const ensure=needed=>{if(y-needed<bottom)start();};
- // Datas e turnos da programação mensal: verde e negrito, inclusive quando o texto quebra.
- const isScheduleLine=line=>/^(?:\d{2}\/\d{2}\/\d{4}|MANHÃ:|TARDE:)/i.test(String(line).trim());
+ // Somente a data e as palavras MANHÃ/TARDE ficam em verde e negrito.
+ // Os dois-pontos e o texto das atividades permanecem pretos e regulares.
  const textLines=(text,size=9.5,opt={})=>{
-  const max=opt.width||W-margin*2,lh=opt.lineHeight||size*1.48;
-  const groups=stripPDF(text).split("\n").map(raw=>{
-   const highlight=Boolean(opt.schedule&&isScheduleLine(raw));
-   const font=highlight||opt.bold?bold:regular;
-   return {lines:wrapText(font,raw,size,max),font,color:highlight?green:(opt.color||dark)};
-  });
-  const total=groups.reduce((n,g)=>n+g.lines.length*lh,0)+4;
-  if(total<=H-102-bottom)ensure(total);
-  for(const group of groups){
-   for(const chunk of group.lines){
+  const max=opt.width||W-margin*2,lh=opt.lineHeight||size*1.48,origin=opt.x||margin;
+  const content=stripPDF(text);
+  if(opt.schedule){
+   let drawnLines=0;
+   const newline=()=>{y-=lh;drawnLines++;ensure(lh+4);};
+   for(const raw of content.split("\n")){
     ensure(lh+4);
-    page.drawText(chunk||" ",{x:opt.x||margin,y,size,font:group.font,color:group.color});
-    y-=lh;
+    const matched=raw.match(/^(\s*)(\d{2}\/\d{2}\/\d{4}|MANHÃ|TARDE)(?=$|[:\s])/i);
+    // Todo o texto que não é uma data ou o nome do turno recebe fonte regular preta.
+    const parts=matched?[
+     {value:matched[1],font:regular,color:dark},
+     {value:matched[2],font:bold,color:green},
+     {value:raw.slice(matched[0].length),font:regular,color:dark}
+    ]:[{value:raw,font:regular,color:dark}];
+    let cursor=origin,space="";
+    for(const part of parts){
+     for(const token of (part.value.match(/\s+|\S+/g)||[])){
+      if(/^\s+$/.test(token)){space+=token;continue;}
+      const spaceWidth=cursor>origin?regular.widthOfTextAtSize(space,size):0;
+      const wordWidth=part.font.widthOfTextAtSize(token,size);
+      if(cursor>origin&&cursor-origin+spaceWidth+wordWidth>max){newline();cursor=origin;}
+      else if(cursor>origin)cursor+=spaceWidth;
+      space="";
+      if(wordWidth<=max){
+       page.drawText(token,{x:cursor,y,size,font:part.font,color:part.color});
+       cursor+=wordWidth;
+      }else{
+       for(const letter of token){
+        const width=part.font.widthOfTextAtSize(letter,size);
+        if(cursor>origin&&cursor-origin+width>max){newline();cursor=origin;}
+        page.drawText(letter,{x:cursor,y,size,font:part.font,color:part.color});
+        cursor+=width;
+       }
+      }
+     }
+    }
+    y-=lh;drawnLines++;
    }
+   y-=opt.after??4;
+   return;
+  }
+  const font=opt.bold?bold:regular;
+  const lines=wrapText(font,content,size,max);
+  const total=lines.length*lh+4;
+  if(total<=H-102-bottom)ensure(total);
+  for(const chunk of lines){
+   ensure(lh+4);
+   page.drawText(chunk||" ",{x:origin,y,size,font,color:opt.color||dark});
+   y-=lh;
   }
   y-=opt.after??4;
  };
  const label=(name,value,kind)=>{
-  const emph=kind==='programacao'&&/^(data operacional|competência)$/i.test(String(name).trim());
+  const emph=kind==='programacao'&&/^data operacional$/i.test(String(name).trim());
   const valueFont=emph?bold:regular;
   const left=172,right=W-margin-left-40;
   const labelLines=wrapText(bold,name,8.5,left-8);
