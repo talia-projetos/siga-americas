@@ -1,5 +1,5 @@
 // Impressão da escala diária com a mesma identidade e biblioteca da OS.
-import {generatePDF,downloadDocument} from "./document-output.js?v=7";
+import {generatePDF,downloadDocument} from "./document-output.js?v=9";
 import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
 const d=v=>v?new Date(String(v).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"Data não informada";
 const pretty=x=>String(x??"").trim()||"A confirmar";
