@@ -45,7 +45,7 @@ export function buildFixedPostDocument(post,date,plans,routines=[]){
    ["03  ROTINAS CONTRATUAIS","Referência: "+(daily.map(r=>r.routine_code+" · "+r.title).join("; ")||"Rotinas a conferir")],
    ["04  ANÁLISE DO GESTOR","Decisão: (  ) Aprovar  (  ) Devolver para ajustes\nObservações: ______________________________________________\nReferência da aprovação: __________________________________"]]);
 }
-export async function downloadDailySchedules(entries,teams,areas,prices,posts=[],plans=new Map(),routines=[]){
+export async function downloadDailySchedules(entries,teams,areas,prices,posts=[],plans=new Map(),routines=[],approval=null){
  if(!entries?.length&&!posts?.length)throw Error("Nenhuma equipe ou posto para exportar.");
  const date=entries[0]?.work_date;
  if(!date)throw Error("Selecione um dia com escala de equipes para incluir os postos.");
@@ -53,6 +53,15 @@ export async function downloadDailySchedules(entries,teams,areas,prices,posts=[]
   .map(entry=>buildDailyScheduleDocument(entry,teams.get(entry.team_id),areas.get(entry.area_id),prices.get(entry.contract_item_id),[],plans));
  for(const post of posts.slice().sort((a,b)=>a.code.localeCompare(b.code,"pt-BR",{numeric:true})))
   models.push(buildFixedPostDocument(post,date,plans,routines));
+ if(approval){
+  for(const model of models){
+   model.badge="PROGRAMAÇÃO · APROVAÇÃO DOCUMENTAL REGISTRADA";
+   model.meta.push(["Aprovação do gestor",String(approval.manager_name||"Gestor")+
+     " · "+String(approval.approval_reference||"Sem referência")+
+     " · "+String(approval.approved_on||"Data não informada")]);
+   model.notice+=" A aprovação da programação consta no registro documental. Não atesta execução nem autoriza medição sem a conferência contratual.";
+  }
+ }
  const pdf=await generatePDF(models);
  const iso=date.replaceAll("-","");
  const suffix=entries.length===1&&!posts.length?"_"+pretty(teams.get(entries[0].team_id)?.code):"_completo";
