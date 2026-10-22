@@ -12,11 +12,20 @@ const query=async(db,t,columns="*",limit=1000)=>{
 export async function mountFieldMonitor(root,db,{user,notify}){
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Consolidando relatórios das equipes…</p></div>';
  let teams,areas,reports,activities,employees,posts,orders;
+ const initialWeek=weekStart(dateToday());
+ const reportFields="id,team_id,area_id,service_post_id,report_date,report_period,period_start,period_end,shift,status,reported_by,team_leader,team_size,impediments,general_notes,weather,equipment_used,supervisor_notes,submitted_at,created_at";
+ const fetchWeek=async target=>{
+  const result=await db.from("field_daily_reports").select(reportFields)
+   .eq("report_period","semanal").eq("period_start",target).limit(1000);
+  if(result.error)throw result.error;
+  if((result.data||[]).length>=1000)throw Error("Limite de relatórios na semana; precisa de paginação para assegurar a contagem.");
+  return result.data||[];
+ };
  try{
  [teams,areas,reports,activities,employees,posts,orders]=await Promise.all([
    query(db,"teams","id,code,name,active",30),
    query(db,"operational_areas","id,code,name",50),
-   query(db,"field_daily_reports","id,team_id,area_id,service_post_id,report_date,report_period,period_start,period_end,shift,status,reported_by,team_leader,team_size,impediments,general_notes,weather,equipment_used,supervisor_notes,submitted_at,created_at",1000),
+   fetchWeek(initialWeek),
    query(db,"activity_catalog","id,code,name",100),
    query(db,"employees","id,name,team_id",500),
    query(db,"service_posts","id,code,name,area_id",30),
@@ -25,7 +34,7 @@ export async function mountFieldMonitor(root,db,{user,notify}){
  }catch(e){root.innerHTML='<div class="notice danger">Não foi possível carregar os relatórios: '+esc(e.message)+'</div>';return}
  const byDate=(a,b)=>String(b.report_date||"").localeCompare(String(a.report_date||""));
  const activeTeams=teams.filter(x=>x.active!==false);
- let period=weekStart(dateToday()),selectedTeam="all",selectedStatus="all";
+ let period=initialWeek,selectedTeam="all",selectedStatus="all";
  const teamName=id=>{const t=teams.find(x=>x.id===id);return t?[t.code,t.name].filter(Boolean).join(" · "):"Equipe não identificada"};
  const areaName=id=>areas.find(x=>x.id===id)?.name||"Frente não informada";
  const inPeriod=r=>r.report_period==="semanal"?r.period_start===period:r.report_date===period;
@@ -53,12 +62,20 @@ export async function mountFieldMonitor(root,db,{user,notify}){
    '<section class="table-panel monitor-list"><div class="table-head"><div><h2>Relatórios do período</h2><span>'+set.length+' registro(s)</span></div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Data</th><th>Equipe</th><th>Frente</th><th>Trabalhadores presentes</th><th>Status</th><th>Ações</th></tr></thead><tbody>'+
    (set.length?set.map(r=>'<tr><td>'+esc(dateBR(r.report_date))+'</td><td>'+esc(teamName(r.team_id))+'</td><td>'+esc(areaName(r.area_id))+'</td><td>'+esc(r.team_size??"—")+'</td><td><span class="field-status '+esc(r.status)+'">'+esc(statuses[r.status])+'</span></td><td><button class="table-action" data-monitor-detail="'+esc(r.id)+'">Conferir ↗</button></td></tr>').join(""):'<tr><td colspan="6"><div class="empty-state">Nenhum relatório informado na semana com os filtros selecionados.</div></td></tr>')+
    '</tbody></table></div></section><div id="field-monitor-detail"></div>';
-  root.querySelector("#monitor-date").addEventListener("change",e=>{period=weekStart(e.target.value);refresh()});
-  root.querySelector("#monitor-refresh")?.addEventListener("click",async()=>{
-   const button=root.querySelector("#monitor-refresh");button.disabled=true;
-   try{reports=await query(db,"field_daily_reports","id,team_id,area_id,service_post_id,report_date,report_period,period_start,period_end,shift,status,reported_by,team_leader,team_size,impediments,general_notes,weather,equipment_used,supervisor_notes,submitted_at,created_at",1000);refresh()}
-   catch(e){notify("Não foi possível atualizar relatórios: "+e.message,true);button.disabled=false}
-  });
+  let activeFetch=0;
+  async function reloadWeek(){
+   const token=++activeFetch,selected=period;
+   const button=root.querySelector("#monitor-refresh");
+   if(button)button.disabled=true;
+   try{
+    const next=await fetchWeek(selected);
+    if(token!==activeFetch||period!==selected)return;
+    reports=next;refresh();
+   }catch(error){if(token===activeFetch)notify("Falha ao consultar relatórios da semana: "+error.message,true)}
+   finally{if(token===activeFetch&&button?.isConnected)button.disabled=false}
+  }
+  root.querySelector("#monitor-date").addEventListener("change",e=>{period=weekStart(e.target.value);void reloadWeek()});
+  root.querySelector("#monitor-refresh")?.addEventListener("click",()=>void reloadWeek());
   root.querySelector("#monitor-team").addEventListener("change",e=>{selectedTeam=e.target.value;refresh()});
   root.querySelector("#monitor-status").addEventListener("change",e=>{selectedStatus=e.target.value;refresh()});
   root.querySelectorAll("[data-monitor-detail]").forEach(b=>b.addEventListener("click",()=>showDetail(b.dataset.monitorDetail)));
