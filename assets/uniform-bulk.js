@@ -1,4 +1,4 @@
-import {iconMarkup} from "./icons.js?v=4";
+import {iconMarkup} from "./icons.js?v=6";
 // SIGA Américas · conferência de tamanhos e entrega semestral de fardamentos em lote.
 // Dados somente após autenticação; operações transacionais via RPC com validação RLS/perfil.
 const safe=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
