@@ -3,7 +3,7 @@
 // Não atribuir automaticamente atividades, trabalhadores, validação ou execução.
 import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=5";
 import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
-import {buildOperationalDocument,generatePDF,downloadDocument} from "./document-output.js?v=9";
+import {mountDailyApproval} from "./daily-approval.js?v=1";
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
 const stateLabels={programada:"Programada",remanejada:"Remanejada",impedida:"Impedida",informada:"Execução informada",validada:"Validada"};
@@ -80,6 +80,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
     '<div><strong>'+posts.length+'</strong><span>postos fixos contratuais</span></div>'+
     '<div><strong>'+dayShifts+' de '+totalBlocks+'</strong><span>unidades com ambos os turnos definidos</span></div>'+
    '</div>'+
+   '<div id="daily-approval-slot"></div>'+
    '<p class="finance-scenario-alert"><strong>Para análise do gestor:</strong> os horários exatos e a distribuição nominal de trabalhadores devem ser confirmados. Os postos são posições contratuais permanentes nos dias úteis, <strong>não equivalem a equipes extras</strong>. Rotinas cadastradas são referência, não execução comprovada. Documentos exportados não constituem aceite ou OS autorizada.</p>'+
    '<div class="daily-cover-selects"><label>Competência<select id="daily-month">'+
     [["2026-11","Novembro/2026"],["2026-12","Dezembro/2026"],["2027-01","Janeiro/2027"]].map(([m,n])=>'<option value="'+m+'"'+(m===month?' selected':'')+'>'+n+'</option>').join("")+'</select></label>'+
@@ -121,6 +122,10 @@ export async function mountDailyCoverage(root,db,{role,notify}){
    }).join("")+'</div>'+
    '<p class="finance-scenario-alert">Calendário-base de segunda a sexta-feira, exceto feriados nacionais de 02/11, 20/11, 25/12 e 01/01. Confirmar feriados locais, escalas especiais e efetiva disponibilidade. Postos fixos não geram medição diária adicional por constarem nesta proposta.</p>'+
    '</section>';
+  mountDailyApproval(root.querySelector("#daily-approval-slot"),db,{date:day,approval,issued,expected:totalBlocks,completed:dayShifts,canManage,notify,teams,areas,prices,
+   onApproved:record=>{approvals.set(day,record);draw()},
+   onIssued:links=>{orderLinks=[...orderLinks.filter(x=>x.work_date!==day),...links];draw()}
+  });
   root.querySelector("#daily-month").onchange=e=>{month=e.target.value;day=null;draw()};
   root.querySelector("#daily-date").onchange=e=>{day=e.target.value;draw()};
   root.querySelector("#daily-team").onchange=e=>{teamFilter=e.target.value;draw()};
