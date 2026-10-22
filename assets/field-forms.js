@@ -4,7 +4,7 @@ import {teamFixedPosts,allowedTeamAreas,relevantOrders,autoMatchOrder,orderPrefi
 // Reproduz os campos do 05_Execucao e agrega presença, OS, local e itens da matriz 73.
 // O envio de um relatório não encerra ordens de serviço nem gera medições automáticas.
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const label=(obj,kind)=>kind==="activity"?[obj.code,obj.name].filter(Boolean).join(" · "):kind==="team"?[obj.code,obj.name].filter(Boolean).join(" · "):[obj.code,obj.name].filter(Boolean).join(" · ");
+const label=(obj,kind)=>kind==="post"?"Posto "+obj.code+" · "+obj.name:[obj.code,obj.name].filter(Boolean).join(" · ");
 const BRtoday=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const dateBR=x=>x?new Date(String(x).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"—";
 const weekStart=date=>{
@@ -96,7 +96,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
  let formState={report_date:weekStart(BRtoday()),team_id:selectedTeam,area_id:"",service_post_id:"",shift:"integral",team_leader:"",
     weather:"nao_informado",field_conditions:"",equipment_used:"",general_notes:"",impediments:""};
  let attendance={};let optionalOpen=false;let items=[newItem()];
- function newItem(){return {id:null,area_id:"",service_post_id:"",performed_on:"",activity_id:"",work_order_id:"",field_plan_item_id:null,result:"executada",location:"",quantity:"",unit:"",hours_worked:"",notes:"",evidence_ref:"",workers:[]}}
+ function newItem(){return {id:null,area_id:"",service_post_id:"",performed_on:"",activity_id:"",work_order_id:"",field_plan_item_id:null,result:"",location:"",quantity:"",unit:"",hours_worked:"",notes:"",evidence_ref:"",workers:[]}}
  function activeTeam(){return teams.find(t=>t.id===selectedTeam)||null;}
  function postsForTeam(){return teamFixedPosts(activeTeam(),servicePosts);}
  function areasForTeam(){return allowedTeamAreas(activeTeam(),areas,teamAreaLinks,servicePosts);}
@@ -123,7 +123,7 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
    performed_on:card.querySelector("[data-field-workday]")?.value||"",
    activity_id:card.querySelector("[data-field-activity]")?.value||"",
    work_order_id:card.querySelector("[data-field-order]")?.value||"",
-   result:card.querySelector("[data-field-result]:checked")?.value||"executada",
+   result:card.querySelector("[data-field-result]:checked")?.value||"",
    location:card.querySelector("[data-field-location]")?.value?.trim()||"",
    quantity:card.querySelector("[data-field-quantity]")?.value||"",
    unit:card.querySelector("[data-field-unit]")?.value?.trim()||"",
@@ -145,31 +145,47 @@ export async function mountFieldReport(root,db,{user,role,teamId,notify}){
   }).join("")+'</div>';
  }
  function itemCard(item,i){
-  const own=workersForTeam();
-  const permitted=areasForTeam();
-  const activeArea=permitted.some(a=>a.id===item.area_id)?item.area_id:formState.area_id;
-  const ordersForTeam=orders.filter(o=>o.team_id===selectedTeam&&(!o.area_id||permitted.some(a=>a.id===o.area_id)));
-  const workerList=own.length?own.map(w=>
-   '<label class="field-worker-check"><input type="checkbox" data-field-worker value="'+esc(w.id)+'" '+((item.workers||[]).includes(w.id)?"checked":"")+'><span>'+esc(w.name)+'</span></label>'
-  ).join(""):'<p class="field-muted">A composição desta equipe ainda precisa ser conferida.</p>';
+  const own=workersForTeam(),permitted=areasForTeam(),postOptions=postsForTeam();
+  const fixedTeam=postOptions.length>0;
+  const chosenPostId=fixedTeam?(item.service_post_id||formState.service_post_id):"";
+  const post=selectedPost(chosenPostId);
+  const areaId=post?.area_id||item.area_id||formState.area_id;
+  const candidates=orderCandidates({...item,service_post_id:chosenPostId,area_id:areaId});
+  const auto=autoMatchOrder(candidates,item.work_order_id,item.activity_id);
+  const inferred=orderPrefill(auto,post,suggestedUnit(item.activity_id));
+  const activityId=item.activity_id||inferred.activity_id;
+  const unit=normalizeUnit(item.unit)||normalizeUnit(inferred.unit)||suggestedUnit(activityId);
+  const unitValue=acceptedUnits.has(unit)?unit:"";
+  const place=item.location||inferred.location;
+  const staff=own.length?own.map(w=>'<label class="field-worker-check"><input type="checkbox" data-field-worker value="'+esc(w.id)+'" '+((item.workers||[]).includes(w.id)?"checked":"")+'><span>'+esc(w.name)+'</span></label>').join("")
+   :'<p class="field-muted">A composição da equipe ainda precisa ser conferida.</p>';
+  const orderOptions='<option value="">'+(candidates.length?"Selecionar OS da semana":"Nenhuma OS disponível na semana")+'</option>'+
+   candidates.map(o=>escOpt(o.id,(o.reference||"OS")+" · "+(o.due_on?dateBR(o.due_on)+" · ":"")+(o.status||"Programada"),auto?.id||"")).join("");
+  const activitySelect=optList(activities,"activity",activityId,"Selecione a atividade");
   return '<section class="field-activity-card field-activity-quick" data-report-item="'+i+'" data-item-id="'+esc(item.id||"")+'">'+
    '<div class="field-card-heading"><strong>'+(i===0?'O que foi feito?':'Outra atividade · '+(i+1))+'</strong><button type="button" data-remove-field-item="'+i+'" class="field-remove" '+(items.length===1?'disabled':'')+' aria-label="Remover atividade '+(i+1)+'">'+iconMarkup("close")+'</button></div>'+
-   (permitted.length>1?'<label class="field-input wide field-activity-area"><span>Frente atendida *</span><select data-field-area required>'+optList(permitted,"area",activeArea,"Selecione a frente")+'</select></label>':'')+
-   '<label class="field-input wide field-activity-picker"><span>Atividade *</span><select data-field-activity required>'+optList(activities,"activity",item.activity_id,"Escolha a atividade")+'</select></label>'+
-   '<div class="field-result-choice"><span class="field-choice-label">Resultado informado pela equipe</span><div class="field-result-options">'+[
-     ["executada","Feito"],["parcial","Parcial"],["impedida","Impedido"],["nao_aplicavel","Não se aplica"]
-   ].map(x=>'<label class="field-result-pill"><input type="radio" name="field-result-'+i+'" data-field-result value="'+x[0]+'" '+(item.result===x[0]?"checked":"")+'><span>'+x[1]+'</span></label>').join("")+'</div><p class="field-result-hint">Feito: concluído conforme observado pela equipe, ainda sujeito à conferência. Parcial: existe serviço pendente; registre o que falta em Detalhes.</p></div>'+
-   '<details class="field-inline-details"><summary>'+iconMarkup("plus")+' OS, quantidade, evidências e pendências <small>abra para detalhar</small></summary><div class="field-inline-details-content">'+
-   '<div class="field-form-grid">'+
-    '<label class="field-input wide"><span>OS relacionada</span><select data-field-order><option value="">Não informar</option>'+ordersForTeam.map(o=>escOpt(o.id,o.reference+" · "+o.status,item.work_order_id)).join("")+'</select></label>'+
-    '<label class="field-input wide"><span>Local específico</span><input data-field-location maxlength="160" placeholder="Ex.: jardim do bloco B" value="'+esc(item.location)+'"></label>'+
-    '<label class="field-input"><span>Quantidade realizada</span><input data-field-quantity type="number" min="0" step="0.001" placeholder="Ex.: 200" value="'+esc(item.quantity)+'"></label>'+
-    '<label class="field-input"><span>Unidade de medida</span><select data-field-unit aria-label="Unidade da atividade '+(i+1)+'">'+optionsForUnit(normalizeUnit(item.unit)||suggestedUnit(item.activity_id))+'</select></label>'+
-    '<label class="field-input"><span>Horas acumuladas na semana</span><input data-field-hours type="number" min="0" max="168" step="0.25" placeholder="Ex.: 16" value="'+esc(item.hours_worked)+'"></label>'+
-    '<label class="field-input"><span>Evidência</span><input data-field-evidence maxlength="250" placeholder="Foto, arquivo ou protocolo" value="'+esc(item.evidence_ref)+'"></label>'+
-    '<label class="field-input wide"><span>Observação / motivo do impedimento</span><textarea data-field-notes rows="2" placeholder="Se for necessário explicar algo">'+esc(item.notes)+'</textarea></label>'+
-   '</div>'+
-   '<details class="field-worker-details"><summary>Quem participou? <small>opcional</small></summary><div class="field-worker-picks">'+workerList+'</div></details>'+
+   (fixedTeam?'<label class="field-input wide"><span>Posto fixo atendido *</span><select data-field-post required>'+
+     optList(postOptions,"post",chosenPostId,"Selecione o posto")+'</select></label>':
+    permitted.length>1?'<label class="field-input wide field-activity-area"><span>Frente atendida *</span><select data-field-area required>'+optList(permitted,"area",areaId,"Selecione a frente")+'</select></label>':"")+
+   '<label class="field-input wide field-activity-picker"><span>Atividade *</span><select data-field-activity required>'+activitySelect+'</select></label>'+
+   '<div class="field-quick-measure-grid">'+
+   '<label class="field-input"><span>Dia da execução (na semana)</span><input data-field-workday type="date" min="'+esc(weekStart(formState.report_date))+'" max="'+esc(weekEnd(weekStart(formState.report_date)))+'" value="'+esc(item.performed_on||"")+'"></label>'+
+   '<label class="field-input"><span>OS relacionada</span><select data-field-order>'+orderOptions+'</select></label>'+
+   '<label class="field-input"><span>Quantidade efetivamente realizada</span><input data-field-quantity type="number" min="0" step="0.001" placeholder="Informar medida" value="'+esc(item.quantity)+'"></label>'+
+   '<label class="field-input"><span>Unidade</span><select data-field-unit>'+optionsForUnit(unitValue)+'</select></label></div>'+
+   '<p class="field-order-hint">'+(auto?'OS selecionada conforme dados disponíveis; confirme o serviço. '+(auto.quantity!=null?'Quantitativo previsto na OS: '+esc(auto.quantity)+' '+esc(auto.unit||"")+' (não copiado como realizado).':''):
+    'Sem OS única identificável para este contexto. Selecione o dia/posto ou consulte a supervisão. O relatório pode ser enviado sem inventar uma OS.')+'</p>'+
+   '<div class="field-result-choice"><span class="field-choice-label">Resultado informado pela equipe *</span><div class="field-result-options">'+[
+    ["executada","Feito"],["parcial","Parcial"],["impedida","Impedido"],["nao_aplicavel","Não se aplica"]
+   ].map(x=>'<label class="field-result-pill"><input type="radio" name="field-result-'+i+'" data-field-result value="'+x[0]+'" '+(item.result===x[0]?"checked":"")+'><span>'+x[1]+'</span></label>').join("")+'</div>'+
+   '<p class="field-result-hint">Informe o resultado observado; a supervisão fará a validação. Quantidades e locais continuam editáveis.</p></div>'+
+   '<details class="field-inline-details"><summary>'+iconMarkup("plus")+' Local, evidências, horas e observações <small>informações adicionais</small></summary>'+
+   '<div class="field-inline-details-content"><div class="field-form-grid">'+
+    '<label class="field-input wide"><span>Local específico</span><input data-field-location maxlength="160" placeholder="Local efetivamente atendido" value="'+esc(place)+'"></label>'+
+    '<label class="field-input"><span>Horas acumuladas na semana</span><input data-field-hours type="number" min="0" max="168" step="0.25" value="'+esc(item.hours_worked)+'"></label>'+
+    '<label class="field-input"><span>Evidência</span><input data-field-evidence maxlength="250" placeholder="Foto ou protocolo" value="'+esc(item.evidence_ref)+'"></label>'+
+    '<label class="field-input wide"><span>Observação / motivo do impedimento</span><textarea data-field-notes rows="2">'+esc(item.notes)+'</textarea></label>'+
+   '</div><details class="field-worker-details"><summary>Quem participou? <small>opcional</small></summary><div class="field-worker-picks">'+staff+'</div></details>'+
    '</div></details></section>';
  }
  function drawForm(){
