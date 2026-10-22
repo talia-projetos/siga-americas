@@ -33,7 +33,8 @@ const areaColor=name=>{
  let hash=0;for(const char of key)hash=(hash*31+char.charCodeAt(0))>>>0;
  return fallbackPalette[hash%fallbackPalette.length];
 };
-const colorForFeature=(feature,layer)=>areaColor(featureName(feature,layer));
+const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||""))?String(value).toUpperCase():null;
+const colorForFeature=(feature,layer)=>validColor(feature?.properties?._siga_import_color)||areaColor(featureName(feature,layer));
 const countryBounds=p=>Array.isArray(p)&&p.length>=2&&Number.isFinite(p[0])&&Number.isFinite(p[1])&&
  p[0]>-55.2&&p[0]<-54.05&&p[1]>-26.0&&p[1]<-24.9;
 function haversine(a,b){
@@ -136,7 +137,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   (GOOGLE_MAPS_BROWSER_KEY?'<option value="google">Google Satélite (API autorizada)</option>':"")+
   '</select></label>'+
   '<a class="btn btn-ghost" href="https://www.google.com/maps/@-25.51,-54.56,13z/data=!3m1!1e3" target="_blank" rel="noopener noreferrer">Abrir no Google Satélite '+iconMarkup("arrow")+'</a>'+
-  (canWrite?'<button type="button" class="btn btn-secondary" data-open-import>Importar KML / KMZ</button>':"")+
+  (canWrite?'<label class="coverage-import-color">Cor da importação <input type="color" data-import-color value="#72A69F" aria-label="Cor das novas camadas importadas"></label><button type="button" class="btn btn-secondary" data-open-import>Importar KML / KMZ</button>':"")+
  '</div>'+
  '<div class="coverage-map-layout"><div class="coverage-map-canvas" data-map role="region" aria-label="Mapa interativo das frentes operacionais da PROERG em Itaipu"></div>'+
  '<details class="coverage-map-legend" data-legend open><summary>'+iconMarkup("layers")+
@@ -195,7 +196,8 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    for(const feature of layer.geometry.features||[]){
     if(!feature.geometry)continue;
     const name=featureName(feature,layer),key=areaKey(name);
-    if(!items.has(key))items.set(key,{name,color:areaColor(name)});
+    const color=colorForFeature(feature,layer),identifier=key+"|"+color;
+     if(!items.has(identifier))items.set(identifier,{name,color});
    }
   }
   legend.hidden=!items.size;
@@ -230,7 +232,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   const mapData=new google.maps.Data({map:gMap});
   mapData.addGeoJson(l.geometry);
   mapData.setStyle(feature=>({
-   strokeColor:areaColor(feature.getProperty("name")||feature.getProperty("Name")||
+   strokeColor:validColor(feature.getProperty("_siga_import_color"))||areaColor(feature.getProperty("name")||feature.getProperty("Name")||
     feature.getProperty("trecho")||l.name),
    strokeWeight:3,strokeOpacity:1,fillOpacity:0
   }));
@@ -284,6 +286,8 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   button.disabled=true;button.textContent="Conferindo geometria...";
   try{
    const geo=await readGeoFile(file);
+    const selectedColor=validColor(q("[data-import-color]")?.value)||"#72A69F";
+    geo.features=geo.features.map(feature=>({...feature,properties:{...(feature.properties||{}),_siga_import_color:selectedColor}}));
    const hasLine=geo.features.some(x=>["LineString","MultiLineString"].includes(x.geometry.type));
    const hasPoly=geo.features.some(x=>["Polygon","MultiPolygon"].includes(x.geometry.type));
    const hasPoint=geo.features.some(x=>["Point","MultiPoint"].includes(x.geometry.type));
