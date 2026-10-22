@@ -38,6 +38,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
  let orderLinks=orderLinksRes.data||[];
  const getPlan=(kind,id,date,shift)=>planIndex.get(planKey(kind,id,date,shift));
  let month="2026-11",day=null,teamFilter="",postFilter="",generatingPDF=false,busy=false;
+ const openCards=new Set();let initialCardSet=false;
  const grouped=()=>entries.filter(e=>e.work_date.startsWith(month));
  const dates=()=>[...new Set(grouped().map(e=>e.work_date))].sort();
  const postRoutines=id=>routines.filter(r=>r.service_post_id===id).sort((a,b)=>a.routine_code.localeCompare(b.routine_code,"pt-BR"));
@@ -76,6 +77,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
   const todayTeams=all.filter(e=>e.work_date===day);
   const shownTeams=todayTeams.filter(e=>!teamFilter||teams.get(e.team_id)?.code===teamFilter);
   const shownPosts=posts.filter(p=>!postFilter||p.code===postFilter);
+  if(!initialCardSet){if(shownTeams[0])openCards.add("equipe:"+shownTeams[0].id);initialCardSet=true;}
   const dayShifts=todayTeams.filter(e=>dailyValid("equipe",e.id,day)).length+
    posts.filter(p=>dailyValid("posto",p.id,day)).length;
   const totalBlocks=todayTeams.length+posts.length;
@@ -93,21 +95,20 @@ export async function mountDailyCoverage(root,db,{role,notify}){
     '<div><strong>'+posts.length+'</strong><span>postos fixos contratuais</span></div>'+
     '<div><strong>'+dayShifts+' de '+totalBlocks+'</strong><span>unidades com ambos os turnos revisados</span></div>'+
    '</div>'+
-   '<div id="daily-approval-slot"></div>'+
-   '<p class="finance-scenario-alert"><strong>Para análise do gestor:</strong> os horários exatos e a distribuição nominal de trabalhadores devem ser confirmados. Os postos são posições contratuais permanentes nos dias úteis, <strong>não equivalem a equipes extras</strong>. Rotinas cadastradas são referência, não execução comprovada. Documentos exportados não constituem aceite ou OS autorizada.</p>'+
+   '<div class="daily-overview-progress" aria-label="Progresso de revisão de turnos"><span style="width:'+Math.min(100,totalBlocks?100*dayShifts/totalBlocks:0)+'%"></span></div>'+
    '<div class="daily-cover-selects"><label>Competência<select id="daily-month">'+
     [["2026-11","Novembro/2026"],["2026-12","Dezembro/2026"],["2027-01","Janeiro/2027"]].map(([m,n])=>'<option value="'+m+'"'+(m===month?' selected':'')+'>'+n+'</option>').join("")+'</select></label>'+
    '<label>Dia útil previsto<select id="daily-date">'+days.map(d=>'<option value="'+d+'"'+(d===day?' selected':'')+'>'+safe(dateBR(d))+'</option>').join("")+'</select></label>'+
    '<label>Equipe<select id="daily-team"><option value="">Todas as seis</option>'+[...teams.values()].sort(sorted).map(t=>'<option value="'+safe(t.code)+'"'+(t.code===teamFilter?' selected':'')+'>'+safe(t.code+' · '+t.name)+'</option>').join("")+'</select></label>'+
    '<label>Posto fixo<select id="daily-post"><option value="">Todos os seis</option>'+posts.map(p=>'<option value="'+safe(p.code)+'"'+(p.code===postFilter?' selected':'')+'>'+safe(p.code+' · '+p.name)+'</option>').join("")+'</select></label></div>'+
-   '<div class="daily-plan-block-title"><h3>Equipes operacionais</h3><span>Atividade diária original é referência, não distribuição por turno</span></div>'+
+   '<div class="daily-plan-block-title"><h3>1 · Equipes operacionais</h3><span>Selecione um cartão para revisar manhã e tarde</span></div>'+
    '<div class="daily-cover-list">'+shownTeams.map(e=>{
     const t=teams.get(e.team_id)||{},a=areas.get(e.area_id)||{},c=prices.get(e.contract_item_id)||{};
     const locked=e.block_status==="validada",secondary=secondaryCandidates([...prices.values()],e,a);
-    return '<article class="daily-cover-card" data-daily-id="'+safe(e.id)+'">'+
-     '<div class="daily-cover-card-head"><div><strong>'+safe(t.code||"—")+' · '+safe(t.name||"Equipe")+'</strong>'+
+    return '<details class="daily-cover-card daily-plan-accordion" data-daily-id="'+safe(e.id)+'"'+(openCards.has('equipe:'+e.id)?' open':'')+'>'+
+     '<summary class="daily-cover-card-head"><div><strong>'+safe(t.code||"—")+' · '+safe(t.name||"Equipe")+'</strong>'+
       '<small>'+safe(a.name||"Frente a confirmar")+' · Rubrica '+safe(c.code||"—")+'</small></div>'+
-      '<span class="status-chip" data-status="'+safe(e.block_status)+'">'+safe(stateLabels[e.block_status]||e.block_status)+'</span></div>'+
+      '<span class="daily-card-status"><span class="daily-card-count">'+shifts.filter(([shift])=>getPlan('equipe',e.id,day,shift)?.review_status==='revisado').length+'/2 turnos</span><span class="status-chip" data-status="'+safe(e.block_status)+'">'+safe(stateLabels[e.block_status]||e.block_status)+'</span><span class="daily-card-chevron" aria-hidden="true">⌄</span></span></summary><div class="daily-plan-card-content">'+
      '<p class="daily-activity-title"><small>Atividade diária de referência:</small> '+safe(trimDaily(e.planned_service))+'</p>'+
      '<p class="daily-place"><strong>Local original:</strong><span>'+safe(e.planned_location)+'</span></p>'+
      shiftRows("equipe",e.id,day)+
@@ -119,32 +120,37 @@ export async function mountDailyCoverage(root,db,{role,notify}){
        '<label class="daily-reason-wrap" '+(e.block_status==="programada"?"hidden":"")+'>Motivo / providência<textarea class="daily-reason" rows="2">'+safe(e.blocker_reason||"")+'</textarea></label>'+
        '<button type="button" class="btn btn-secondary" data-daily-save="'+safe(e.id)+'">Salvar situação</button></div>':
        e.blocker_reason?'<p>'+safe(e.blocker_reason)+'</p>':"")+
-    '</article>';
+    '</div></details>';
    }).join("")+'</div>'+
-   '<div id="daily-maintenance-actions"></div>'+
-   '<div class="daily-plan-block-title"><h3>Postos fixos · item 3.40</h3><span>Jardineiro por posto nos dias úteis · alocação nominal a conferir</span></div>'+
+   '<details class="daily-maintenance-wrapper"><summary><strong>Carteira de manutenção global</strong><span>Prioridades, pendências e rotinas · abrir acompanhamento</span></summary><div id="daily-maintenance-actions"></div></details>'+
+   '<div class="daily-plan-block-title"><h3>2 · Postos fixos · item 3.40</h3><span>Rotinas próprias, sem duplicação de efetivo</span></div>'+
    '<div class="daily-cover-list">'+shownPosts.map(p=>{
      const rt=postRoutines(p.id),daily=rt.filter(r=>r.frequency==="diaria");
-     return '<article class="daily-cover-card daily-fixed-post"><div class="daily-cover-card-head"><div><strong>Posto '+safe(p.code)+' · '+safe(p.name)+'</strong>'+
+     return '<details class="daily-cover-card daily-fixed-post daily-plan-accordion" data-post-id="'+safe(p.id)+'"'+(openCards.has('posto:'+p.id)?' open':'')+'><summary class="daily-cover-card-head"><div><strong>Posto '+safe(p.code)+' · '+safe(p.name)+'</strong>'+
        '<small>'+safe(p.contractual_reference)+' · '+safe(p.fixed_positions)+' posição(ões) contratual(is) · '+safe(p.verification_status)+'</small></div>'+
-       '<span class="status-chip" data-status="'+safe(p.verification_status)+'">'+(dailyValid("posto",p.id,day)?"Turnos definidos":"A detalhar")+'</span></div>'+
+       '<span class="daily-card-status"><span class="daily-card-count">'+shifts.filter(([shift])=>getPlan('posto',p.id,day,shift)?.review_status==='revisado').length+'/2 turnos</span><span class="status-chip" data-status="'+safe(p.verification_status)+'">'+(dailyValid("posto",p.id,day)?"Revisado":"Rascunho")+'</span><span class="daily-card-chevron" aria-hidden="true">⌄</span></span></summary><div class="daily-plan-card-content">'+
        '<p class="daily-activity-title"><small>Rotinas diárias de referência:</small> '+safe(daily.map(r=>r.title).join(" · ")||"Consultar modelo contratual")+'</p>'+
        shiftRows("posto",p.id,day)+
        '<details class="daily-plan-details"><summary>Rotinas e orientações do posto ('+rt.length+')</summary><ul>'+
        rt.map(r=>'<li><strong>'+safe(r.routine_code+' · '+r.title)+'</strong> <small>'+safe(r.frequency)+' · '+safe(r.execution_guidance||"")+'</small></li>').join("")+
-       '</ul></details></article>';
+       '</ul></details></div></details>';
    }).join("")+'</div>'+
-   '<p class="finance-scenario-alert">Calendário-base de segunda a sexta-feira, exceto feriados nacionais de 02/11, 20/11, 25/12 e 01/01. Confirmar feriados locais, escalas especiais e efetiva disponibilidade. Postos fixos não geram medição diária adicional por constarem nesta proposta.</p>'+
+   '<div id="daily-approval-slot"></div>'+ 
+   '<details class="daily-plan-guidance"><summary>Critérios para aprovação e cuidados do planejamento</summary><p>O gestor deve confirmar horários, alocação nominal, segurança, local e documentação. Os postos fixos não são equipes adicionais; rotinas cadastradas são referência, não execução comprovada. A escala-base exclui os feriados nacionais de 02/11, 20/11, 25/12 e 01/01; conferir feriados locais e situações especiais. Exportar PDF não constitui aceite nem OS autorizada.</p></details>'+
    '</section>';
   void mountMaintenanceActionPanel(root.querySelector("#daily-maintenance-actions"),db,{role,notify});
   mountDailyApproval(root.querySelector("#daily-approval-slot"),db,{date:day,approval,issued,expected:totalBlocks,completed:dayShifts,canManage,notify,teams,areas,prices,
    onApproved:record=>{approvals.set(day,record);draw()},
    onIssued:links=>{orderLinks=[...orderLinks.filter(x=>x.work_date!==day),...links];draw()}
   });
+  root.querySelectorAll("details.daily-plan-accordion").forEach(card=>card.addEventListener("toggle",()=>{
+   const key=card.dataset.dailyId?"equipe:"+card.dataset.dailyId:"posto:"+card.dataset.postId;
+   if(card.open)openCards.add(key);else openCards.delete(key);
+  }));
   root.querySelector("#daily-month").onchange=e=>{month=e.target.value;day=null;draw()};
   root.querySelector("#daily-date").onchange=e=>{day=e.target.value;draw()};
-  root.querySelector("#daily-team").onchange=e=>{teamFilter=e.target.value;draw()};
-  root.querySelector("#daily-post").onchange=e=>{postFilter=e.target.value;draw()};
+  root.querySelector("#daily-team").onchange=e=>{teamFilter=e.target.value;if(teamFilter){const item=entries.find(x=>teams.get(x.team_id)?.code===teamFilter);if(item)openCards.add("equipe:"+item.id);}draw()};
+  root.querySelector("#daily-post").onchange=e=>{postFilter=e.target.value;if(postFilter){const p=posts.find(x=>x.code===postFilter);if(p)openCards.add("posto:"+p.id);}draw()};
   root.querySelectorAll(".daily-routine-choice").forEach(select=>select.onchange=()=>{
    const r=routines.find(v=>v.id===select.value);if(!r)return;
    const box=select.closest(".daily-shift");
