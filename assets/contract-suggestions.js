@@ -80,6 +80,26 @@ const rank=(a,b)=>{
  const order={high:0,medium:1,low:2,fixed:3,support:4,blocked:5};
  return (order[a.tier]-order[b.tier])||b.score-a.score||numericCode(a.activity.code)-numericCode(b.activity.code);
 };
+// Visualização proporcional de valores REGISTRADOS (não medidos nem faturados).
+// Os valores são comparados apenas em R$, nunca entre unidades físicas distintas.
+export function renderRegisteredValueChart(all){
+ const rows=all.filter(x=>Number(x.sum)>0).sort((a,b)=>b.sum-a.sum).slice(0,7);
+ if(!rows.length)return '<p class="suggest-chart-empty">Ainda não há valores registrados para construir o gráfico.</p>';
+ const peak=Math.max(...rows.map(x=>Number(x.sum)),1);
+ const total=rows.reduce((sum,x)=>sum+Number(x.sum),0);
+ return '<figure class="suggest-value-chart" aria-label="Comparação de valores estimados já registrados por item da matriz de atividades">'+
+  '<div class="suggest-chart-scale"><span>R$ 0</span><span>Maior item: '+money(peak)+'</span></div>'+
+  '<div class="suggest-chart-rows">'+rows.map((x,index)=>{
+   const value=Number(x.sum),pct=100*value/peak;
+   const label=x.activity.code+' · '+x.activity.name;
+   const kind=x.profile.situation==="support"?"Rubrica de apoio":x.profile.situation==="fixed"?"Rotina mensal":"Serviço apontado";
+   return '<div class="suggest-chart-row"><div class="suggest-chart-item"><strong title="'+text(label)+'">'+text(label)+'</strong><small>'+text(kind)+' · '+x.days+' dia(s) com registro</small></div>'+
+    '<div class="suggest-chart-viz"><div class="suggest-chart-track" role="progressbar" aria-label="'+text(label)+'" aria-valuemin="0" aria-valuemax="'+peak.toFixed(2)+'" aria-valuenow="'+value.toFixed(2)+'" aria-valuetext="'+text(money(value))+'">'+
+     '<span class="suggest-chart-bar'+(index===0?' is-largest':'')+'" style="width:'+pct.toFixed(2)+'%"></span></div></div>'+
+    '<strong class="suggest-chart-amount">'+money(value)+'</strong></div>';
+  }).join('')+'</div>'+
+  '<figcaption class="suggest-chart-caption">Valores estimados dos registros vinculados aos itens; incluem apontamentos ainda pendentes de conferência. '+rows.length+' itens exibidos. Não representam faturamento, medição aceita nem previsão de receita.</figcaption></figure>';
+}
 export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=>{}}={}){
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Consultando a matriz de 73 atividades, preços e execuções...</p></div>';
  const queries=[
@@ -176,9 +196,7 @@ export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=
    '<div class="suggestion-list">'+top.map(x=>row(x,true)).join('')+'</div></section>'+
    '<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Maiores valores registrados · por item da matriz</h3>'+
    '<p>Valores dos apontamentos já cadastrados, sujeitos à conferência. Rubricas de apoio, como SE, não são novas ações executáveis.</p></div></div>'+
-   '<div class="suggestion-finance-list">'+all.filter(x=>x.sum>0).sort((a,b)=>b.sum-a.sum).slice(0,6).map(x=>
-    '<div><span><strong>'+text(x.activity.code)+' · '+text(x.activity.name)+'</strong><small>'+text(x.profile.situation==="support"?"Rubrica de apoio · conferir regime/OS":x.profile.situation==="fixed"?"Rotina de preço mensal":"Atividade com execução apontada")+'</small></span>'+
-    '<strong>'+money(x.sum)+'</strong></div>').join('')+'</div></section>';
+   renderRegisteredValueChart(all)+'</section>';
   root.querySelector("#suggest-table").innerHTML='<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Matriz de prioridades</h3><p>'+list.length+' de 73 itens no filtro atual · valores comparáveis apenas com produção registrada na mesma rubrica.</p></div></div>'+
    '<div class="suggestion-list suggestion-list-all">'+(list.map(x=>row(x)).join('')||'<p>Nenhum item encontrado nesse filtro.</p>')+'</div></section>';
   root.querySelector("#suggest-export")?.addEventListener("click",exportCsv);
