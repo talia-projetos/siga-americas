@@ -41,7 +41,7 @@ const symbolType=(feature,layer)=>{
  const geom=feature?.geometry?.type||"";
  if(/Polygon/.test(geom))return "area";
  if(/LineString/.test(geom))return "rota";
- return layer?.reference_scope==="matrizes"||/matriz|arvor.?s.*matriz/i.test(layer?.name||"")?"matriz":"ponto";
+ return layer?.reference_scope==="matrizes"||/matriz|arvore/i.test(areaKey(layer?.name||""))?"matriz":"ponto";
 };
 const matrixName=str=>/matriz|matrizes|arvore|árvore|seed.?tree|semente/i.test(String(str||""));
 const isPoint=f=>["Point","MultiPoint"].includes(f?.geometry?.type);
@@ -49,6 +49,7 @@ function matrizCandidateCollection(geo){
  const pts=(geo.features||[]).filter(isPoint);
  const tagged=pts.filter(f=>matrixName(f.properties?.name)||matrixName(f.properties?.description));
  return {allPoints:pts.length,matched:tagged.length,
+  tagged:{type:"FeatureCollection",features:tagged},
   selected:{type:"FeatureCollection",features:tagged.length?tagged:pts}};
 }
 function nearExisting(feature,layers,tolerance=3){
@@ -348,6 +349,52 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    if(!b.isEmpty())gMap.fitBounds(b);
   }
  }
+
+ // Seleção seletiva de KMZ: o upload de centenas de MB não carrega as fotografias.
+ const importedLayer=()=>layers.find(l=>/matrizes/i.test(areaKey(l.name||""))&&l.geometry&&
+   (l.geometry.features||[]).some(isPoint));
+ const setMatrixDefaults=()=>{
+  if(q("[data-layer-category]").value==="matrizes"){
+   if(!q("[data-layer-name]").value.trim())q("[data-layer-name]").value="Árvores matrizes · campo";
+   if(!q("[data-layer-contract]").value.trim())q("[data-layer-contract]").value="3.1 · Identificação de matrizes";
+   if(!q("[data-layer-source]").value.trim())q("[data-layer-source]").value="Levantamento georreferenciado de campo (KMZ)";
+   q("[data-import-color]").value="#25C9A2";
+  }
+  q("[data-replace-wrap]").hidden=q("[data-layer-category]").value!=="matrizes"||!importedLayer();
+  q("[data-replace-matrices]").checked=false;
+ };
+ async function buildPreview(){
+  const file=q("[data-layer-file]").files?.[0],matrizes=q("[data-layer-category]").value==="matrizes";
+  const target=q("[data-matrix-preview]");
+  preview=null;
+  if(!file){target.textContent="";return null;}
+  target.textContent="Inspecionando geometrias e nomes do arquivo, sem carregar fotografias…";
+  try{
+   const read=await readGeoFile(file,{matrizes});
+   const selected=read.geometry.features||[];
+   const near=matrizes?selected.filter(f=>nearExisting(f,layers)).length:0;
+   preview={file,matrizes,read,near};
+   const names=selected.filter(isPoint).map(f=>featureName(f,{name:"Matriz sem identificação"}));
+   const summary=read.summary;
+   target.innerHTML='<strong>'+esc(selected.length+' feições selecionadas')+
+    (matrizes?' · '+(summary?.matched||0)+' com identificação temática no nome':'')+'</strong>'+
+    '<p>'+esc(file.name)+(read.entry?' · '+esc(read.entry):'')+
+    (matrizes?'<br>'+esc(near)+' ponto(s) a até 3 m de matrizes já cadastradas. Conferir duplicações antes de salvar.':'')+
+    (read.otherKmlCount?'<br>Outros '+esc(read.otherKmlCount)+' arquivos KML no KMZ não foram processados.':'')+'</p>'+
+    (names.length?'<details><summary>Conferir nomes dos pontos ('+names.length+')</summary><ol>'+
+      names.slice(0,90).map(name=>'<li>'+esc(name)+'</li>').join("")+
+      (names.length>90?'<li>… e outros '+(names.length-90)+' pontos</li>':'')+'</ol></details>':'');
+   return preview;
+  }catch(error){target.textContent="Importação não concluída: "+error.message;throw error;}
+ }
+ q("[data-layer-category]").addEventListener("change",()=>{
+  setMatrixDefaults();
+  if(q("[data-layer-file]").files?.length)void buildPreview().catch(error=>notify(error.message,true));
+ });
+ q("[data-layer-file]").addEventListener("change",()=>{
+  setMatrixDefaults();
+  void buildPreview().catch(error=>notify(error.message,true));
+ });
  root.addEventListener("click",async e=>{
   const open=e.target.closest("[data-open-import]");
   if(open){q("[data-import-panel]").hidden=false;return;}
@@ -362,18 +409,31 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   if(!name||!contract||!source||!file){notify("Informe nome, vínculo à matriz contratual, fonte e arquivo de geometria.",true);return;}
   button.disabled=true;button.textContent="Conferindo geometria...";
   try{
-   const geo=await readGeoFile(file);
-    const selectedColor=validColor(q("[data-import-color]")?.value)||"#72A69F";
-    geo.features=geo.features.map(feature=>({...feature,properties:{...(feature.properties||{}),_siga_import_color:selectedColor}}));
+   const chosen=q("[data-layer-category]").value==="matrizes";
+   const parsed=preview?.file===file&&preview.matrizes===chosen?preview:await buildPreview();
+   const geo=parsed.read.geometry;
+   const selectedColor=validColor(q("[data-import-color]")?.value)||"#72A69F";
+   geo.features=geo.features.map(feature=>({...feature,properties:{
+    ...(feature.properties||{}),_siga_import_color:selectedColor
+   }}));
    const hasLine=geo.features.some(x=>["LineString","MultiLineString"].includes(x.geometry.type));
    const hasPoly=geo.features.some(x=>["Polygon","MultiPolygon"].includes(x.geometry.type));
    const hasPoint=geo.features.some(x=>["Point","MultiPoint"].includes(x.geometry.type));
-   if(cat==="trecho"&&!hasLine||cat==="area"&&!hasPoly||cat==="ponto"&&!hasPoint)
-    throw Error("A categoria selecionada não corresponde à geometria incluída.");
-   const duplicate=layers.find(l=>l.name.toLocaleLowerCase("pt-BR")===name.toLocaleLowerCase("pt-BR")&&!l.geometry);
+   if((cat==="trecho"&&!hasLine)||(cat==="area"&&!hasPoly)||((cat==="ponto"||cat==="matrizes")&&!hasPoint))
+    throw Error("A categoria escolhida não corresponde às geometrias encontradas.");
+   if(chosen&&geo.features.some(f=>!isPoint(f)))throw Error("A camada de matrizes só aceita pontos.");
+   if(chosen&&parsed.near&&!q("[data-replace-matrices]").checked)
+    throw Error(parsed.near+" coordenadas próximas de matrizes existentes. Revise a prévia e use a opção de substituição, se for o mesmo levantamento.");
+   const replace=q("[data-replace-matrices]").checked&&chosen?importedLayer():null;
+   const duplicate=replace||layers.find(l=>l.name.toLocaleLowerCase("pt-BR")===name.toLocaleLowerCase("pt-BR")&&!l.geometry);
+   if(!duplicate&&layers.some(l=>l.name===name&&l.source_filename===file.name&&l.geometry))
+    throw Error("Essa origem já está cadastrada. Evite duplicar camadas; selecione a substituição após conferência.");
    const payload={
-    name,category:cat,contract_reference:contract,source_name:source,source_filename:file.name,
-    source_type:/\.(?:kml|kmz)$/i.test(file.name)?"kml":"geojson",verification_status:"geometria_importada",geometry:geo
+    name:replace?replace.name:name,category:chosen?"ponto":cat,reference_scope:chosen?"matrizes":null,
+    contract_reference:contract,source_name:source,source_filename:file.name,
+    source_type:/\.(?:kml|kmz)$/i.test(file.name)?"kml":"geojson",
+    verification_status:"geometria_importada",geometry:geo,
+    notes:chosen?"KMZ de campo; "+geo.features.length+" pontos importados; nomes/espécies sujeitos à conferência; KML interno: "+(parsed.read.entry||"arquivo KML"):null
    };
    const write=duplicate?db.from("coverage_map_layers").update(payload).eq("id",duplicate.id).select().single():
     db.from("coverage_map_layers").insert(payload).select().single();
@@ -381,9 +441,9 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    if(result.error)throw result.error;
    const i=layers.findIndex(l=>l.id===result.data.id);
    if(i<0)layers.push(result.data);else layers[i]=result.data;
-   q("[data-import-panel]").hidden=true;q("[data-layer-file]").value="";
+   q("[data-import-panel]").hidden=true;q("[data-layer-file]").value="";preview=null;q("[data-matrix-preview]").textContent="";
    draw();showLayer(result.data.id);
-   notify("Geometria salva. Confira sua correspondência com os limites e medidas contratuais.");
+   notify(chosen?"Matrizes georreferenciadas salvas. Identificações e duplicidades precisam de validação técnica.":"Geometria salva. Confira limites e medidas contratuais.");
   }catch(error){notify("Não foi possível salvar a camada: "+error.message,true);}
   finally{button.disabled=false;button.textContent="Salvar camada georreferenciada";}
  });
