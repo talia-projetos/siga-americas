@@ -11,7 +11,7 @@ export async function mountWeatherAdvisory(root,db){
  '<div><strong>Janeiro/2027</strong><span>Verão sob influência possível do El Niño. Ainda não há prognóstico mensal local verificado nesta consulta; reavaliar os boletins vigentes antes de liberar frentes.</span></div></div>'+
  '<div id="climate-live-result" class="climate-live-result" aria-live="polite">Consultando as fontes oficiais INMET e CPTEC/INPE…</div>'+
  '<p class="climate-disclaimer">A previsão diária é válida apenas no horizonte divulgado pelo INMET. Não equivale a liberação de campo. Suspender ou reprogramar operações sob raios, tempestades, ventos fortes ou solo sem condições seguras, conforme avaliação do responsável.</p>'+
- '<div class="climate-sources">Fontes: <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a> · <a href="https://servicos.cptec.inpe.br/XML/" target="_blank" rel="noopener noreferrer">CPTEC/INPE</a> · <a href="https://www.simepar.br/simepar/post/79386" target="_blank" rel="noopener noreferrer">Simepar: El Niño e chuva até dezembro</a> · <a href="https://portal.inmet.gov.br/normais" target="_blank" rel="noopener noreferrer">Normais climatológicas</a></div></section>';
+ '<div class="climate-sources">Fontes: <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a> · <a href="https://servicos.cptec.inpe.br/XML/" target="_blank" rel="noopener noreferrer">CPTEC/INPE</a> · <a href="https://www.simepar.br/simepar/post/79386" target="_blank" rel="noopener noreferrer">Simepar: El Niño e chuva até dezembro</a> · <a href="https://portal.inmet.gov.br/normais" target="_blank" rel="noopener noreferrer">Normais climatológicas</a> · <a href="https://api.met.no/weatherapi/locationforecast/2.0/documentation" target="_blank" rel="noopener noreferrer">MET Norway / ECMWF (modelo)</a></div></section>';
  const result=root.querySelector("#climate-live-result");
  const toolbar=document.createElement("div");
  toolbar.className="climate-refresh-toolbar";
@@ -35,12 +35,13 @@ export async function mountWeatherAdvisory(root,db){
     const detail=diagnostics.length?'<details class="climate-diagnostic"><summary>Diagnóstico das fontes</summary><p>'+html(diagnostics.join(" · "))+'</p></details>':"";
     throw {message:data?.message||response.error?.message||"Sem dados atuais",detail};
    }
-   const days=data.days.slice(0,7),retrieved=new Date(data.retrieved_at||Date.now());
-   result.innerHTML='<p class="climate-label">Previsão oficial '+html(data.source||"Fonte oficial")+
+   const days=data.days.slice(0,7),retrieved=new Date(data.retrieved_at||Date.now()),isModel=data.forecast_type==='modelo_numerico';
+   result.innerHTML='<p class="climate-label">'+(isModel?'Previsão modelada':'Previsão institucional')+' · '+html(data.source||"Fonte meteorológica")+
     ' · Foz do Iguaçu/PR · consulta '+html(retrieved.toLocaleString("pt-BR"))+'</p>'+
     '<div class="climate-live-days">'+days.map(day=>
      '<div><strong>'+html(fmt(day.date))+'</strong><span>'+html(nr(day.min))+' a '+html(nr(day.max))+
-     '</span><small>'+html(day.description)+'</small></div>').join("")+'</div>';
+     '</span><small>'+html(day.description)+'</small></div>').join("")+'</div>'+ 
+    (isModel?'<p class="climate-attribution">Previsão numérica sujeita à incerteza, não é aviso meteorológico oficial brasileiro. '+html(data.attribution||'')+' Consulte o modelo e os boletins locais antes de liberar campo.</p>':'');
   }catch(e){
    result.innerHTML='<p class="climate-live-warning">Não foi possível obter uma previsão atual verificável nas fontes oficiais. '+
     'O serviço consultou INMET e CPTEC/INPE, mas não recebeu dados atuais utilizáveis (pode retornar 503). Consulte <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a> ou '+
