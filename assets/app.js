@@ -12,7 +12,7 @@ import {renderFinancialIndicator} from "./execution-metrics.js?v=6";
 import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=8";
 import {mountCoverageMap} from "./coverage-map.js?v=7";
-import {mountContractSuggestions} from "./contract-suggestions.js?v=6";
+import {mountContractSuggestions} from "./contract-suggestions.js?v=7";
 import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=14";
 import {mountWeatherAdvisory} from "./climate-planner.js?v=7";
 import {mountQuickVehicle} from "./quick-vehicle.js?v=1";
@@ -527,8 +527,7 @@ async function coveragePage(){
 }
 async function contractSuggestionsPage(){
  app.page="contract_suggestions";app.search="";nav();header("contract_suggestions");
- el("main").innerHTML=title("contract_suggestions",modules.contract_suggestions.description)+
-  '<div id="contract-suggestions-root"></div>';
+ el("main").innerHTML='<div id="contract-suggestions-root"></div>';
  try{
   await mountContractSuggestions(el("contract-suggestions-root"),app.db,{
    notify,
