@@ -1,4 +1,4 @@
-import {iconMarkup} from "./icons.js?v=4";
+import {iconMarkup} from "./icons.js?v=6";
 import {teamFixedPosts,allowedTeamAreas,relevantOrders,autoMatchOrder,orderPrefill} from "./field-os-assist.js?v=1";
 // SIGA Américas · Formulário de campo para técnicos das equipes
 // Reproduz os campos do 05_Execucao e agrega presença, OS, local e itens da matriz 73.
