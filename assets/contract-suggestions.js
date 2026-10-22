@@ -100,127 +100,159 @@ export function renderRegisteredValueChart(all){
   }).join('')+'</div>'+
   '<figcaption class="suggest-chart-caption">Valores estimados dos registros vinculados aos itens; incluem apontamentos ainda pendentes de conferência. '+rows.length+' itens exibidos. Não representam faturamento, medição aceita nem previsão de receita.</figcaption></figure>';
 }
+
+const iso=x=>String(x||"").slice(0,10);
+const shiftDay=(s,n)=>{const d=new Date(iso(s)+"T12:00:00");d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const monday=day=>{const d=new Date(iso(day)+"T12:00:00");return shiftDay(iso(day),-((d.getDay()+6)%7))};
+const nowBR=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const formatWeek=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"short"});
+const resultLabels={executada:"Executada (informada)",parcial:"Parcial (informada)",impedida:"Impedida (informada)",nao_aplicavel:"Não aplicável"};
+export function summarizeWeekly(matrix,teams,reports,items,plans,programs,week,teamId=""){
+ const end=shiftDay(week,6),validActivities=new Set(matrix.map(x=>x.id));
+ const teamsShown=teams.filter(x=>!teamId||teamId===x.id),teamIds=new Set(teamsShown.map(x=>x.id));
+ const weeklyReports=reports.filter(x=>x.report_period==="semanal"&&x.period_start===week&&teamIds.has(x.team_id));
+ const submitted=weeklyReports.filter(x=>x.status==="enviado"||x.status==="validado");
+ const byReport=new Map(submitted.map(x=>[x.id,x]));
+ const weeklyItems=items.filter(x=>validActivities.has(x.activity_id)&&byReport.has(x.report_id))
+  .map(x=>({...x,report:byReport.get(x.report_id)}));
+ const programTeams=new Map(programs.filter(p=>teamIds.has(p.team_id)).map(p=>[p.id,p.team_id]));
+ const weeklyPlans=plans.filter(p=>validActivities.has(p.activity_id)&&p.planned_for&&p.planned_for>=week&&p.planned_for<=end&&programTeams.has(p.program_id));
+ const receivedTeams=new Set(submitted.map(x=>x.team_id));
+ const validatedTeams=new Set(submitted.filter(x=>x.status==="validado").map(x=>x.team_id));
+ return {week,end,teamsShown,weeklyReports,submitted,weeklyItems,weeklyPlans,programTeams,receivedTeams,validatedTeams,
+  informed:new Set(weeklyItems.map(x=>x.activity_id)),
+  confirmed:new Set(weeklyItems.filter(x=>x.report.status==="validado").map(x=>x.activity_id)),
+  planned:new Set(weeklyPlans.map(x=>x.activity_id)),
+  pendingReview:submitted.filter(x=>x.status==="enviado").length};
+}
 export async function mountContractSuggestions(root,db,{onPlan=()=>{},notify=()=>{}}={}){
- root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Consultando a matriz de 73 atividades, preços e execuções...</p></div>';
- const queries=[
-  db.from("activity_catalog").select("id,code,name,category").limit(100),
-  db.from("contract_items").select("id,code,name,unit,unit_price,source_type").eq("source_type","precos").limit(100),
-  db.from("field_execution_entries").select("activity_id,contract_item_id,performed_on,quantity,estimated_amount,execution_status,validation_status").order("performed_on",{ascending:false}).limit(1000)
- ];
- const responses=await Promise.all(queries);
- for(const result of responses)if(result.error)throw result.error;
- const [matrix,prices,executions]=responses.map(x=>x.data||[]);
- if(matrix.length!==73)throw Error("A matriz consultada possui "+matrix.length+" registros, em vez de 73. Verifique a base antes de priorizar.");
- const state={scenario:"incerto",window:"normal",filter:"acoes",sort:"sugerida",query:""};
- const dates=executions.map(e=>String(e.performed_on||"").slice(0,10)).filter(Boolean).sort();
- const datesLabel=dates.length?"Datas extremas dos registros consultados: "+dateBR(dates[0])+" a "+dateBR(dates[dates.length-1])+" (não indica execução diária)":"Ainda não há apontamentos cadastrados";
- root.innerHTML='<section class="suggestions-guide">'+
-  '<div class="suggestions-heading"><div><span class="eyebrow">ANÁLISE OPERACIONAL · PROERG / ITAIPU</span><h2>Itens contratuais sugeridos</h2>'+
-  '<p>Prioridade por recorrência potencial, execução já observada e relevância financeira registrada. <strong>Bloqueadores de clima, segurança e autorização prevalecem sobre valor.</strong></p></div>'+
-  '<div class="suggestions-73">73 <span>itens da matriz</span></div></div>'+
-  '<div class="suggestions-controls">'+
-   '<label>Cenário meteorológico (simulação)<select id="suggest-weather"><option value="incerto">Tempo ainda não confirmado</option><option value="seco">Tempo favorável / solo seco</option><option value="chuva">Chuva / solo encharcado</option><option value="vento">Vento forte / temporal</option></select></label>'+
-   '<label>Janela disponível<select id="suggest-window"><option value="normal">Janela operacional normal</option><option value="curta">Janela operacional reduzida</option></select></label>'+
-   '<label>Exibir<select id="suggest-filter"><option value="acoes">Ações executáveis (3.1 a 3.57)</option><option value="recorrentes">Demanda recorrente provável</option><option value="registradas">Com ocorrência registrada</option><option value="todas">Todos os 73 itens</option></select></label>'+
-   '<label>Ordenar<select id="suggest-sort"><option value="sugerida">Prioridade operacional sugerida</option><option value="receita">Maior valor já registrado</option><option value="dias">Maior ocorrência em dias</option><option value="recorrencia">Maior recorrência potencial</option><option value="codigo">Código da matriz</option></select></label>'+
-   '<label class="suggest-search-label">Buscar item<input type="search" id="suggest-search" placeholder="Ex.: gramados, poda, trator"></label>'+
-  '</div>'+
-  '<p class="suggestions-disclaimer"><strong>Clima simulado:</strong> esta tela não consulta previsão em tempo real. Prioridades são indicativas, não substituem vistoria, OS, licenças e validação da medição. Preços aparecem apenas quando há vínculo confiável entre matriz e planilha financeira.</p></section>'+
-  '<div id="suggest-summary"></div><div id="suggest-shortlist"></div><div id="suggest-table"></div>';
- const items=buildSuggestions(matrix,prices,executions,state);
- const term=(p)=>[p.activity.code,p.activity.name,p.mapping.price?.name,p.blocker.blocker].some(s=>normalized(s).includes(normalized(state.query)));
- const classify=(arr)=>arr.map(item=>{
-   const blocker=weatherRisk(item.profile,state.scenario,state.window);
-   const tier=blocker.status==="blocked"||blocker.status==="fixed"||blocker.status==="support"?blocker.status:
-    item.score>=78?"high":item.score>=49?"medium":"low";
-   return {...item,blocker,tier};
- });
- const filtered=(all)=>{
-   const pool=all.filter(v=>(state.filter==="todas"||
-    state.filter==="acoes"&&v.profile.situation==="action"||
-    state.filter==="recorrentes"&&v.profile.recurrence>=3&&v.profile.situation==="action"||
-    state.filter==="registradas"&&v.days>0)&&term(v));
-   pool.sort((a,b)=>state.sort==="receita"?b.sum-a.sum||rank(a,b):
-    state.sort==="dias"?b.days-a.days||rank(a,b):
-    state.sort==="recorrencia"?b.profile.recurrence-a.profile.recurrence||rank(a,b):
-    state.sort==="codigo"?numericCode(a.activity.code)-numericCode(b.activity.code):rank(a,b));
-   return pool;
- };
- function row(x,card=false){
-  const a=x.activity,p=x.mapping.price;
-  const isBlocked=x.blocker.status==="blocked";
-  const price=p?money(p.unit_price)+" / "+text(p.unit||"un"):"Preço não confirmado";
-  const note=x.mapping.source;
-  const html='<div class="suggestion-main"><strong>'+text(a.code)+' · '+text(a.name)+'</strong>'+
-    '<span class="suggestion-hint">'+text(x.profile.motivation)+'</span></div>'+
-    '<div><span class="suggest-status '+(isBlocked?"suggest-stopped":x.tier==="high"?"suggest-priority":"")+'">'+text(priorityNames[x.tier]||"Conferir")+'</span>'+
-    '<small class="suggestion-hint">'+text(x.blocker.blocker)+'</small></div>'+
-    '<div><strong>'+text(price)+'</strong><small class="suggestion-hint">'+text(note)+'</small></div>'+
-    '<div><strong>'+x.days+' dia(s)</strong><small class="suggestion-hint">'+text(datesLabel)+'</small></div>'+
-    '<div><strong>'+money(x.sum)+'</strong><small class="suggestion-hint">Produção informada; pendente de conferência</small></div>'+
-    (x.profile.situation==="action"&&!isBlocked?
-      '<button class="btn btn-secondary" type="button" data-suggest-plan="'+text(a.id)+'">Levar ao planejamento</button>':
-      '<span class="suggestion-hint">'+(isBlocked?"Reavaliar bloqueador":x.profile.situation==="fixed"?"Acompanhar rotina fixa":"Consultar rubrica")+'</span>');
-  return card?'<article class="suggestion-card">'+html+'</article>':
-   '<div class="suggestion-row">'+html+'</div>';
+ root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Carregando dados semanais…</p></div>';
+ const initial=await Promise.all([
+  db.from("activity_catalog").select("id,code,name,category").order("code").limit(150),
+  db.from("teams").select("id,code,name,active").eq("active",true).order("code"),
+  db.from("field_programs").select("id,team_id").limit(300),
+  db.from("field_plan_items").select("id,program_id,activity_id,planned_for,planned_quantity,action_status").limit(800)
+ ]);
+ for(const r of initial)if(r.error)throw r.error;
+ const [matrix,teams,programs,plans]=initial.map(x=>x.data||[]);
+ const byActivity=new Map(matrix.map(x=>[x.id,x])),byTeam=new Map(teams.map(x=>[x.id,x]));
+ let week=monday(nowBR()),team="",search="",reports=[],items=[],lastUpdate="",requestId=0,loading=false;
+ root.innerHTML='<section class="weekly-panel">'+
+  '<header class="weekly-head"><div><span class="eyebrow">CAPE · CICLO SEMANAL</span><h2>Prioridades da semana</h2>'+
+  '<p>Atividades programadas, cumprimento informado pelos técnicos e validação da supervisão.</p></div>'+
+  '<span class="weekly-source-pill">Dados operacionais do SIGA</span></header>'+
+  '<div class="weekly-filters"><div class="weekly-date-tools"><button class="btn btn-secondary" id="weekly-back" type="button" aria-label="Semana anterior">‹</button>'+
+  '<label>Semana de referência<input type="date" id="weekly-date"></label>'+
+  '<button class="btn btn-secondary" id="weekly-forward" type="button" aria-label="Próxima semana">›</button></div>'+
+  '<label>Equipe<select id="weekly-team"><option value="">Todas as equipes</option>'+
+   teams.map(t=>'<option value="'+text(t.id)+'">'+text(t.code+" · "+t.name)+'</option>').join("")+'</select></label>'+
+  '<label>Buscar<input id="weekly-search" type="search" placeholder="Código, serviço ou categoria"></label>'+
+  '<button class="btn btn-secondary" id="weekly-reload" type="button">Atualizar dados</button></div>'+
+  '<div id="weekly-feedback" aria-live="polite"></div><div id="weekly-counters"></div><div id="weekly-work"></div>'+
+  '<details class="weekly-reference"><summary><strong>Catálogo técnico e critérios CAPE</strong><small>'+matrix.length+' itens apenas como referência</small></summary>'+
+  '<div id="weekly-reference-list"></div></details></section>';
+ const el=q=>root.querySelector(q);
+ const taskButton=id=>'<button type="button" class="table-action" data-suggest-plan="'+text(id)+'">Analisar no planejamento ↗</button>';
+ const teamLabel=id=>{const t=byTeam.get(id);return t?t.code+" · "+t.name:"Equipe"};
+ function render(){
+  el("#weekly-date").value=week;el("#weekly-team").value=team;
+  const d=summarizeWeekly(matrix,teams,reports,items,plans,programs,week,team);
+  const filter=a=>!search||normalized([a.code,a.name,a.category].join(" ")).includes(normalized(search));
+  el("#weekly-feedback").innerHTML='<div class="weekly-period-label"><strong>'+text(formatWeek(week))+' a '+text(formatWeek(d.end))+'</strong>'+
+   '<span>'+text(lastUpdate?"Consultado: "+lastUpdate:"Consultando…")+'</span></div>';
+  const stats=[
+    ["Equipes com relatório enviado",d.receivedTeams.size+" / "+d.teamsShown.length,
+     "Cobertura de envio, não taxa de cumprimento"],
+    ["Atividades informadas",d.informed.size,"Conforme relatórios enviados"],
+    ["Atividades validadas",d.confirmed.size,"Em relatórios validados pela supervisão"],
+    ["Atividades programadas",d.planned.size,"Com data e equipe vinculadas à semana"]
+  ];
+  el("#weekly-counters").innerHTML='<div class="weekly-stats">'+stats.map(([label,value,detail])=>
+    '<div class="weekly-stat"><small>'+text(label)+'</small><strong>'+text(value)+'</strong><span>'+text(detail)+'</span></div>').join("")+'</div>';
+  const activityIds=new Set([...d.informed,...d.planned]);
+  const rows=[...activityIds].map(id=>{
+   const activity=byActivity.get(id),linked=d.weeklyItems.filter(x=>x.activity_id===id);
+   const planned=d.weeklyPlans.filter(x=>x.activity_id===id);
+   const statuses=new Set(linked.map(x=>x.result));
+   const kind=statuses.has("impedida")?"blocked":statuses.has("parcial")?"partial":
+    linked.some(x=>x.report.status==="validado")?"validated":linked.length?"informed":"planned";
+   const badge={blocked:"Impedimento informado",partial:"Execução parcial",validated:"Relatório validado",
+    informed:"Enviado · em análise",planned:"Programada · aguardando relato"}[kind];
+   const teamLabels=[...new Set(linked.map(x=>x.report.team_id))].map(teamLabel);
+   const notes=linked.filter(x=>x.result==="impedida"||x.result==="parcial")
+      .map(x=>String(x.notes||"").trim()).filter(Boolean).slice(0,2);
+   return {activity,id,kind,badge,linked,planned,teamLabels,notes};
+  }).filter(x=>x.activity&&filter(x.activity))
+   .sort((a,b)=>({blocked:0,partial:1,planned:2,informed:3,validated:4}[a.kind]-
+     {blocked:0,partial:1,planned:2,informed:3,validated:4}[b.kind])||
+     a.activity.code.localeCompare(b.activity.code,"pt-BR",{numeric:true}));
+  const reportStatus=d.submitted.length===0?
+   '<div class="weekly-no-reports"><strong>Aguardando relatórios dos técnicos</strong><p>Nenhum relatório enviado para esta semana. '+
+   'Isso não demonstra descumprimento das rotinas. Utilize os relatórios semanais para alimentar o acompanhamento.</p>'+
+   '<button class="btn btn-secondary" type="button" data-nav="field_report">Abrir relatórios de campo</button></div>':
+   '<div class="weekly-report-note"><strong>'+d.receivedTeams.size+' equipe(s) com relatório enviado.</strong> '+
+   d.validatedTeams.size+' validada(s) pela supervisão; '+d.pendingReview+' aguardando conferência. '+
+   'Atividades parciais e impedidas refletem relato técnico, não conclusão da fiscalização.</div>';
+  const content=rows.length?rows.map(x=>{
+   const a=x.activity;
+   const info=[x.planned.length?x.planned.length+" programação(ões) com data":"",
+     x.linked.length?x.linked.length+" apontamento(s) de atividade":"",...x.teamLabels].filter(Boolean).join(" · ");
+   const explanation={blocked:"Conferir impedimento, recursos e reprogramação.",
+    partial:"Verificar quantidade restante e plano de continuidade.",
+    planned:"Há planejamento datado, mas nenhum retorno técnico vinculado.",
+    informed:"Aguardar validação do relatório pela supervisão.",
+    validated:"Relatório validado; medição e faturamento permanecem etapas separadas."}[x.kind];
+   return '<article class="weekly-activity-card"><div class="weekly-activity-title"><strong>'+text(a.code+" · "+a.name)+'</strong>'+
+    '<span class="weekly-status-chip '+x.kind+'">'+text(x.badge)+'</span></div><p>'+text(explanation)+'</p>'+
+    (info?'<small>'+text(info)+'</small>':'')+
+    (x.notes.length?'<p class="weekly-activity-note">'+x.notes.map(text).join(" · ")+'</p>':'')+
+    '<div class="weekly-card-action">'+taskButton(x.id)+'</div></article>';
+  }).join(""):'<div class="weekly-empty">Nenhuma atividade com programação datada ou relato enviado nesta seleção.'+
+   (search?' Tente outra busca.':' O catálogo não é automaticamente uma lista de pendências.')+'</div>';
+  el("#weekly-work").innerHTML='<section class="weekly-worklist"><header><div><h3>Acompanhamento e próximas ações</h3>'+
+   '<p>Primeiro os impedimentos e parciais, depois programação sem retorno. Sem pontuação fictícia de receita ou clima.</p></div>'+
+   '<span>'+rows.length+' atividade(s)</span></header>'+reportStatus+
+   '<div class="weekly-activity-grid">'+content+'</div>'+
+   '<footer><span>Relatórios recebidos: '+d.submitted.length+'. Programações sem data não são consideradas exigíveis na semana.</span>'+
+   '<button type="button" class="btn btn-secondary" data-nav="field_monitor">Revisar relatórios</button></footer></section>';
+  const catalog=matrix.filter(filter).sort((a,b)=>numericCode(a.code)-numericCode(b.code));
+  el("#weekly-reference-list").innerHTML='<p>As '+matrix.length+' atividades são referências técnicas, não metas semanais automáticas. '+
+   'Cumprimento depende de atividade com programação datada, relato do técnico e validação.</p>'+
+   '<div class="weekly-reference-rows">'+catalog.map(a=>
+    '<div><span><strong>'+text(a.code+" · "+a.name)+'</strong><small>'+text(a.category||"Sem categoria")+'</small></span>'+
+    taskButton(a.id)+'</div>').join("")+'</div>'+
+   '<p class="weekly-method">CAPE: Contrato (atividade elegível) → Aptidão (demanda e condições) → Programação (data/equipe) → '+
+   'Evidência (relatório enviado, conferência e medição separadas). A falta de relatório não representa comprovação de descumprimento.</p>';
  }
- function paint(){
-  const all=classify(items);
-  const list=filtered(all);
-  const eligible=all.filter(v=>v.profile.situation==="action"&&v.tier!=="blocked");
-  // Para a reunião, combinar execução recente com manutenção recorrente:
-  // o corte de gramados deve ser inspecionado mesmo sem apontamento do preposto.
-  const recentTop=eligible.filter(v=>v.days>0).sort(rank).slice(0,3);
-  const recurringTop=eligible.filter(v=>v.profile.recurrence>=3&&v.days===0)
-   .sort((a,b)=>{
-    const focus=x=>/corte de gramados/.test(normalized(x.activity.name))?0:
-     /rocada geral/.test(normalized(x.activity.name))?1:
-     /manutencao de jardins/.test(normalized(x.activity.name))?2:3;
-    return focus(a)-focus(b)||rank(a,b);
-   }).slice(0,3);
-  const top=[...recentTop,...recurringTop,...eligible.sort(rank)].filter((v,i,arr)=>arr.findIndex(x=>x.activity.id===v.activity.id)===i).slice(0,6);
-  const blockers=all.filter(v=>v.profile.situation==="action"&&v.tier==="blocked").length;
-  const recent=all.filter(v=>v.days>0).length;
-  const priced=all.filter(v=>Boolean(v.mapping.price)).length;
-  const critical=state.scenario==="vento"?"Vento forte ou temporal: evite poda, corte de árvores e máquinas expostas até condições seguras.":
-   state.scenario==="chuva"?"Chuva e solo encharcado: reprogramar operações de máquinas, roçadas e cortes condicionados à segurança.":
-   state.scenario==="seco"?"Tempo favorável é apenas cenário informado; confirme condições reais, autorizações e disponibilidade antes da OS.":
-   "Tempo não confirmado: consulte previsão e condições locais antes de liberar roçada, poda e operações com máquinas.";
-  root.querySelector("#suggest-summary").innerHTML='<div class="suggestion-critical"><strong>Bloqueador prioritário · clima e segurança</strong><span>'+text(critical)+'</span></div><div class="suggestion-summary">'+[
-    ["Matriz de referência",matrix.length,"Todos os itens preservados"],
-    ["Com preço identificado",priced,"Equivalência técnica ou apontamento já vinculado"],
-    ["Atividades com execução",recent,"Quantidade de itens distintos"],
-    ["Bloqueios no cenário",blockers,"Prioridade absoluta: segurança e viabilidade"]
-   ].map(([label,value,note])=>'<div class="suggestion-stat"><small>'+text(label)+'</small><strong>'+text(value)+'</strong><span>'+text(note)+'</span></div>').join('')+'</div>';
-  root.querySelector("#suggest-shortlist").innerHTML='<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Sugestões para vistoria e planejamento</h3><p>Seleção automática para conferência técnica. Não constitui reunião agendada, OS autorizada nem medição validada. '+text(datesLabel)+'.</p></div><button type="button" class="btn btn-ghost" id="suggest-export">Exportar os 73 itens (CSV)</button></div>'+
-   '<div class="suggestion-list">'+top.map(x=>row(x,true)).join('')+'</div></section>'+
-   '<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Maiores valores registrados · por item da matriz</h3>'+
-   '<p>Valores dos apontamentos já cadastrados, sujeitos à conferência. Rubricas de apoio, como SE, não são novas ações executáveis.</p></div></div>'+
-   renderRegisteredValueChart(all)+'</section>';
-  root.querySelector("#suggest-table").innerHTML='<section class="suggestion-section"><div class="suggestion-section-header"><div><h3>Matriz de prioridades</h3><p>'+list.length+' de 73 itens no filtro atual · valores comparáveis apenas com produção registrada na mesma rubrica.</p></div></div>'+
-   '<div class="suggestion-list suggestion-list-all">'+(list.map(x=>row(x)).join('')||'<p>Nenhum item encontrado nesse filtro.</p>')+'</div></section>';
-  root.querySelector("#suggest-export")?.addEventListener("click",exportCsv);
+ async function refresh(){
+  const token=++requestId,selected=week;loading=true;el("#weekly-reload").disabled=true;
+  el("#weekly-feedback").textContent="Consultando os relatórios da semana…";
+  try{
+   const rep=await db.from("field_daily_reports").select("id,team_id,report_period,period_start,period_end,status,submitted_at,reviewed_at")
+    .eq("report_period","semanal").eq("period_start",selected).limit(300);
+   if(rep.error)throw rep.error;
+   const localReports=rep.data||[],ids=localReports.map(x=>x.id);
+   let localItems=[];
+   if(ids.length){
+    for(let i=0;i<ids.length;i+=100){
+     const r=await db.from("field_daily_report_items").select("id,report_id,activity_id,field_plan_item_id,result,notes,quantity").in("report_id",ids.slice(i,i+100)).limit(1000);
+     if(r.error)throw r.error;
+     localItems.push(...(r.data||[]));
+    }
+   }
+   if(token!==requestId||selected!==week)return;
+   reports=localReports;items=localItems;
+   lastUpdate=new Date().toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});render();
+  }catch(e){if(token===requestId){el("#weekly-feedback").innerHTML='<div class="weekly-error">Não foi possível atualizar: '+text(e.message||e)+'</div>';notify(String(e.message||e),true)}}
+  finally{if(token===requestId){loading=false;el("#weekly-reload").disabled=false}}
  }
- function exportCsv(){
-  const all=classify(items).sort((a,b)=>numericCode(a.activity.code)-numericCode(b.activity.code));
-  const head=["Código matriz","Atividade da matriz","Prioridade gerencial","Bloqueador principal","Recorrência estimada (heurística)","Dias com ocorrência","Valor registrado (R$)","Código planilha de preços","Preço unitário (R$)","Unidade da planilha","Origem da correspondência"];
-  const rows=all.map(x=>[
-   x.activity.code,x.activity.name,priorityNames[x.tier]||"Conferir",x.blocker.blocker,
-   x.profile.recurrence,x.days,x.sum,x.mapping.price?.code||"",x.mapping.price?.unit_price||"",x.mapping.price?.unit||"",x.mapping.source]);
-  const safe=v=>{let value=String(v??"");if(/^[=+@-]/.test(value))value="'"+value;return '"'+value.replace(/"/g,'""')+'"';};
-  const csv=[head,...rows].map(a=>a.map(safe).join(";")).join("\r\n");
-  const url=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));
-  const a=document.createElement("a");a.href=url;a.download="siga_prioridades_matriz_73.csv";a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
- }
- for(const [id,key] of [["suggest-weather","scenario"],["suggest-window","window"],["suggest-filter","filter"],["suggest-sort","sort"]]){
-  root.querySelector("#"+id).addEventListener("change",e=>{state[key]=e.target.value;paint();});
- }
- root.querySelector("#suggest-search").addEventListener("input",e=>{state.query=e.target.value;paint();});
- root.addEventListener("click",event=>{
-  const button=event.target.closest("[data-suggest-plan]");
-  if(button)onPlan(button.dataset.suggestPlan);
- });
- paint();
- return ()=>{};
+ el("#weekly-back").onclick=()=>{week=shiftDay(week,-7);void refresh()};
+ el("#weekly-forward").onclick=()=>{week=shiftDay(week,7);void refresh()};
+ el("#weekly-date").onchange=e=>{if(e.target.value){week=monday(e.target.value);void refresh()}};
+ el("#weekly-team").onchange=e=>{team=e.target.value;render()};
+ el("#weekly-search").oninput=e=>{search=e.target.value;render()};
+ el("#weekly-reload").onclick=()=>void refresh();
+ root.addEventListener("click",e=>{const b=e.target.closest("[data-suggest-plan]");if(b&&root.contains(b))onPlan(b.dataset.suggestPlan)});
+ await refresh();
+ return ()=>{requestId++};
 }
