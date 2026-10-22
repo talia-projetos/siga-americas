@@ -1,7 +1,7 @@
 // SIGA Américas · planejamento diário por manhã/tarde e postos fixos.
 // O registro diário é referência; somente turnos gravados são considerados detalhados.
 // Não atribuir automaticamente atividades, trabalhadores, validação ou execução.
-import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=6";
+import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=7";
 import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
 import {mountDailyApproval} from "./daily-approval.js?v=2";
 import {mountMaintenanceActionPanel} from "./maintenance-action-panel.js?v=1";
@@ -56,7 +56,9 @@ export async function mountDailyCoverage(root,db,{role,notify}){
  const dailyValid=(kind,id,date)=>shifts.every(([shift])=>{const plan=getPlan(kind,id,date,shift);return Boolean(plan?.review_status==="revisado"&&plan?.planned_activity?.trim()&&plan?.planned_location?.trim())});
  const shiftRows=(kind,id,date)=>{
   return '<div class="daily-shift-grid">'+shifts.map(([shift,label])=>{
-   const p=getPlan(kind,id,date,shift),ref=kind==="posto"?postRoutines(id):[],routine=kind==="posto"?selectedRoutine(ref,date,shift):null;
+   const p=getPlan(kind,id,date,shift),ref=kind==="posto"?postRoutines(id):[],
+    savedRoutine=ref.find(r=>String(p?.planned_activity||"").startsWith(r.title)),
+    routine=kind==="posto"?(savedRoutine||(p?.planned_activity?null:selectedRoutine(ref,date,shift))):null;
    return '<div class="daily-shift" data-shift-kind="'+kind+'" data-shift-id="'+safe(id)+'" data-shift-date="'+safe(date)+'" data-shift="'+shift+'">'+
     '<div class="daily-shift-head"><strong>'+label+'</strong><span class="daily-shift-state '+(p?.review_status==="revisado"?"is-saved":"is-pending")+'">'+(p?.review_status==="revisado"?"Turno revisado":p?"Rascunho · revisar":"A definir / conferir")+'</span></div>'+
     (canManage&&!approvals.has(date)?'<label>Atividade prevista<textarea class="daily-shift-activity" maxlength="600" rows="2" placeholder="Definir atividade deste turno">'+safe(p?.planned_activity||"")+'</textarea></label>'+
