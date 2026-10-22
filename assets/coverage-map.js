@@ -194,6 +194,23 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  const maps=window.L;
  if(!maps){mapDiv.innerHTML='<p>Biblioteca de mapas indisponível. Confira sua conexão com a internet.</p>';return ()=>{};}
  map=maps.map(mapDiv,{scrollWheelZoom:false,zoomControl:true}).setView(VIEW,12);
+ // Camadas próprias mantêm as árvores acima dos limites e dos caminhos, sem mover coordenadas.
+ const matrixPane=map.createPane("siga-matrix-points");
+ matrixPane.style.zIndex="660";
+ const ordinaryPointPane=map.createPane("siga-other-points");
+ ordinaryPointPane.style.zIndex="650";
+ const radiusAtZoom=(zoom,matrix=true)=>matrix?
+  (zoom<13?3.9:zoom<15?4.6:5.4):(zoom<13?3.7:zoom<15?4.4:5);
+ const updatePointSizes=()=>{
+  if(engine!=="leaflet"||!map)return;
+  const zoom=map.getZoom();
+  for(const record of drawn)record.layer?.eachLayer(part=>{
+   if(part instanceof maps.CircleMarker && part.feature && /Point/.test(part.feature.geometry?.type||"")){
+    part.setRadius(radiusAtZoom(zoom,symbolType(part.feature,layers.find(x=>x.id===record.id))==="matriz"));
+   }
+  });
+ };
+ map.on("zoomend",updatePointSizes);
  // Respeitar o novo tamanho do painel, inclusive quando o menu lateral muda.
  const syncMapSize=()=>{
   if(destroyed||!root.isConnected)return;
@@ -276,16 +293,24 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
      {color:kind==="rota"?"#F4B39C":c,weight:3.1,opacity:.95,dashArray:"9 6",lineCap:"round",fill:false,className:"siga-route-dashed"};
    },
    pointToLayer:(feature,latlng)=>{
-    const kind=symbolType(feature,l),c=kind==="matriz"?"#25C9A2":colorForFeature(feature,l);
+    const kind=symbolType(feature,l),isMatrix=kind==="matriz",
+     c=isMatrix?"#23CBA0":colorForFeature(feature,l);
     return maps.circleMarker(latlng,{
-     radius:kind==="matriz"?5.1:4.7,
-     color:"#FFFFFF",weight:1.35,opacity:.98,fill:true,fillColor:c,fillOpacity:.96,
-     className:"siga-point-solid "+(kind==="matriz"?"siga-matrix-point":"")
+     pane:isMatrix?"siga-matrix-points":"siga-other-points",
+     radius:radiusAtZoom(map.getZoom(),isMatrix),
+     color:"#FFFFFF",weight:1.15,opacity:1,fill:true,fillColor:c,fillOpacity:1,
+     interactive:true,bubblingMouseEvents:false,
+     className:"siga-point-solid "+(isMatrix?"siga-matrix-point":"siga-other-point")
     });
    },
    onEachFeature:(feature,item)=>{
     const kind=symbolType(feature,l),coords=feature.geometry?.type==="Point"?feature.geometry.coordinates:null;
     const name=featureName(feature,l);
+    if(kind==="matriz"||kind==="ponto"){
+     item.bindTooltip(esc(name),{direction:"top",offset:[0,-9],sticky:false,opacity:.98,className:"siga-point-tooltip"});
+     item.on("mouseover",()=>{if(map)item.setRadius(radiusAtZoom(map.getZoom(),kind==="matriz")+1.2);});
+     item.on("mouseout",()=>{if(map)item.setRadius(radiusAtZoom(map.getZoom(),kind==="matriz"));});
+    }
     item.bindPopup('<div class="siga-map-popup"><strong>'+esc(name)+'</strong>'+
       '<span>'+esc(kind==="matriz"?"Matriz georreferenciada · identificação a conferir":
         kind==="area"?"Área cartográfica":kind==="rota"?"Traçado georreferenciado":"Ponto")+'</span>'+
@@ -299,6 +324,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    if(kind==="area")hatchPolygon(part,colorForFeature(part.feature,l));
   });
   drawn.push({id:l.id,layer});
+  updatePointSizes();
  }
  let gMap=null;
  async function setGoogle(){
@@ -318,9 +344,10 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    const type=feature.getGeometry()?.getType()||"";
    const color=strokeFor(feature);
    if(/Point/.test(type))return {icon:{
-    path:google.maps.SymbolPath.CIRCLE,scale:5,fillColor:l.reference_scope==="matrizes"||/matriz|arvore/i.test(areaKey(l.name))?"#25C9A2":color,
-    fillOpacity:.96,strokeColor:"#FFFFFF",strokeWeight:1.35,strokeOpacity:.98
-   },zIndex:8};
+    path:google.maps.SymbolPath.CIRCLE,scale:Math.max(4,Math.min(5.5,(gMap?.getZoom()||12)*.35)),
+    fillColor:l.reference_scope==="matrizes"||/matriz|arvore/i.test(areaKey(l.name))?"#23CBA0":color,
+    fillOpacity:1,strokeColor:"#FFFFFF",strokeWeight:1.15,strokeOpacity:1
+   },zIndex:9};
    if(/Polygon/.test(type))return {strokeColor:color,strokeWeight:1.6,strokeOpacity:.94,
     fillColor:color,fillOpacity:.09,zIndex:3};
    return {strokeColor:"#F4B39C",strokeWeight:2.7,strokeOpacity:.45,zIndex:5};
