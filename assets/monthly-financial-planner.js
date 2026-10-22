@@ -28,6 +28,9 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
    const monthActual=actual.filter(a=>a.performed_on?.startsWith(selected.slice(0,7))&&a.validation_status==="validada").reduce((s,v)=>s+Number(v.estimated_amount||0),0);
    const monthTasks=proposed.filter(v=>v.period_month===selected);
    const expected=monthTasks.reduce((s,v)=>s+(Number(v.proposed_quantity||0)*Number(byId.get(v.contract_item_id)?.unit_price||0)),0);
+    const quantified=monthTasks.filter(v=>Number(v.proposed_quantity)>0).length;
+    const withOs=monthTasks.filter(v=>v.work_order_id).length;
+    const located=monthTasks.filter(v=>v.area_id&&v.location_description&&!/a confirmar|a definir|local exato/i.test(v.location_description)).length;
    const referenced=prices.reduce((sum,i)=>sum+Number(i.estimated_total||0)/4,0);
    const body=monthTasks.map(t=>{
     const item=byId.get(t.contract_item_id)||{},released=Boolean(t.work_order_id);
@@ -43,6 +46,7 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
    const quote=prices.slice().sort((a,b)=>Number(b.estimated_total)-Number(a.estimated_total)).map(i=>'<tr><td>'+esc(i.code)+'</td><td>'+esc(i.name)+'</td><td>'+esc(qty(Number(i.estimated_quantity)/4))+' '+esc(i.unit||"")+'</td><td>'+esc(currency(Number(i.estimated_total)/4))+'</td></tr>').join("");
    root.querySelector("#finance-plan-current").innerHTML=
     '<div class="finance-planning-kpis"><div><span>Meta gerencial</span><strong>'+currency(target)+'</strong></div><div><span>Referência aritmética (1/4)</span><strong>'+currency(referenced)+'</strong></div><div><span>Propostas quantificadas</span><strong>'+currency(expected)+'</strong></div><div><span>Produção com validação registrada</span><strong>'+currency(monthActual)+'</strong></div></div>'+
+    '<p class="finance-scenario-alert"><strong>Prontidão do mês:</strong> '+quantified+' de '+monthTasks.length+' propostas com quantidade numérica; '+located+' com frente vinculada e local descritivo; '+withOs+' OS emitidas. Quantidade, local, disponibilidade, autorização, clima e medição devem ser validados antes da execução.</p>'+ 
     '<p class="finance-scenario-alert"><strong>Não é previsão de faturamento:</strong> dividir o custeio por quatro produz um limite matemático de comparação, não um calendário executável. Os trabalhos sem área delimitada, autorização, disponibilidade e medição permanecem sem quantidade. Saldo contratual e execução de outubro precisam ser reconciliados antes de aprovação.</p>'+
     '<div class="finance-panel-heading"><h3>Propostas operacionais com datas indicativas</h3><span>'+monthTasks.length+' ações candidatas</span></div>'+
     '<div class="table-scroll"><table class="finance-planning-table"><thead><tr><th>Data</th><th>Serviço e local</th><th>Unidade / preço</th><th>Quantidade</th><th>Situação</th><th>Critérios</th><th>Ação</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
