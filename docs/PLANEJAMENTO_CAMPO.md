@@ -160,3 +160,19 @@ A meta de maior cobertura não significa executar todas as rubricas sem demanda.
 **Simulação 50–150%**: multiplicar apenas a quantidade aritmética das rubricas variáveis, mantendo os preços originais e as rubricas mensais em 100%. Cenários maiores que a referência distribuída em quatro meses exigem verificação de saldos, produtividade, horas de equipe, insumos e autorização; não geram OS nem receitas na base. O simulador não substitui medição.
 
 Referência observada na base em 22/10/2026: 14 de 53 rubricas com propostas em cada mês de novembro a janeiro (26,4% de cobertura); 0 das 53 com quantidade proposta positiva. Esses dados podem variar com as revisões.
+
+## Prioridades semanais dinâmicas (22/10/2026)
+
+A antiga aba **Itens contratuais sugeridos** passa a ser **Prioridades da semana**. Elimina os filtros de clima hipotético e os rankings estáticos por receita/recorrência, substituídos por acompanhamento de execução real registrado no SIGA.
+
+- A referência temporal é sempre a semana escolhida pelo usuário (segunda a domingo), com navegação para semanas anteriores e posteriores, filtro por equipe, busca e atualização manual.
+- O relatório do técnico vem de `field_daily_reports` com `report_period='semanal'`; seus itens estão em `field_daily_report_items`. Relatórios em rascunho ou devolvidos não contam como enviados nem validados.
+- As atividades programadas são obtidas de `field_plan_items` **com data dentro da semana** e vínculo a um `field_programs` com equipe. As 73 atividades do catálogo não são automaticamente transformadas em metas semanais.
+- O **cumprimento informado** tem por denominador os itens planejados datados e vinculados a equipe; numerador com relato `executada` pelo técnico da mesma equipe na semana, seja vínculo explícito à programação ou correspondência única por atividade/equipe quando não há vínculo de item. Situações `parcial`, `impedida` e `nao_aplicavel` não são consideradas concluídas.
+- O **cumprimento validado** utiliza o mesmo denominador, mas exige que o relatório que contém a atividade esteja marcado `validado` pela supervisão.
+- Se **não houver atividades programadas com data**, ambos os percentuais mostram **Sem base**, não 0%. Se **não houver relatório enviado**, isso significa ausência de informação e nunca comprova descumprimento.
+- A lista de atenção coloca impedimentos e execução parcial em destaque, depois planos datados sem relato e registros informados/validados. Evidências e faturamento exigem conferência própria, nunca são inferidos do status do relatório.
+- O catálogo integral de 73 itens permanece dentro de seção recolhível para consulta técnica e inclusão de propostas. Não há filtros permanentes de clima simulado ou pontuação financeira presumida.
+- Consultas semanais usam filtros de data no banco; os resultados são atualizados quando a aba abre, o usuário troca a semana ou usa **Atualizar dados**.
+
+Esses critérios integram o ciclo CAPE sem alterar a lógica de OS, aprovações e relatórios de campo.
