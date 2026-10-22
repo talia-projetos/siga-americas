@@ -155,3 +155,7 @@
 #main .climate-diagnostic{margin:9px 0 0;border-top:1px solid #e6ece8;padding:8px 0 2px}
 #main .climate-diagnostic summary{font-size:10.5px;color:#5f7766;cursor:pointer}
 #main .climate-diagnostic p{line-height:1.5;font-size:10px;color:#758579;margin:6px 0}
+
+
+#main .ppe-contract-unit{display:inline-block;color:#4e705a;font-size:11px;font-weight:650;white-space:normal}
+#main .catalog-table:has(.ppe-contract-unit) td,#main .catalog-table:has(.ppe-contract-unit) th{vertical-align:middle}
