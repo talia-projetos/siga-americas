@@ -311,6 +311,7 @@ export async function generateListPDF({title,subtitle="",columns=[],rows=[]}){
  pdf.setAuthor("PROERG · SIGA Américas");
  const font=await pdf.embedFont(lib.StandardFonts.Helvetica);
  const bold=await pdf.embedFont(lib.StandardFonts.HelveticaBold);
+ const companyLogo=await officialLogo().then(logo=>pdf.embedPng(logo.bytes)).catch(()=>null);
  const W=841.89,H=595.28,pad=34,usable=W-2*pad;
  const weights=columns.map(c=>Number(c.weight)||(/descri|item|atividade|observa|nome|material|local/i.test(c.label)?2:1));
  const sum=weights.reduce((a,b)=>a+b,0),widths=weights.map(w=>usable*w/sum);
@@ -330,7 +331,10 @@ export async function generateListPDF({title,subtitle="",columns=[],rows=[]}){
   page=pdf.addPage([W,H]);pageNumber++;
   const green=lib.rgb(.13,.37,.26),grey=lib.rgb(.43,.50,.45);
   page.drawRectangle({x:0,y:H-8,width:W,height:8,color:green});
-  page.drawText("PROERG",{x:pad,y:H-35,size:15,font:bold,color:green});
+  if(companyLogo){
+   const h=90*companyLogo.height/companyLogo.width;
+   page.drawImage(companyLogo,{x:pad,y:H-24-h,width:90,height:h});
+  }else page.drawText("PROERG",{x:pad,y:H-35,size:15,font:bold,color:green});
   page.drawText("SIGA AMÉRICAS · RELATÓRIO DE REGISTROS",{x:pad+112,y:H-33,size:9,font:bold,color:grey});
   page.drawText(short(title,W-pad*2,13,true),{x:pad,y:H-65,size:13,font:bold,color:green});
   page.drawText(short(subtitle,W-pad*2,8),{x:pad,y:H-82,size:8,font,color:grey});
