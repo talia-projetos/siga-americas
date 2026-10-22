@@ -18,13 +18,14 @@ export async function mountCategoryQuantities(root,db,{categories,canWrite=false
  if(error){root.innerHTML='<div class="notice warning">Não foi possível consultar os quantitativos: '+html(error.message)+'</div>';return}
  const rows=(data||[]).sort((a,b)=>a.category.localeCompare(b.category)||refSort(a,b));
  let search="";
+ let expanded=requested.includes("veiculo")||requested.includes("equipamento");
  const moneyWarning="Os valores encontrados são registros declarados. Somente uma conferência física marcada e documentada indica vistoria; não altera a obrigação contratual.";
  const isFleet=requested.length===1&&requested[0]==="veiculo";
  const draw=()=>{
   const informed=rows.filter(counted).length,verified=rows.filter(r=>r.quantity_checked_at&&counted(r)).length;
   const noQty=rows.length-informed;
   const list=rows.filter(r=>(r.item_name+" "+r.source_ref+" "+r.category).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")));
-  const open=isFleet||requested.includes("equipamento");
+  const open=expanded;
   root.innerHTML='<section class="category-quantity-overview" aria-label="Quantidades da categoria">'+
    '<div class="category-quantity-summary"><div><span class="eyebrow">REFERÊNCIA CONTRATUAL · CONFERÊNCIA POR ÁREA</span><h2>'+html(requested.map(k=>sections[k]).join(" e "))+'</h2>'+
    '<p>Quantidades previstas, informadas e verificadas em campo, sem duplicar o cadastro de bens ou as movimentações de estoque.</p></div>'+
@@ -44,9 +45,11 @@ export async function mountCategoryQuantities(root,db,{categories,canWrite=false
        (isFleet?'<button type="button" class="table-action" data-fleet-add="'+html(r.id)+'">Identificar veículo</button>':"")+'</td>':"")+
     '</tr>').join(""):'<tr><td colspan="'+(canWrite?6:5)+'">Nenhum item corresponde à pesquisa.</td></tr>')+
    '</tbody></table></div><p class="category-quantity-foot">'+moneyWarning+'</p></details></section>';
+  root.querySelector(".category-quantity-details")?.addEventListener("toggle",event=>{expanded=event.target.open});
   const searchInput=root.querySelector("[data-quantity-search]");
   searchInput?.addEventListener("input",e=>{
    search=e.target.value;
+   expanded=true;
    const start=searchInput.selectionStart;
    draw();
    const next=root.querySelector("[data-quantity-search]");
