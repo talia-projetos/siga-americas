@@ -194,11 +194,12 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  const maps=window.L;
  if(!maps){mapDiv.innerHTML='<p>Biblioteca de mapas indisponível. Confira sua conexão com a internet.</p>';return ()=>{};}
  map=maps.map(mapDiv,{scrollWheelZoom:false,zoomControl:true}).setView(VIEW,12);
- // Camadas próprias mantêm as árvores acima dos limites e dos caminhos, sem mover coordenadas.
- const matrixPane=map.createPane("siga-matrix-points");
- matrixPane.style.zIndex="660";
- const ordinaryPointPane=map.createPane("siga-other-points");
- ordinaryPointPane.style.zIndex="650";
+ // Matrizes aparecem acima das áreas e rotas, sem deslocar os pontos geográficos.
+ const installPointPanes=()=>{
+  const matrixPane=map.getPane("siga-matrix-points")||map.createPane("siga-matrix-points");
+  const otherPane=map.getPane("siga-other-points")||map.createPane("siga-other-points");
+  matrixPane.style.zIndex="660";otherPane.style.zIndex="650";
+ };
  const radiusAtZoom=(zoom,matrix=true)=>matrix?
   (zoom<13?3.9:zoom<15?4.6:5.4):(zoom<13?3.7:zoom<15?4.4:5);
  const updatePointSizes=()=>{
@@ -210,6 +211,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    }
   });
  };
+ installPointPanes();
  map.on("zoomend",updatePointSizes);
  // Respeitar o novo tamanho do painel, inclusive quando o menu lateral muda.
  const syncMapSize=()=>{
@@ -521,6 +523,8 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
     for(const x of googleData){x.layer.setMap(null);x.decorations?.forEach(d=>d.setMap(null));}
     engine="leaflet";gMap=null;googleData=[];mapDiv.replaceChildren();
     map=maps.map(mapDiv,{scrollWheelZoom:false,zoomControl:true}).setView(lastCenter?[lastCenter.lat(),lastCenter.lng()]:VIEW,lastZoom);
+    installPointPanes();
+    map.on("zoomend",updatePointSizes);
     maps.control.scale({metric:true,imperial:false}).addTo(map);
     applyBase(mode);draw({fit:false});
    }else applyBase(mode);
