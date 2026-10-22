@@ -23,7 +23,7 @@ function classification(row){
 export async function mountInventoryCheck(root,db,{notify}){
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Consultando quantitativos previstos...</p></div>';
  const {data,error}=await db.from("contract_resource_requirements")
- .select("id,category,item_name,required_quantity,observed_quantity,unit,source_ref,provider_party,inventory_note,quantity_checked_at")
+ .select("id,category,item_name,required_quantity,observed_quantity,unit,source_ref,provider_party,inventory_note,quantity_checked_at,review_status,validation_status")
  .in("category",["ferramenta","veiculo","equipamento"]).limit(400);
  if(error){root.textContent="Não foi possível carregar a conferência: "+error.message;return}
  const details=await Promise.allSettled([
@@ -62,24 +62,29 @@ export async function mountInventoryCheck(root,db,{notify}){
   '<div class="inventory-progress" role="meter" aria-label="Tipos com quantidade informada" aria-valuemin="0" aria-valuemax="'+types+'" aria-valuenow="'+checked+'"><div class="inventory-progress-bar" style="width:'+(types?100*checked/types:0).toFixed(1)+'%"></div></div>'+
   '<div class="notice inventory-note">A coluna <strong>quantidade contratual</strong> não pode ser alterada nesta tela. Quantidades declaradas não comprovam vistoria, funcionamento, regularidade documental ou conformidade técnica. Faça a conferência individual em Veículos e Frota ou Ferramentas e Máquinas.</div>'+
   '<div class="inventory-controls"><input id="inventory-search" class="searchbox" type="search" placeholder="Buscar item da relação…" value="'+html(query)+'" aria-label="Buscar recurso"><label>Fornecimento <select id="inventory-provider"><option value="all"'+(provider==="all"?" selected":"")+'>Todos</option><option value="proerg"'+(provider==="proerg"?" selected":"")+'>PROERG</option><option value="itaipu"'+(provider==="itaipu"?" selected":"")+'>Itaipu</option></select></label><span class="muted">'+visible.length+' item(ns)</span></div>'+
-  '<div class="table-panel inventory-table-wrap"><div class="table-scroll"><table class="data-table inventory-table"><thead><tr><th>Nº / item</th><th>Descrição</th><th>Exigido</th><th>Encontrado</th><th>Diferença</th><th>Notas da conferência</th><th>Ação</th></tr></thead><tbody>'+
+  '<div class="table-panel inventory-table-wrap"><div class="table-scroll"><table class="data-table inventory-table"><thead><tr><th>Nº / item</th><th>Descrição</th><th>Exigido</th><th>Encontrado</th><th>Diferença</th><th>Notas da conferência</th><th>Vistoria física</th><th>Ação</th></tr></thead><tbody>'+
   (visible.length?visible.map(r=>{
    const state=classification(r),number=r.category==="ferramenta"?(String(r.source_ref).match(/\d+$/)||[""])[0]:r.source_ref;
-   return '<tr data-inventory-row="'+html(r.id)+'"><td><span class="catalog-code">'+html(number)+'</span></td><td><div class="inventory-resource-name">'+html(r.item_name)+'</div><span class="inventory-source">'+html(r.provider_party==="itaipu"?"Itaipu":r.provider_party==="proerg"?"PROERG":"A confirmar")+'</span></td><td><strong>'+html(pt(r.required_quantity))+'</strong><small>'+html(r.unit||"un")+'</small></td><td><label class="sr-only" for="qty-'+html(r.id)+'">Quantidade encontrada de '+html(r.item_name)+'</label><input id="qty-'+html(r.id)+'" class="inventory-qty" data-qty type="number" min="0" step="1" placeholder="—" value="'+(r.observed_quantity===null||r.observed_quantity===undefined?"":html(r.observed_quantity))+'"></td><td><span class="inventory-status '+state.kind+'">'+html(state.label)+'</span></td><td><label class="sr-only" for="note-'+html(r.id)+'">Observações de '+html(r.item_name)+'</label><input class="inventory-row-note" id="note-'+html(r.id)+'" data-note maxlength="450" value="'+html(r.inventory_note||"")+'" placeholder="Opcional"></td><td><button type="button" class="btn btn-secondary inventory-save" data-save-resource="'+html(r.id)+'">Salvar</button></td></tr>';
-  }).join(""):'<tr><td colspan="7"><div class="empty-state">Nenhum item corresponde aos filtros selecionados.</div></td></tr>')+
+   return '<tr data-inventory-row="'+html(r.id)+'"><td><span class="catalog-code">'+html(number)+'</span></td><td><div class="inventory-resource-name">'+html(r.item_name)+'</div><span class="inventory-source">'+html(r.provider_party==="itaipu"?"Itaipu":r.provider_party==="proerg"?"PROERG":"A confirmar")+'</span></td><td><strong>'+html(pt(r.required_quantity))+'</strong><small>'+html(r.unit||"un")+'</small></td><td><label class="sr-only" for="qty-'+html(r.id)+'">Quantidade encontrada de '+html(r.item_name)+'</label><input id="qty-'+html(r.id)+'" class="inventory-qty" data-qty type="number" min="0" step="1" placeholder="—" value="'+(r.observed_quantity===null||r.observed_quantity===undefined?"":html(r.observed_quantity))+'"></td><td><span class="inventory-status '+state.kind+'">'+html(state.label)+'</span></td><td><label class="sr-only" for="note-'+html(r.id)+'">Observações de '+html(r.item_name)+'</label><input class="inventory-row-note" id="note-'+html(r.id)+'" data-note maxlength="450" value="'+html(r.inventory_note||"")+'" placeholder="Opcional"></td><td><label class="quantity-confirm-label"><input type="checkbox" data-verify-physical aria-label="Confirmar vistoria física de '+html(r.item_name)+'" ><span>Confirmar</span></label><small>'+(r.quantity_checked_at?'Conferido: '+new Date(r.quantity_checked_at).toLocaleDateString('pt-BR'):'Não verificado')+'</small></td><td><button type="button" class="btn btn-secondary inventory-save" data-save-resource="'+html(r.id)+'">Salvar</button></td></tr>';
+  }).join(""):'<tr><td colspan="8"><div class="empty-state">Nenhum item corresponde aos filtros selecionados.</div></td></tr>')+
   '</tbody></table></div></div>'+assetSummary+'<p class="inventory-footer">As quantidades indicativas e as especificações dos equipamentos podem ter observações ou condições complementares nos itens 6.1, 6.2 e 6.4 do contrato. Consulte também os documentos de vistoria e patrimônio.</p>';
   root.querySelectorAll("[data-inventory-tab]").forEach(btn=>btn.addEventListener("click",()=>{active=btn.dataset.inventoryTab;query="";draw()}));
   root.querySelector("#inventory-search").addEventListener("input",e=>{query=e.target.value.toLocaleLowerCase("pt-BR");const focus=e.target.selectionStart;draw();const inp=root.querySelector("#inventory-search");inp.focus();inp.setSelectionRange(focus,focus)});
   root.querySelector("#inventory-provider").addEventListener("change",e=>{provider=e.target.value;draw()});
   root.querySelectorAll("[data-save-resource]").forEach(btn=>btn.addEventListener("click",async()=>{
    const rowNode=btn.closest("[data-inventory-row]"),item=rows.find(x=>x.id===btn.dataset.saveResource);
-   const inp=rowNode.querySelector("[data-qty]"),value=inp.value.trim(),note=rowNode.querySelector("[data-note]").value.trim();
+   const inp=rowNode.querySelector("[data-qty]"),value=inp.value.trim(),note=rowNode.querySelector("[data-note]").value.trim(),verify=rowNode.querySelector("[data-verify-physical]").checked;
    if(value===""||!Number.isInteger(Number(value))||Number(value)<0){notify("Informe uma quantidade inteira de 0 ou mais. Para não conferido, deixe o registro como está.",true);return;}
+   if(verify&&note.length<5){notify("Informe local ou referência de evidência para confirmar a vistoria.",true);return;}
    btn.disabled=true;btn.textContent="Salvando…";
-   const payload={observed_quantity:Number(value),inventory_note:note||null,quantity_checked_at:new Date().toISOString()};
-   const result=await db.from("contract_resource_requirements").update(payload).eq("id",item.id).select("id,observed_quantity,inventory_note,quantity_checked_at").single();
+   const changed=Number(item.observed_quantity)!==Number(value);
+   const payload={observed_quantity:Number(value),inventory_note:note||null,
+    quantity_checked_at:verify?new Date().toISOString():changed?null:item.quantity_checked_at,
+    review_status:verify?"validado":"a_conferir",
+    validation_status:verify?(Number(value)<Number(item.required_quantity)?"faltante":"conforme"):"a_conferir"};
+   const result=await db.from("contract_resource_requirements").update(payload).eq("id",item.id).select("id,observed_quantity,inventory_note,quantity_checked_at,review_status,validation_status").single();
    if(result.error){notify(result.error.message,true);btn.disabled=false;btn.textContent="Salvar";return;}
-   Object.assign(item,result.data);notify("Quantidade de "+item.item_name+" registrada.");redrawKeepingPosition();
+   Object.assign(item,result.data);notify("Quantidade de "+item.item_name+" salva. "+(verify?"Conferência física documentada.":"Sem nova confirmação física."));redrawKeepingPosition();
   }));
  }
  // Ao atualizar uma linha, manter aba, pesquisa, fornecedor e posição na lista.
