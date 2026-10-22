@@ -80,3 +80,54 @@ O repositório contém código e documentos genéricos, **não a lista nominal d
 - Se a programação necessitar alterações após aprovação, deve-se formalizar a revisão antes de modificar a escala; não se presume revogação de aceite pelo simples uso da interface.
 
 Migrações: `202610220002_daily_shift_plans.sql`, `202610220003_daily_approval_batch_os.sql`, `202610220004_avoid_approved_assignment_update.sql`.
+
+## Planejamento operacional revisado · novembro/2026 a janeiro/2027
+
+### Organização de turnos e aprovação
+- Programação de 61 dias úteis-base, com **manhã e tarde por equipe e por posto**. Total: 1.464 turnos em estado de rascunho, que só são considerados revisados após conferência autenticada da supervisão.
+- Os seis postos do item 3.40 integram o mesmo quadro, **sem pessoal adicional ou faturamento diário separado**. A equipe de jardinagem coordena a cobertura dos postos, sem duplicar a alocação dos trabalhadores.
+- A programação proposta será exportada para avaliação do gestor; a emissão de OS em lotes permanece condicionada ao registro de aprovação documental e à validação de todos os turnos.
+- O PDF pré-aprovação deve indicar sua natureza de proposta. Se houver aprovação formal registrada, a exportação diária indicará o gestor, data e referência documental, sem confundir planejamento com execução.
+
+### Novembro de 2026 · fase de adequação da Manutenção Global/RBV
+Objetivo do mês: organizar a capacidade de atendimento e as frentes de conservação, respeitando a hierarquia de segurança, disponibilidade de materiais e autorização técnica.
+
+1. **Primeira semana:** checar condições de acessos, estruturas e guarda-corpos; definir segurança e requisitos das intervenções; priorizar drenagem e limpeza técnica; conferir apoio de transporte e descarte.
+2. **Segunda semana:** dedicar frentes a calhas, pontos de drenagem, entorno de edificações e áreas da Administração, com registros por local e dependências de insumos.
+3. **Terceira semana:** conservação de sinalização, estruturas e ambientes de apoio; limpeza vegetativa e conferência de materiais, liberando atividades apenas quando seguras e autorizadas.
+4. **Quarta semana:** revisão dos resultados e pendências; consolidação do ciclo preventivo, das condições de acesso e dos materiais disponíveis.
+5. **Encerramento do mês:** formalizar carteira de demandas eventuais, roteiro diário, frequência semanal e periodicidade mensal.
+
+A carteira operacional de manutenção possui ações identificadas por código, condição de execução, prioridade e situação documentada. Não classificar como concluído sem evidência.
+
+### Dezembro de 2026 e janeiro de 2027 · ciclo de rotina da Manutenção
+- **Diariamente:** ronda de conservação de acessos, inspeção visual de pontos de risco, recolhimento regular de resíduos, verificação de equipamentos e registro das ocorrências.
+- **Semanalmente:** segunda-feira, drenagem/calhas; terça-feira, oficina e edificações; quarta-feira, estruturas/guarda-corpos; quinta-feira, áreas externas e lagos; sexta-feira, vistoria final, evidências e preparação de insumos.
+- **Mensalmente:** revisar sinalização, materiais, intervenções preventivas, pendências de estruturas, limpeza de maior complexidade e indicadores por área. A prioridade do mês resulta da necessidade verificada, não de uma medição presumida.
+- **Eventualmente:** receber serviços globais autorizados pela gestão, avaliando compatibilidade com a rotina e remanejamento documentado, sem dupla medição ou ocupação simultânea fictícia da mesma equipe.
+- **Clima e segurança:** interromper ou remanejar atividade externa em condição insegura; a tendência sazonal não é previsão diária e não substitui avaliação do dia.
+
+### Enquadramento das demais equipes
+| Equipe | Frente principal | Organização recorrente |
+| --- | --- | --- |
+| EQ01, UHI A | Área global e faixas verdes | Vistoria/roteiro, corte ou roçada por trecho, acabamento e registro da área real; alternativa segura mediante autorização |
+| EQ02, UHI B | Praças e vilas | Vistoria de gramados, canteiros e árvores; corte, limpeza, coleta de aparas e atendimento eventual com segurança |
+| EQ03, UHI C | Controle vegetativo | Controle manual, roçada ou corte em talhões definidos, rastelamento, resíduos e evidências sem duplicar rubricas |
+| EQ04, RBV Viveiro | Viveiro e Horto | Mudas, produção, expedição, cuidados hídricos conforme necessidade; manutenção semanal de limpeza/conservação do Horto |
+| EQ05, RBV Manutenção | Conservação global | Um mês de adequação; depois rotinas diária, semanal e mensal, com reserva de capacidade para eventual autorizada |
+| EQ06, Jardinagem descentralizada | Postos contratuais | Conferência da cobertura dos seis postos; não constitui contingente de trabalhadores adicional aos postos |
+| Postos 01 a 06 | Jardins, canteiros e dependências | Diariamente D1/D2, semanalmente S1 e mensalmente M1/M2/M3, conforme os 36 modelos cadastrados e vistoria do local |
+
+### Conferência da meta financeira, sem presumir capacidade operacional
+- A soma dos 53 itens da planilha de preços é **R$ 3.681.955,55**; a referência teórica em quatro meses é **R$ 920.488,89/mês**. Meta gerencial: **R$ 919.000,00/mês**.
+- As quatro rubricas com unidade `mês` totalizam **R$ 127.975,20** por competência, se efetivamente devidas e aceitas. A diferença variável necessária para **99% da meta** é **R$ 781.834,80**; para **100%**, **R$ 791.024,80**.
+- Considerada a distribuição linear do conjunto contratado, 99% da meta exige **98,65%** da referência variável mensal, enquanto 100% exige **99,81%**. A meta de 101% excede a parcela mensal linear; só pode ser estudada se os saldos, a vigência, os quantitativos e a capacidade autorizarem redistribuição.
+- A referência de 100,16% da meta é **matemática**, não demonstra produtividade, medição, autorização ou faturamento. Não existe base quantitativa suficiente para garantir 99%, 100% ou mais.
+- O período de adequação de novembro, disponibilidade real de pessoal/máquinas e as janelas climáticas devem ser considerados como restrições e não compensados por serviços fictícios.
+
+### Prognóstico climático e consulta operacional
+- **Novembro:** tendência de volumes de chuva acima da média, com atenção ao Oeste do Paraná; reservar frentes protegidas e dias seguros.
+- **Dezembro:** prognóstico de chuva acima da média até dezembro no Paraná e possibilidade de tempo severo; ajustar frentes externas e calendário útil.
+- **Janeiro:** cenário de verão com incertezas; boletins futuros devem atualizar o planejamento, sem inventar previsão diária de precipitação.
+- Referência oficial: Simepar, boletim de 09/10/2026, https://www.simepar.br/simepar/post/79386.
+- A função de previsão curta deve buscar INMET/CPTEC. Enquanto não retornar observações previstas válidas, indicar indisponibilidade (HTTP 503) e orientar consulta direta; não liberar atividades automaticamente.
