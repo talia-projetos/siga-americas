@@ -1,0 +1,49 @@
+/* SIGA Américas · apresentação meteorológica consistente em todas as páginas.
+   O mesmo componente aparece no planejamento financeiro e no mensal de campo. */
+#main .climate-planner-panel{width:100%;min-width:0;margin:0 0 18px;padding:0 0 13px;overflow:hidden;background:#fff;border:1px solid #dee8df;border-radius:13px;box-shadow:0 4px 18px rgba(30,68,45,.035)}
+#main .climate-planner-panel .climate-panel-head{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin:0;padding:20px 20px 13px}
+#main .climate-planner-panel .climate-panel-head>div{min-width:0;flex:1 1 450px}
+#main .climate-planner-panel .climate-panel-head .eyebrow{font-size:10px;letter-spacing:.1em;color:#3e814f;font-weight:790}
+#main .climate-planner-panel .climate-panel-head h2{margin:5px 0 4px;font-size:19px;line-height:1.3;letter-spacing:-.02em;color:#254d37}
+#main .climate-planner-panel .climate-panel-head p{color:#74887b;font-size:11px;line-height:1.55;margin:0}
+#main .climate-planner-panel .climate-panel-head a{display:inline-flex;align-items:center;gap:5px;margin:0;padding:7px 9px;border-radius:7px;color:#477257;text-decoration:none;white-space:nowrap;font-size:10.5px;font-weight:680}
+#main .climate-planner-panel .climate-panel-head a:hover{background:#f0f7f1;color:#286043}
+#main .climate-planner-panel .climate-disclaimer{margin:0 20px 12px;padding:0;font-size:10.5px;line-height:1.6;color:#6a826f}
+#main .climate-planner-panel .climate-seasonal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 20px 15px;margin:0}
+#main .climate-planner-panel .climate-seasonal>div{display:flex;flex-direction:column;gap:6px;min-width:0;padding:13px 14px;border:1px solid #e1eae3;border-radius:9px;background:#f9fbf9}
+#main .climate-planner-panel .climate-seasonal strong{font-size:11px;color:#345f43;line-height:1.4}
+#main .climate-planner-panel .climate-seasonal span{font-size:10.5px;color:#637d6b;line-height:1.62}
+#main .climate-planner-panel .climate-forecast-section{min-width:0;margin:0 20px 14px;background:#f8fbf8;border:1px solid #dce8df;border-radius:10px;overflow:hidden}
+#main .climate-planner-panel .climate-refresh-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px;padding:13px 15px;margin:0;background:#f0f7f1;border-bottom:1px solid #e0eae2}
+#main .climate-planner-panel .climate-refresh-caption{display:grid;min-width:0;gap:3px;flex:1 1 210px}
+#main .climate-planner-panel .climate-refresh-caption strong{font-size:12px;color:#2f5c3f;line-height:1.3;font-weight:760}
+#main .climate-planner-panel .climate-refresh-caption small{font-size:10px;color:#6d8574;line-height:1.45}
+#main .climate-planner-panel .climate-refresh-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:9px 12px;min-width:0}
+#main .climate-planner-panel .climate-refresh-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;min-height:36px;border:1px solid #d0e4d4;border-radius:8px;background:#e7f3e8;color:#2d6845;font-size:10.5px;line-height:1.35;font-weight:740;white-space:nowrap}
+#main .climate-planner-panel .climate-refresh-actions button:hover{background:#dceede;color:#245a3b}
+#main .climate-planner-panel .climate-refresh-actions button:focus-visible{outline:2px solid #52946d;outline-offset:2px}
+#main .climate-planner-panel .climate-refresh-actions button:disabled{opacity:.58;cursor:wait}
+#main .climate-planner-panel .climate-refresh-actions [data-forecast-last-check]{font-size:10px;line-height:1.4;color:#74897a;font-variant-numeric:tabular-nums;white-space:normal}
+#main .climate-planner-panel .climate-live-result{min-width:0;margin:0;padding:13px 15px;border:0;border-radius:0;background:transparent;color:#526e59;font-size:10.5px;line-height:1.5}
+#main .climate-planner-panel .climate-label{margin:0 0 12px;color:#386e4b;font-weight:740;font-size:10.5px;line-height:1.45}
+#main .climate-planner-panel .climate-live-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;min-width:0}
+#main .climate-planner-panel .climate-live-days>div{min-width:0;display:flex;flex-direction:column;gap:5px;padding:10px;border:1px solid #e2ebe3;border-radius:8px;background:#fff}
+#main .climate-planner-panel .climate-live-days strong{font-size:10px;color:#356243;line-height:1.35;white-space:normal}
+#main .climate-planner-panel .climate-live-days span{font-size:12px;color:#516e5c;line-height:1.45;white-space:normal}
+#main .climate-planner-panel .climate-live-days small{font-size:9.5px;color:#718575;line-height:1.45}
+#main .climate-planner-panel .climate-attribution{font-size:10px;color:#6c8572;line-height:1.55;margin:12px 0 0}
+#main .climate-planner-panel .climate-live-warning{font-size:10.5px;line-height:1.65;color:#916c46;margin:0}
+#main .climate-planner-panel .climate-diagnostic{padding-top:10px;border-top:1px solid #dfeae1;margin-top:11px}
+#main .climate-planner-panel .climate-guidance{display:flex;align-items:flex-start;gap:10px;margin:0 20px 10px;padding:11px 13px;border:1px solid #eae9da;border-radius:9px;background:#faf9f3}
+#main .climate-planner-panel .climate-guidance-symbol{display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;margin-top:1px;border-radius:7px;background:#f4ead4;color:#8d723e}
+#main .climate-planner-panel .climate-guidance-symbol .ui-icon{width:16px;height:16px}
+#main .climate-planner-panel .climate-guidance p{margin:0;min-width:0;font-size:10.5px;line-height:1.6;color:#796f53}
+#main .climate-planner-panel .climate-guidance strong{color:#5a583c}
+#main .climate-planner-panel .climate-source-disclosure{margin:0 20px;padding:1px 2px 0;border-top:1px solid #e9efea}
+#main .climate-planner-panel .climate-source-disclosure>summary{display:list-item;padding:9px 2px 5px;cursor:pointer;font-size:10.5px;line-height:1.5;font-weight:690;color:#456f52}
+#main .climate-planner-panel .climate-source-disclosure .climate-sources{font-size:10px;line-height:1.8;margin:0;padding:7px 0 3px;color:#718474}
+#main .climate-planner-panel .climate-source-disclosure .climate-sources a{color:#3d7352}
+@media(max-width:1200px){#main .climate-planner-panel .climate-live-days{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:850px){#main .climate-planner-panel .climate-seasonal{grid-template-columns:1fr}#main .climate-planner-panel .climate-refresh-actions{justify-content:flex-start}#main .climate-planner-panel .climate-live-days{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){#main .climate-planner-panel .climate-panel-head{padding:16px 13px 10px}#main .climate-planner-panel .climate-disclaimer{margin:0 13px 11px}#main .climate-planner-panel .climate-seasonal{padding:0 13px 13px}#main .climate-planner-panel .climate-forecast-section{margin:0 13px 12px}#main .climate-planner-panel .climate-refresh-toolbar{padding:11px 12px}#main .climate-planner-panel .climate-refresh-actions{width:100%;justify-content:flex-start}#main .climate-planner-panel .climate-live-result{padding:12px}#main .climate-planner-panel .climate-live-days{grid-template-columns:repeat(2,minmax(0,1fr))}#main .climate-planner-panel .climate-guidance{margin:0 13px 10px;padding:11px}#main .climate-planner-panel .climate-source-disclosure{margin:0 13px}}
+@media(prefers-reduced-motion:reduce){#main .climate-planner-panel *{transition:none!important}}
