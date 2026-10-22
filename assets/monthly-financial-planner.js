@@ -11,22 +11,20 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
  const canWrite=["admin","gestao","supervisao"].includes(role);
  root.innerHTML='<div class="loading-page"><div class="loader"></div><p>Consultando custeio e propostas de campo…</p></div>';
  try{
-  const [itemsResult,goalsResult,proposalsResult,recordsResult,octoberResult,activitiesResult,fieldItemsResult,datesResult]=await Promise.all([
+  const [itemsResult,goalsResult,proposalsResult,recordsResult,activitiesResult,fieldItemsResult,datesResult]=await Promise.all([
    db.from("contract_items").select("id,code,name,unit,unit_price,estimated_quantity,estimated_total,source_type").eq("source_type","precos").limit(150),
    db.from("finance_goals").select("period_month,target_amount,notes").in("period_month",["2026-11-01","2026-12-01","2027-01-01"]),
    db.from("monthly_operational_proposals").select("id,period_month,planned_for,location_description,justification,climate_alternative,proposed_quantity,proposal_status,contract_item_id,area_id,work_order_id").order("planned_for",{ascending:true}).limit(250),
    db.from("field_execution_entries").select("performed_on,estimated_amount,validation_status").gte("performed_on","2026-11-01").lt("performed_on","2027-02-01").limit(700),
-   db.from("field_execution_entries").select("estimated_amount").eq("validation_status","validada").gte("performed_on","2026-10-01").lt("performed_on","2026-11-01").limit(700),
    db.from("activity_catalog").select("id,code,name,category").limit(200),
    db.from("field_plan_items").select("id,activity_id,contract_item_id,planned_quantity,action_status").limit(300),
    db.from("daily_team_assignments").select("work_date").gte("work_date","2026-11-01").lte("work_date","2027-01-31").limit(900)
   ]);
-  for(const v of [itemsResult,goalsResult,proposalsResult,recordsResult,octoberResult,activitiesResult,fieldItemsResult,datesResult])if(v.error)throw v.error;
+  for(const v of [itemsResult,goalsResult,proposalsResult,recordsResult,activitiesResult,fieldItemsResult,datesResult])if(v.error)throw v.error;
   const prices=(itemsResult.data||[]).filter(x=>Number.isFinite(Number(x.unit_price))&&Number.isFinite(Number(x.estimated_quantity))),
    byId=new Map(prices.map(i=>[i.id,i])),
    goals=new Map((goalsResult.data||[]).map(g=>[g.period_month,g])),
    proposed=proposalsResult.data||[],actual=recordsResult.data||[],
-   octValidated=(octoberResult.data||[]).reduce((s,e)=>s+Number(e.estimated_amount||0),0),
    activityCatalogue=activitiesResult.data||[],fieldPlanItems=fieldItemsResult.data||[],
    workingDates=[...new Set((datesResult.data||[]).map(x=>x.work_date))];
   const months=[["2026-11-01","Novembro de 2026"],["2026-12-01","Dezembro de 2026"],["2027-01-01","Janeiro de 2027"]];
