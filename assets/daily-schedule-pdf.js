@@ -1,11 +1,13 @@
 // Impressão da escala diária com a mesma identidade e biblioteca da OS.
-import {generatePDF,downloadDocument} from "./document-output.js?v=7";
+import {generatePDF,downloadDocument} from "./document-output.js?v=9";
+import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
 const d=v=>v?new Date(String(v).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"Data não informada";
 const pretty=x=>String(x??"").trim()||"A confirmar";
 const labels={programada:"Programada",remanejada:"Remanejada",impedida:"Impedida",informada:"Execução informada",validada:"Validada"};
 const shortService=x=>String(x??"").replace(/\s*·\s*programação diária.*$/i,"").trim();
-export function buildDailyScheduleDocument(entry,team,area,price){
+export function buildDailyScheduleDocument(entry,team,area,price,catalog=[]){
  const date=d(entry.work_date),item=[price?.code,price?.name].filter(Boolean).join(" · ");
+ const alternatives=secondaryCandidates(catalog,entry,area);
  const blocker=entry.block_status==="impedida"
   ?"Bloqueio informado: "+pretty(entry.blocker_reason)
   :entry.block_status==="remanejada"
@@ -31,7 +33,8 @@ export function buildDailyScheduleDocument(entry,team,area,price){
    ["01  ATIVIDADE PREVISTA",shortService(entry.planned_service)||pretty(price?.name)],
    ["02  ALTERNATIVA / IMPEDIMENTO",
     "Atividade alternativa condicionada à segurança: "+pretty(entry.climate_alternative)+"\n"+
-    "Situação: "+pretty(labels[entry.block_status]||entry.block_status)+". "+blocker],
+    "Situação: "+pretty(labels[entry.block_status]||entry.block_status)+". "+blocker+"\n"+
+    "Rubricas alternativas, sujeitas a necessidade e medição: "+(alternatives.map(priceLabel).join(" | ")||"Não confirmadas")],
    ["03  REGISTRO POSTERIOR DA EQUIPE",
     "Atividade executada: _______________________________________________________\n"+
     "Local / trecho: _____________________________________________________________\n"+
@@ -49,7 +52,7 @@ export function buildDailyScheduleDocument(entry,team,area,price){
 export async function downloadDailySchedules(entries,teams,areas,prices){
  if(!entries?.length)throw new Error("Selecione uma data com equipe programada.");
  const models=entries.slice().sort((a,b)=>String(teams.get(a.team_id)?.code||"").localeCompare(String(teams.get(b.team_id)?.code||""))).map(entry=>
-  buildDailyScheduleDocument(entry,teams.get(entry.team_id),areas.get(entry.area_id),prices.get(entry.contract_item_id))
+  buildDailyScheduleDocument(entry,teams.get(entry.team_id),areas.get(entry.area_id),prices.get(entry.contract_item_id),[...prices.values()])
  );
  const pdf=await generatePDF(models);
  const iso=String(entries[0].work_date||"data").replaceAll("-","");
@@ -70,6 +73,7 @@ export function buildMonthlyScheduleDocuments(entries,teams,areas,prices,selecte
  return teamIds.map(teamId=>{
   const team=teams.get(teamId)||{},subset=entries.filter(e=>e.team_id===teamId).sort((a,b)=>a.work_date.localeCompare(b.work_date));
   const area=areas.get(subset[0]?.area_id)||{};
+  const alternatives=secondaryCandidates([...prices.values()],subset[0],area);
   const lines=subset.map(e=>{
    const price=prices.get(e.contract_item_id)||{};
    const date=String(e.work_date).slice(8,10)+"/"+String(e.work_date).slice(5,7);
@@ -91,6 +95,7 @@ export function buildMonthlyScheduleDocuments(entries,teams,areas,prices,selecte
    sections:[
     ["01  ATIVIDADES POR DATA",lines.join("\n")],
     ["02  ALTERNATIVAS E BLOQUEADORES",
+     "Rubricas alternativas possíveis nesta frente: "+(alternatives.map(priceLabel).join(" | ")||"A avaliar")+".\n"+
      "Atividades alternativas e condições de segurança devem ser conferidas diariamente no SIGA. Dias remanejados ou impedidos estão identificados na relação acima.\n"+
      "O técnico registra a execução real e informa serviços não previstos; a supervisão verifica e valida."],
     ["03  CONFERÊNCIA OPERACIONAL",
