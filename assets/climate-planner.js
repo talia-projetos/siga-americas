@@ -1,3 +1,4 @@
+import {iconMarkup} from "./icons.js?v=6";
 // Clima operacional do SIGA: INMET (API de curto prazo) e tendência sazonal oficial Simepar.
 const html=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=d=>{const date=new Date(d+"T12:00:00");return Number.isNaN(date.valueOf())?d:date.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",weekday:"short"});};
@@ -11,10 +12,10 @@ export async function mountWeatherAdvisory(root,db){
  '<div><strong>Janeiro/2027</strong><span>Verão sob influência possível do El Niño. Ainda não há prognóstico mensal local verificado nesta consulta; reavaliar os boletins vigentes antes de liberar frentes.</span></div></div>'+
  '<section class="climate-forecast-section" aria-label="Previsão meteorológica de curto prazo">'+
  '<div class="climate-refresh-toolbar"><div class="climate-refresh-caption"><strong>Previsão de curto prazo</strong><small>INMET · CPTEC/INPE · MET Norway/ECMWF</small></div>'+
- '<div class="climate-refresh-actions"><button type="button" class="btn btn-secondary" data-refresh-forecast>Atualizar previsão</button>'+
+ '<div class="climate-refresh-actions"><button type="button" class="btn btn-secondary" data-refresh-forecast>'+iconMarkup("repeat")+' Atualizar previsão</button>'+
  '<span data-forecast-last-check aria-live="polite">Aguardando primeira consulta</span></div></div>'+
  '<div id="climate-live-result" class="climate-live-result" aria-live="polite">Consultando as fontes meteorológicas…</div></section>'+
- '<div class="climate-guidance"><span class="climate-guidance-symbol" aria-hidden="true">!</span><p><strong>Segurança operacional:</strong> previsão numérica ou institucional não libera serviço em campo. Conferir alertas locais e suspender/reprogramar operações sob raios, temporais, ventos intensos ou condições inseguras do solo.</p></div>'+
+ '<div class="climate-guidance"><span class="climate-guidance-symbol" aria-hidden="true">'+iconMarkup("shield")+'</span><p><strong>Segurança operacional:</strong> previsão numérica ou institucional não libera serviço em campo. Conferir alertas locais e suspender/reprogramar operações sob raios, temporais, ventos intensos ou condições inseguras do solo.</p></div>'+
  '<details class="climate-source-disclosure"><summary>Fontes consultadas e referências técnicas</summary><div class="climate-sources">Fontes: <a href="https://previsao.inmet.gov.br/4108304" target="_blank" rel="noopener noreferrer">INMET</a> · <a href="https://servicos.cptec.inpe.br/XML/" target="_blank" rel="noopener noreferrer">CPTEC/INPE</a> · <a href="https://www.simepar.br/simepar/post/79386" target="_blank" rel="noopener noreferrer">Simepar: El Niño e chuva até dezembro</a> · <a href="https://portal.inmet.gov.br/normais" target="_blank" rel="noopener noreferrer">Normais climatológicas</a> · <a href="https://api.met.no/weatherapi/locationforecast/2.0/documentation" target="_blank" rel="noopener noreferrer">MET Norway / ECMWF (modelo)</a></div></details></section>';
  const result=root.querySelector("#climate-live-result");
  const toolbar=root.querySelector(".climate-refresh-toolbar");
