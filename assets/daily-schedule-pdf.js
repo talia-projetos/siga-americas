@@ -1,6 +1,6 @@
 // SIGA Américas · propostas de escala por manhã e tarde para validação do gestor.
 // Postos fixos: item 3.40 de periodicidade mensal; nenhuma medição diária presumida.
-import {generatePDF,downloadDocument} from "./document-output.js?v=9";
+import {generatePDF,downloadDocument} from "./document-output.js?v=10";
 const d=v=>v?new Date(String(v).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"Data não informada";
 const pretty=x=>String(x??"").trim()||"A definir";
 const shortService=x=>String(x??"").replace(/\s*·\s*programação diária.*$/i,"").trim();
