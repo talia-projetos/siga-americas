@@ -172,14 +172,18 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   '<h3>Importar geometria para conferência contratual</h3>'+
   '<p>Formato KML, KMZ ou GeoJSON em WGS84 · EPSG:4326. Indique a fonte e o vínculo à matriz de 73 atividades. A geometria será armazenada e poderá ser consultada por outras contas autorizadas.</p>'+
   '<div class="coverage-map-inputs"><label>Nome da área/trecho/ponto<input data-layer-name maxlength="140" placeholder="Ex.: Ciclovia Vila A · trecho leste"></label>'+
-   '<label>Categoria<select data-layer-category><option value="trecho">Trecho linear</option><option value="area">Área de cobertura</option><option value="ponto">Ponto externo</option></select></label>'+
+   '<label>Categoria<select data-layer-category><option value="trecho">Trecho linear</option><option value="area">Área de cobertura</option><option value="ponto">Ponto externo</option><option value="matrizes">Árvores matrizes (KMZ)</option></select></label>'+
    '<label>Referência do contrato / matriz<input data-layer-contract maxlength="220" placeholder="Ex.: 3.35 · Corte de gramados"></label>'+
    '<label>Fonte da geometria<input data-layer-source maxlength="220" placeholder="Ex.: levantamento QGIS / vistoria de campo"></label>'+
    '<label>Arquivo KML/KMZ/GeoJSON<input type="file" data-layer-file accept=".kml,.kmz,.json,.geojson"></label></div>'+
+ '<div class="coverage-matrix-preview" data-matrix-preview aria-live="polite"></div>'+
+  '<label class="coverage-replace-toggle" data-replace-wrap hidden><input type="checkbox" data-replace-matrices> Substituir os pontos provisórios de matrizes após conferência</label>'+
+  '<p class="coverage-import-note">KMZ grande: só o KML interno será processado, sem carregar as fotografias. A importação não comprova identificação botânica.</p>'+
   '<div class="coverage-map-import-actions"><button class="btn btn-primary" type="button" data-layer-save>Salvar camada georreferenciada</button>'+
   '<button class="btn btn-ghost" type="button" data-import-close>Cancelar</button></div></div>'+
  '</section>';
  const q=s=>root.querySelector(s);let layers=[],map=null,engine="leaflet",drawn=[],googleData=[],destroyed=false,resizeObserver=null,resizeFrame=0;
+ let preview=null;
  const mapDiv=q("[data-map]");
  const defaultPins=[]; // Nenhuma referência nominal recebe coordenadas inventadas.
  const satelliteUrl="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
