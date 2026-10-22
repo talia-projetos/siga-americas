@@ -1906,3 +1906,71 @@
 #main .contract-coverage-accumulated{font-size:10.5px;line-height:1.55;color:#607968;margin:4px 0 14px;border-left:3px solid #a8c9b0;padding:7px 10px;background:#f7faf7;border-radius:0 6px 6px 0}
 #main .contract-coverage-accumulated strong{color:#2f6747}
 @media(max-width:760px){#main .planning-workspace .climate-forecast-section{margin:2px 12px 13px}#main .planning-workspace .climate-guidance{margin:0 12px 12px}#main .planning-workspace .climate-source-disclosure{margin:0 12px 15px}#main .planning-workspace .climate-planner-panel .climate-refresh-toolbar{align-items:flex-start;padding:12px}#main .planning-workspace .climate-refresh-actions{justify-content:flex-start;width:100%;margin-left:0;gap:8px}#main .planning-workspace .climate-refresh-actions [data-forecast-last-check]{white-space:normal}#main .planning-workspace .climate-refresh-actions button{flex-shrink:0}}
+
+/* CAPE: acompanhamento vivo das semanas — prioridade à leitura, não ao catálogo */
+#main .weekly-panel{background:#fff;border:1px solid #dce8df;border-radius:13px;overflow:hidden;box-shadow:0 6px 26px rgba(28,71,46,.035)}
+#main .weekly-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:22px 24px 13px}
+#main .weekly-head .eyebrow{font-size:10px;font-weight:800;letter-spacing:.11em;color:#528263}
+#main .weekly-head h2{font-size:clamp(18px,2vw,24px);letter-spacing:-.025em;margin:5px 0 6px;color:#244c36}
+#main .weekly-head p{font-size:11.5px;margin:0;color:#738778;line-height:1.55}
+#main .weekly-source-pill{font-size:10px;font-weight:750;color:#3c704f;background:#edf6ed;border:1px solid #d6e8d7;border-radius:999px;padding:8px 12px;white-space:nowrap}
+#main .weekly-filters{display:grid;grid-template-columns:minmax(250px,1.4fr) minmax(180px,1fr) minmax(190px,1.2fr) auto;align-items:end;gap:10px;padding:14px 24px;background:#f8fbf8;border-top:1px solid #edf2ed;border-bottom:1px solid #e7eee7}
+#main .weekly-filters label{display:grid;gap:5px;min-width:0;color:#53705b;font-size:10px;font-weight:700}
+#main .weekly-filters input,#main .weekly-filters select{width:100%;min-width:0;box-sizing:border-box;border:1px solid #d8e6da;border-radius:8px;background:#fff;min-height:39px;padding:9px 10px;font-size:11px;color:#315840}
+#main .weekly-date-tools{display:grid;grid-template-columns:37px minmax(130px,1fr) 37px;gap:5px;align-items:end;min-width:0}
+#main .weekly-date-tools button{min-height:39px;font-size:22px;font-weight:450;line-height:1;padding:5px}
+#main .weekly-filters>#weekly-reload{white-space:nowrap;font-size:10px;min-height:39px}
+#main .weekly-filters button:focus-visible,#main .weekly-filters select:focus-visible,#main .weekly-filters input:focus-visible,#main .weekly-activity-card button:focus-visible{outline:2px solid #458d65;outline-offset:2px}
+#main .weekly-period-label{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px 24px 0}
+#main .weekly-period-label strong{font-size:12px;color:#325d41}
+#main .weekly-period-label span{font-size:10px;color:#8a988e}
+#main .weekly-error{padding:12px 24px;color:#975738;font-size:11px}
+#main .weekly-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;padding:14px 24px 19px}
+#main .weekly-stat{min-width:0;background:#f5f9f5;border:1px solid #e4ece4;border-radius:10px;padding:13px 14px;display:flex;flex-direction:column;gap:5px}
+#main .weekly-stat small{font-size:10px;color:#6e8371;line-height:1.4}
+#main .weekly-stat strong{font-size:21px;color:#2c6043;font-weight:790;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+#main .weekly-stat span{font-size:10px;color:#829185;line-height:1.45}
+#main .weekly-worklist{padding:4px 24px 18px;border-top:1px solid #edf1eb}
+#main .weekly-worklist>header{display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:13px}
+#main .weekly-worklist>header h3{font-size:15px;color:#315d41;margin:6px 0}
+#main .weekly-worklist>header p{font-size:11px;line-height:1.55;color:#7c8c80;margin:0;max-width:720px}
+#main .weekly-worklist>header>span{font-size:10px;color:#697c6f;white-space:nowrap;background:#f0f5f0;border-radius:7px;padding:7px 9px}
+#main .weekly-no-reports{padding:18px 20px;background:#f9fbf8;border:1px solid #e0eae0;border-radius:10px;margin-bottom:13px}
+#main .weekly-no-reports strong{font-size:13px;color:#335c42}
+#main .weekly-no-reports p{color:#6b806d;font-size:11px;line-height:1.65;max-width:780px;margin:7px 0 13px}
+#main .weekly-report-note{background:#f3f9f5;border:1px solid #e1ece3;border-radius:9px;padding:12px 14px;color:#647c6b;font-size:11px;line-height:1.6;margin-bottom:12px}
+#main .weekly-report-note strong{color:#345b42}
+#main .weekly-activity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#main .weekly-activity-card{min-width:0;border:1px solid #e2ece4;border-radius:10px;background:#fff;padding:14px 15px}
+#main .weekly-activity-title{display:flex;justify-content:space-between;align-items:start;gap:8px;flex-wrap:wrap}
+#main .weekly-activity-title strong{font-size:12px;color:#2a543b;line-height:1.45}
+#main .weekly-activity-card p{font-size:11px;color:#667a6e;line-height:1.55;margin:9px 0}
+#main .weekly-activity-card small{font-size:10px;color:#87978b;line-height:1.5;display:block}
+#main .weekly-status-chip{font-size:9.5px;font-weight:730;white-space:nowrap;color:#527c5c;background:#edf5ed;border:1px solid #dceadc;padding:4px 7px;border-radius:6px}
+#main .weekly-status-chip.blocked{color:#98613e;background:#fdf3e9;border-color:#f1dfce}
+#main .weekly-status-chip.partial{color:#a77b32;background:#fcf8ea;border-color:#efe6cb}
+#main .weekly-status-chip.planned{color:#667a88;background:#f0f4f6;border-color:#dbe5e9}
+#main .weekly-status-chip.validated{color:#34734b;background:#e9f5ec}
+#main .weekly-activity-note{border-left:2px solid #e4b978;padding-left:10px;color:#906d47!important}
+#main .weekly-card-action{margin-top:11px}
+#main .weekly-activity-card button{font-size:10px}
+#main .weekly-empty{padding:16px 18px;background:#f8faf8;border:1px dashed #dbe7de;border-radius:8px;color:#758579;line-height:1.55;font-size:11px;grid-column:1/-1}
+#main .weekly-worklist>footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:17px;padding-top:14px;border-top:1px solid #edf1ee}
+#main .weekly-worklist>footer>span{font-size:10px;color:#819185;line-height:1.55}
+#main .weekly-worklist>footer button{font-size:10px}
+#main .weekly-reference{border-top:1px solid #e4ece5;background:#fafcfa}
+#main .weekly-reference>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;padding:15px 24px;list-style:none;color:#477154;font-size:12px}
+#main .weekly-reference>summary::-webkit-details-marker{display:none}
+#main .weekly-reference>summary small{font-size:10px;color:#869689}
+#main .weekly-reference[open]>summary{border-bottom:1px solid #e5ece6}
+#main #weekly-reference-list{padding:15px 24px 24px}
+#main #weekly-reference-list>p{font-size:11px;line-height:1.6;color:#728475}
+#main .weekly-reference-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}
+#main .weekly-reference-rows>div{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid #e6ede6;border-radius:8px;padding:10px 12px;min-width:0}
+#main .weekly-reference-rows>div>span{min-width:0}
+#main .weekly-reference-rows strong{font-size:10.5px;color:#345e42;display:block}
+#main .weekly-reference-rows small{font-size:9.5px;color:#8a998e;display:block;margin-top:4px}
+#main .weekly-reference-rows button{font-size:10px;text-align:right;flex-shrink:0}
+#main .weekly-method{background:#eff6f0;padding:12px 14px;border-radius:8px;margin-top:16px}
+@media(max-width:1080px){#main .weekly-filters{grid-template-columns:repeat(2,minmax(0,1fr))}#main .weekly-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){#main .weekly-head{padding:18px 14px 12px}#main .weekly-source-pill{display:none}#main .weekly-filters{grid-template-columns:1fr;padding:13px 14px}#main .weekly-period-label{padding:12px 14px 0}#main .weekly-stats{padding:12px 14px;grid-template-columns:repeat(2,minmax(0,1fr))}#main .weekly-worklist{padding:6px 14px 16px}#main .weekly-activity-grid,#main .weekly-reference-rows{grid-template-columns:1fr}#main .weekly-reference>summary{padding:14px}#main #weekly-reference-list{padding:12px 14px}#main .weekly-worklist>header{flex-wrap:wrap}}
