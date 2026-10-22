@@ -146,3 +146,12 @@
 #main .ppe-contract-metrics span{font-size:10px;color:#728779;line-height:1.4}
 #main .ppe-contract-overview .ppe-contract-note{flex:1 1 100%;font-size:10.5px;border-top:1px solid #edf1ec;padding-top:10px}
 @media(max-width:680px){#main .ppe-contract-overview{padding:13px}#main .ppe-contract-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+
+/* Previsão oficial: ação de atualização separada do estado de erro. */
+#main .climate-refresh-toolbar{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin:8px 0 0}
+#main .climate-refresh-toolbar button{font-size:11px;min-height:34px}
+#main .climate-refresh-toolbar span{color:#82918a;font-size:10px}
+#main .climate-diagnostic{margin:9px 0 0;border-top:1px solid #e6ece8;padding:8px 0 2px}
+#main .climate-diagnostic summary{font-size:10.5px;color:#5f7766;cursor:pointer}
+#main .climate-diagnostic p{line-height:1.5;font-size:10px;color:#758579;margin:6px 0}
