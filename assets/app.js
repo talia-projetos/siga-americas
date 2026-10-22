@@ -1076,9 +1076,12 @@ async function saveRecord(e){
 }
 function exportCSV(){
  const m=modules[app.page];if(!m?.table)return;
- const cols=m.fields.map(f=>f.key);
+ const cols=[...new Set([...m.fields.map(f=>f.key),...m.columns,...(app.page==="stock_items"?["count_evidence"]:[])])];
+ const header=key=>m.fields.find(f=>f.key===key)?.label||({contract_required:"Quantidade contratual",ledger_balance:"Saldo por movimentações",counted_quantity:"Contagem física",counted_at:"Data da contagem",count_evidence:"Evidência da contagem"})[key]||key;
+ const cell=(row,key)=>key==="contract_required"?(app.ppeRequirementMap?.get(row.contract_resource_requirement_id)?.required_quantity??"A dimensionar"):
+ app.page==="purchases"&&key==="sector_team_ids"&&Array.isArray(row[key])?row[key].map(id=>optionLabel("teams",id,"name")).join(", "):row[key];
  const protect=value=>{let str=String(value??"");if(/^[=+@-]/.test(str))str="'"+str;return '"'+str.replaceAll('"','""')+'"'};
- const output=[m.fields.map(f=>protect(f.label)).join(";"),...filteredRows().map(r=>cols.map(k=>protect(app.page==="purchases"&&k==="sector_team_ids"&&Array.isArray(r[k])?r[k].map(id=>optionLabel("teams",id,"name")).join(", "):r[k])).join(";"))].join("\r\n");
+ const output=[cols.map(k=>protect(header(k))).join(";"),...filteredRows().map(r=>cols.map(k=>protect(cell(r,k))).join(";"))].join("\r\n");
  const link=document.createElement("a"),url=URL.createObjectURL(new Blob(["\ufeff"+output],{type:"text/csv;charset=utf-8"}));link.href=url;link.download=m.table+"_"+new Date().toISOString().slice(0,10)+".csv";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 document.addEventListener("click",async e=>{
