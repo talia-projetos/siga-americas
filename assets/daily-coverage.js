@@ -21,8 +21,8 @@ export async function mountDailyCoverage(root,db,{role,notify}){
   db.from("contract_items").select("id,code,name,unit,unit_price,source_type").eq("source_type","precos"),
   db.from("service_posts").select("id,code,name,contractual_reference,fixed_positions,verification_status").order("code"),
   db.from("field_routine_templates").select("id,service_post_id,routine_code,title,frequency,execution_guidance,active,validation_status").eq("active",true).limit(150),
-  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").order("id").range(0,999),
-  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").order("id").range(1000,1999),
+  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note,review_status,reviewed_by,reviewed_at").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").order("id").range(0,999),
+  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note,review_status,reviewed_by,reviewed_at").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").order("id").range(1000,1999),
   db.from("daily_plan_approvals").select("id,work_date,manager_name,approval_reference,approved_on,recorded_by").gte("work_date","2026-11-01").lte("work_date","2027-01-31"),
   db.from("daily_plan_order_links").select("id,work_date,work_order_id,team_assignment_id,service_post_id").gte("work_date","2026-11-01").lte("work_date","2027-01-31").limit(1600)
  ]);
@@ -40,18 +40,18 @@ export async function mountDailyCoverage(root,db,{role,notify}){
  const grouped=()=>entries.filter(e=>e.work_date.startsWith(month));
  const dates=()=>[...new Set(grouped().map(e=>e.work_date))].sort();
  const postRoutines=id=>routines.filter(r=>r.service_post_id===id).sort((a,b)=>a.routine_code.localeCompare(b.routine_code,"pt-BR"));
- const dailyValid=(kind,id,date)=>shifts.every(([shift])=>{const plan=getPlan(kind,id,date,shift);return Boolean(plan?.planned_activity?.trim()&&plan?.planned_location?.trim())});
+ const dailyValid=(kind,id,date)=>shifts.every(([shift])=>{const plan=getPlan(kind,id,date,shift);return Boolean(plan?.review_status==="revisado"&&plan?.planned_activity?.trim()&&plan?.planned_location?.trim())});
  const shiftRows=(kind,id,date)=>{
   return '<div class="daily-shift-grid">'+shifts.map(([shift,label])=>{
    const p=getPlan(kind,id,date,shift),ref=kind==="posto"?postRoutines(id):[];
    return '<div class="daily-shift" data-shift-kind="'+kind+'" data-shift-id="'+safe(id)+'" data-shift-date="'+safe(date)+'" data-shift="'+shift+'">'+
-    '<div class="daily-shift-head"><strong>'+label+'</strong><span class="daily-shift-state '+(p?"is-saved":"is-pending")+'">'+(p?"Detalhamento salvo":"A definir / conferir")+'</span></div>'+
+    '<div class="daily-shift-head"><strong>'+label+'</strong><span class="daily-shift-state '+(p?.review_status==="revisado"?"is-saved":"is-pending")+'">'+(p?.review_status==="revisado"?"Turno revisado":p?"Rascunho · revisar":"A definir / conferir")+'</span></div>'+
     (canManage&&!approvals.has(date)?'<label>Atividade prevista<textarea class="daily-shift-activity" maxlength="600" rows="2" placeholder="Definir atividade deste turno">'+safe(p?.planned_activity||"")+'</textarea></label>'+
      '<label>Local / trecho<input class="daily-shift-location" maxlength="300" value="'+safe(p?.planned_location||"")+'" placeholder="Local a confirmar"></label>'+
      '<label>Orientação / observação<input class="daily-shift-note" maxlength="1000" value="'+safe(p?.supervisor_note||"")+'" placeholder="Opcional"></label>'+
      (kind==="posto"&&ref.length?'<label>Rotinas contratuais como referência<select class="daily-routine-choice"><option value="">Escolher rotina para preencher a atividade…</option>'+
        ref.map(r=>'<option value="'+safe(r.id)+'">'+safe(r.routine_code+' · '+r.title+' ('+r.frequency+')')+'</option>').join("")+'</select></label>':"")+
-     '<button class="btn btn-secondary" type="button" data-save-shift>Salvar '+label.toLowerCase()+'</button>':
+     '<button class="btn btn-secondary" type="button" data-save-shift>Revisar e salvar '+label.toLowerCase()+'</button>':
      '<p><strong>Atividade:</strong> '+safe(p?.planned_activity||"A definir pela supervisão")+'</p>'+
      '<p><strong>Local:</strong> '+safe(p?.planned_location||"A confirmar")+'</p>'+
      (p?.supervisor_note?'<p>'+safe(p.supervisor_note)+'</p>':""))+
@@ -79,7 +79,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
    '<div class="daily-cover-kpis daily-cover-overview">'+
     '<div><strong>'+todayTeams.length+'</strong><span>equipes na data</span></div>'+
     '<div><strong>'+posts.length+'</strong><span>postos fixos contratuais</span></div>'+
-    '<div><strong>'+dayShifts+' de '+totalBlocks+'</strong><span>unidades com ambos os turnos definidos</span></div>'+
+    '<div><strong>'+dayShifts+' de '+totalBlocks+'</strong><span>unidades com ambos os turnos revisados</span></div>'+
    '</div>'+
    '<div id="daily-approval-slot"></div>'+
    '<p class="finance-scenario-alert"><strong>Para análise do gestor:</strong> os horários exatos e a distribuição nominal de trabalhadores devem ser confirmados. Os postos são posições contratuais permanentes nos dias úteis, <strong>não equivalem a equipes extras</strong>. Rotinas cadastradas são referência, não execução comprovada. Documentos exportados não constituem aceite ou OS autorizada.</p>'+
@@ -147,15 +147,19 @@ export async function mountDailyCoverage(root,db,{role,notify}){
    if(activity.length<3||location.length<3){notify("Preencha atividade e local do turno antes de salvar.",true);return;}
    if(kind==="equipe"&&!entries.some(e=>e.id===id&&e.work_date===date)){notify("Equipe não corresponde à data selecionada.",true);return;}
    busy=true;button.disabled=true;
+   const auth=await db.auth.getUser();
+   const reviewer=auth.data?.user?.id;
+   if(auth.error||!reviewer){notify("É necessário estar autenticado para revisar o turno.",true);busy=false;button.disabled=false;return;}
    const payload={work_date:date,shift,planned_activity:activity,planned_location:location,supervisor_note:note||null,
+    review_status:"revisado",reviewed_by:reviewer,reviewed_at:new Date().toISOString(),
     team_assignment_id:kind==="equipe"?id:null,service_post_id:kind==="posto"?id:null,updated_at:new Date().toISOString()};
    try{
     const query=existing?db.from("daily_shift_plans").update(payload).eq("id",existing.id):
       db.from("daily_shift_plans").insert(payload);
-    const {data,error}=await query.select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").single();
+    const {data,error}=await query.select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note,review_status,reviewed_by,reviewed_at").single();
     if(error)throw error;
     planIndex.set(planKey(kind,id,date,shift),data);
-    notify("Turno salvo como proposta para avaliação do gestor. Não constitui aprovação.");draw();
+    notify("Turno revisado e salvo como proposta para avaliação do gestor. Não constitui aprovação.");draw();
    }catch(e){notify("Erro ao salvar turno: "+(e.message||e),true);button.disabled=false}
    finally{busy=false}
   });
