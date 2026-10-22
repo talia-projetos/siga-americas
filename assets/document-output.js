@@ -228,6 +228,7 @@ export async function generatePDF(models){
   const max=opt.width||W-margin*2,lh=opt.lineHeight||size*1.48,origin=opt.x||margin;
   const content=stripPDF(text);
   if(opt.schedule){
+   const scheduleInk=lib.rgb(.10,.10,.10);
    let drawnLines=0;
    const newline=()=>{y-=lh;drawnLines++;ensure(lh+4);};
    for(const raw of content.split("\n")){
@@ -235,10 +236,10 @@ export async function generatePDF(models){
     const matched=raw.match(/^(\s*)(\d{2}\/\d{2}\/\d{4}|MANHÃ|TARDE)(?=$|[:\s])/i);
     // Todo o texto que não é uma data ou o nome do turno recebe fonte regular preta.
     const parts=matched?[
-     {value:matched[1],font:regular,color:dark},
+     {value:matched[1],font:regular,color:scheduleInk},
      {value:matched[2],font:bold,color:green},
-     {value:raw.slice(matched[0].length),font:regular,color:dark}
-    ]:[{value:raw,font:regular,color:dark}];
+     {value:raw.slice(matched[0].length),font:regular,color:scheduleInk}
+    ]:[{value:raw,font:regular,color:scheduleInk}];
     let cursor=origin,space="";
     for(const part of parts){
      for(const token of (part.value.match(/\s+|\S+/g)||[])){
