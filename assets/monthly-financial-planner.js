@@ -1,8 +1,8 @@
-import {mountWeatherAdvisory} from "./climate-planner.js?v=5";
-import {mountDailyCoverage} from "./daily-coverage.js?v=9";
+import {mountWeatherAdvisory} from "./climate-planner.js?v=6";
+import {mountDailyCoverage} from "./daily-coverage.js?v=10";
 import {mountLowMobilizationBalance} from "./low-resource-panel.js?v=2";
 import {mountTargetFeasibility} from "./financial-target-analysis.js?v=2";
-import {mountContractCoverage} from "./contract-coverage.js?v=1";
+import {mountContractCoverage} from "./contract-coverage.js?v=2";
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const currency=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const qty=n=>Number(n||0).toLocaleString("pt-BR",{maximumFractionDigits:3});
