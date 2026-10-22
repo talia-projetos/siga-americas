@@ -15,25 +15,30 @@ export function mountLowMobilizationBalance(root,prices,proposals,goal,expected)
   '<div><small>Potencial previsto nessas propostas</small><strong>'+money(plannedValue)+'</strong></div>'+
   '<div><small>Diferença até a meta</small><strong>'+money(Math.max(0,goal-expected))+'</strong></div></div></div>'+
   '<details><summary>Simular atividades alternativas por rubrica ('+candidates.length+' opções)</summary>'+
-  '<p class="low-resource-warning">A simulação não cria planejamento, OS ou medição. Informe somente quantidades tecnicamente plausíveis na unidade contratual; preços não representam receita realizada nem lucro. Não executar em condição insegura para alcançar meta.</p>'+
-  '<div class="table-scroll"><table class="low-resource-table"><thead><tr><th>Rubrica e serviço</th><th>Unidade e tarifa</th><th>Requisitos de aplicação</th><th>Quantidade hipotética</th><th>Potencial simulado</th></tr></thead><tbody>'+
+  '<p class="low-resource-warning">Inclua, no custo adicional total de cada hipótese, combustível, deslocamento, horas de pessoal, máquinas, insumos e qualquer outro custo incremental; evite contar duas vezes custos já remunerados. Sem custo informado não há resultado líquido estimável. A simulação não cria planejamento, OS ou medição. Informe somente quantidades tecnicamente plausíveis na unidade contratual; preços não representam receita realizada nem lucro. Não executar em condição insegura para alcançar meta.</p>'+
+  '<div class="table-scroll"><table class="low-resource-table"><thead><tr><th>Rubrica e serviço</th><th>Unidade e tarifa</th><th>Requisitos de aplicação</th><th>Quantidade hipotética</th><th>Potencial simulado</th><th>Custo adicional (R$)</th><th>Resultado operacional hipotético</th></tr></thead><tbody>'+
   candidates.map(item=>'<tr data-low-resource="'+safe(item.code)+'" data-rate="'+safe(item.unit_price)+'">'+
    '<td><strong>'+safe(item.code)+' · '+safe(item.name)+'</strong></td>'+
    '<td>'+money(item.unit_price)+' / '+safe(item.unit)+'</td><td>'+safe(item.requirements)+'</td>'+
    '<td><input type="number" min="0" step="any" inputmode="decimal" data-low-resource-quantity placeholder="Sem estimativa" aria-label="Quantidade hipotética '+safe(item.code)+'"></td>'+
-   '<td data-low-resource-potential>—</td></tr>').join("")+
+   '<td data-low-resource-potential>—</td><td><input type="number" min="0" step="0.01" data-cost-extra placeholder="A informar" aria-label="Custo adicional total da rubrica '+safe(item.code)+'"></td><td data-low-resource-net>—</td></tr>').join("")+
   '</tbody></table></div><div class="low-resource-total"><span>Potencial adicional simulado, sujeito a confirmação</span><strong data-low-resource-total>—</strong></div></details></section>';
  const update=()=>{
-  let total=0,valid=true;
+  let total=0,costTotal=0,valid=true,unknownCosts=0;
   root.querySelectorAll("[data-low-resource]").forEach(row=>{
    const input=row.querySelector("[data-low-resource-quantity]"),text=input.value.trim(),n=Number(text);
    const cell=row.querySelector("[data-low-resource-potential]");
-   if(!text){cell.textContent="—";return;}
+   if(!text){cell.textContent="—";row.querySelector("[data-low-resource-net]").textContent="—";return;}
    if(!Number.isFinite(n)||n<0){cell.textContent="Quantidade inválida";valid=false;return;}
    const result=n*Number(row.dataset.rate||0);total+=result;
    cell.textContent=money(result)+" (hipótese)";
+   const costText=row.querySelector("[data-cost-extra]").value.trim(),net=row.querySelector("[data-low-resource-net]");
+   if(!costText){unknownCosts++;net.textContent="Custo não informado";return;}
+   const cost=Number(costText);
+   if(!Number.isFinite(cost)||cost<0){valid=false;net.textContent="Custo inválido";return;}
+   costTotal+=cost;net.textContent=money(result-cost)+" (antes de tributos e custos não estimados)";
   });
-  root.querySelector("[data-low-resource-total]").textContent=valid?money(total):"Revise quantidades inválidas";
+  root.querySelector("[data-low-resource-total]").textContent=valid?(money(total)+" de receita potencial bruta; "+(unknownCosts?"resultado indisponível para "+unknownCosts+" rubrica(s) sem custo":money(total-costTotal)+" de resultado parcial hipotético")):"Revise quantidades e custos inválidos";
  };
- root.querySelectorAll("[data-low-resource-quantity]").forEach(el=>el.oninput=update);
+ root.querySelectorAll("[data-low-resource-quantity], [data-cost-extra]").forEach(el=>el.oninput=update);
 }
