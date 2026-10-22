@@ -40,3 +40,13 @@
  #main #dashboard-coverage-map .coverage-matrix-preview ol{grid-template-columns:1fr}
  #main #dashboard-coverage-map .coverage-map-toolbar [data-open-matrices]{width:auto;flex:1 1 150px}
 }
+
+/* Matrizes: símbolos sólidos, discretos e clicáveis, sempre à frente das rotas. */
+#main #dashboard-coverage-map .leaflet-pane.leaflet-siga-matrix-points-pane,
+#main #dashboard-coverage-map .leaflet-pane.leaflet-siga-other-points-pane{pointer-events:none}
+#main #dashboard-coverage-map .leaflet-pane .leaflet-interactive.siga-point-solid{pointer-events:visiblePainted;fill-opacity:1!important;stroke:#fff!important;stroke-opacity:1!important;stroke-width:1.15px!important;paint-order:stroke fill}
+#main #dashboard-coverage-map .leaflet-pane .leaflet-interactive.siga-matrix-point{fill:#23CBA0!important}
+#main #dashboard-coverage-map .leaflet-pane .leaflet-interactive.siga-matrix-point:hover{fill:#12E2B3!important;stroke:#fff!important;cursor:pointer}
+#main #dashboard-coverage-map .leaflet-tooltip.siga-point-tooltip{border:1px solid #d9e8de;background:rgba(255,255,255,.97);padding:5px 8px;border-radius:6px;color:#28583f;box-shadow:0 4px 14px rgba(24,64,42,.14);font-size:11px;font-weight:680}
+#main #dashboard-coverage-map .leaflet-tooltip.siga-point-tooltip::before{border-top-color:#d9e8de}
+#main #dashboard-coverage-map .coverage-map-header{align-items:flex-start}
