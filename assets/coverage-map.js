@@ -163,6 +163,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   (GOOGLE_MAPS_BROWSER_KEY?'<option value="google">Google Satélite (API autorizada)</option>':"")+
   '</select></label>'+
   '<a class="btn btn-ghost" href="https://www.google.com/maps/@-25.51,-54.56,13z/data=!3m1!1e3" target="_blank" rel="noopener noreferrer">Abrir no Google Satélite '+iconMarkup("arrow")+'</a>'+
+  (canWrite?'<button type="button" class="btn btn-secondary" data-open-matrices>Importar matrizes KMZ</button>':'')+
   (canWrite?'<label class="coverage-import-color">Cor da importação <input type="color" data-import-color value="#72A69F" aria-label="Cor das novas camadas importadas"></label><button type="button" class="btn btn-secondary" data-open-import>Importar KML / KMZ</button>':"")+
  '</div>'+
  '<div class="coverage-map-layout"><div class="coverage-map-canvas" data-map role="region" aria-label="Mapa interativo das frentes operacionais da PROERG em Itaipu"></div>'+
@@ -396,6 +397,13 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   void buildPreview().catch(error=>notify(error.message,true));
  });
  root.addEventListener("click",async e=>{
+  if(e.target.closest("[data-open-matrices]")){
+   q("[data-import-panel]").hidden=false;
+   q("[data-layer-category]").value="matrizes";
+   setMatrixDefaults();
+   q("[data-layer-file]").focus();
+   return;
+  }
   const open=e.target.closest("[data-open-import]");
   if(open){q("[data-import-panel]").hidden=false;return;}
   if(e.target.closest("[data-import-close]")){q("[data-import-panel]").hidden=true;return;}
@@ -412,6 +420,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    const chosen=q("[data-layer-category]").value==="matrizes";
    const parsed=preview?.file===file&&preview.matrizes===chosen?preview:await buildPreview();
    const geo=parsed.read.geometry;
+   if(chosen&&!geo.features.length)throw Error("Não existem pontos de matrizes para salvar.");
    const selectedColor=validColor(q("[data-import-color]")?.value)||"#72A69F";
    geo.features=geo.features.map(feature=>({...feature,properties:{
     ...(feature.properties||{}),_siga_import_color:selectedColor
