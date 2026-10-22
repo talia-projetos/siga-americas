@@ -1096,7 +1096,44 @@ document.addEventListener("click",async e=>{
  const action=e.target.closest("[data-action]")?.dataset.action;
  if(action==="create")await openForm();
  if(action==="uniformBatch"&&app.page==="uniform_deliveries"&&privileged())await uniformPage();
- if(action==="export")exportCSV();
+ if(action==="exportToggle"){
+  const group=e.target.closest(".export-dropdown"),list=group?.querySelector(".export-options"),button=group?.querySelector('[data-action="exportToggle"]');
+  if(list){list.hidden=!list.hidden;button?.setAttribute("aria-expanded",String(!list.hidden))}
+ }
+ if(action==="exportCSV"){
+  exportCSV();const menu=e.target.closest(".export-options");if(menu)menu.hidden=true;
+ }
+ if(action==="exportPDF"){
+  const btn=e.target.closest('[data-action="exportPDF"]');
+  if(btn&&!btn.disabled){
+   const page=app.page,m=modules[page],rows=filteredRows();
+   const cols=m.columns.map(key=>({
+    key,label:m.fields.find(f=>f.key===key)?.label||
+      ({unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)",contract_required:"Quantidade contratual",ledger_balance:"Saldo movimentado",counted_quantity:"Contagem física",counted_at:"Data da contagem"})[key]||key
+   }));
+   const values=rows.map(r=>cols.map(c=>{
+    if(c.key==="contract_required"){
+     const req=app.ppeRequirementMap?.get(r.contract_resource_requirement_id);
+     return req?.required_quantity==null?"A dimensionar":String(req.required_quantity)+" "+(req.unit||"un");
+    }
+    const def=m.fields.find(f=>f.key===c.key);
+    if(def?.type==="ref")return optionLabel(def.table,r[c.key],def.display);
+    const v=r[c.key];
+    if(v==null||v==="")return "—";
+    if(def?.type==="date"||c.key==="counted_at")return dateBR(v);
+    if(["unit_price","estimated_amount","estimated_total","cost","total_cost"].includes(c.key))return currency(v);
+    if(typeof v==="boolean")return v?"Sim":"Não";
+    return Array.isArray(v)?v.join(", "):typeof v==="object"?JSON.stringify(v):String(v);
+   }));
+   btn.disabled=true;btn.textContent="Gerando PDF…";
+   try{
+    const pdf=await generateListPDF({title:m.title,subtitle:rows.length+" registro(s) conforme pesquisa e filtros · gerado em "+new Date().toLocaleString("pt-BR"),columns:cols,rows:values});
+    downloadDocument(pdf,m.table+"_"+new Date().toISOString().slice(0,10)+".pdf");
+    notify("PDF em lote gerado com os registros exibidos.");
+   }catch(err){notify("Falha no PDF: "+friendlyError(err),true);}
+   finally{btn.disabled=false;btn.textContent="Baixar PDF em lote";const menu=btn.closest(".export-options");if(menu)menu.hidden=true}
+  }
+ }
  const saveStock=e.target.closest("[data-save-stock]");
  if(saveStock&&app.page==="stock_items"){
   const row=app.rows.find(r=>r.id===saveStock.dataset.saveStock);
