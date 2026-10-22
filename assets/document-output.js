@@ -222,28 +222,37 @@ export async function generatePDF(models){
   y=H-102;
  };
  const ensure=needed=>{if(y-needed<bottom)start();};
+ // Datas e turnos da programação mensal: verde e negrito, inclusive quando o texto quebra.
+ const isScheduleLine=line=>/^(?:\\d{2}\/\\d{2}\/\\d{4}|MANHÃ:|TARDE:)/i.test(String(line).trim());
  const textLines=(text,size=9.5,opt={})=>{
-  const max=opt.width||W-margin*2;const f=opt.bold?bold:regular;
-  const lines=wrapText(f,text,size,max),lh=opt.lineHeight||size*1.48;
-  const total=lines.length*lh+4;
-  // Blocos mensais extensos devem paginar por linha, nunca ultrapassar a margem inferior.
+  const max=opt.width||W-margin*2,lh=opt.lineHeight||size*1.48;
+  const groups=stripPDF(text).split("\n").map(raw=>{
+   const highlight=Boolean(opt.schedule&&isScheduleLine(raw));
+   const font=highlight||opt.bold?bold:regular;
+   return {lines:wrapText(font,raw,size,max),font,color:highlight?green:(opt.color||dark)};
+  });
+  const total=groups.reduce((n,g)=>n+g.lines.length*lh,0)+4;
   if(total<=H-102-bottom)ensure(total);
-  for(const chunk of lines){
-   ensure(lh+4);
-   page.drawText(chunk||" ",{x:opt.x||margin,y,size,font:f,color:opt.color||dark});
-   y-=lh;
+  for(const group of groups){
+   for(const chunk of group.lines){
+    ensure(lh+4);
+    page.drawText(chunk||" ",{x:opt.x||margin,y,size,font:group.font,color:group.color});
+    y-=lh;
+   }
   }
   y-=opt.after??4;
  };
- const label=(name,value)=>{
+ const label=(name,value,kind)=>{
+  const emph=kind==='programacao'&&/^(data operacional|competência)$/i.test(String(name).trim());
+  const valueFont=emph?bold:regular;
   const left=172,right=W-margin-left-40;
   const labelLines=wrapText(bold,name,8.5,left-8);
-  const valueLines=wrapText(regular,value,9,right);
+  const valueLines=wrapText(valueFont,value,9,right);
   const height=Math.max(labelLines.length*12,valueLines.length*12)+12;
   ensure(height);
   page.drawRectangle({x:margin-5,y:y-height+13,width:W-2*margin+9,height,color:lib.rgb(.973,.984,.974)});
   labelLines.forEach((chunk,i)=>page.drawText(chunk,{x:margin+4,y:y-i*12,size:8.5,font:bold,color:muted}));
-  valueLines.forEach((chunk,i)=>page.drawText(chunk,{x:margin+left,y:y-i*12,size:9,font:regular,color:dark}));
+  valueLines.forEach((chunk,i)=>page.drawText(chunk,{x:margin+left,y:y-i*12,size:9,font:valueFont,color:emph?green:dark}));
   y-=height+4;
  };
  const section=s=>{ensure(29);y-=12;page.drawText(stripPDF(s),{x:margin,y,size:10.2,font:bold,color:green});y-=17;};
@@ -253,15 +262,16 @@ export async function generatePDF(models){
   if(model.subheading)textLines(model.subheading,9.3,{color:muted,after:11});
   if(model.badge)textLines(model.badge,8.4,{bold:true,color:green,after:13});
   if(!model.subheading&&!model.badge)y-=8;
-  model.meta.forEach(([name,value])=>label(name,value));
+  model.meta.forEach(([name,value])=>label(name,value,model.kind));
   section("IDENTIFICAÇÃO E REFERÊNCIAS");
-  model.fields.forEach(([name,value])=>label(name,value));
+  model.fields.forEach(([name,value])=>label(name,value,model.kind));
   for(const [h,body] of model.sections){
    const executionRegister=(model.kind==="os"||model.kind==="programacao")&&h.startsWith("03");
    // Mantém título e linhas de preenchimento juntos em uma mesma página.
    if(executionRegister)ensure(wrapText(regular,body,9.2,W-margin*2).length*19+49);
    section(h);
-   textLines(body,9.2,{lineHeight:executionRegister?19:13.5,after:executionRegister?12:6});
+   textLines(body,9.2,{lineHeight:executionRegister?19:13.5,after:executionRegister?12:6,
+    schedule:model.kind==='programacao'&&/MANHÃ E TARDE POR DIA/i.test(h)});
   }
   section("OBSERVAÇÃO DOCUMENTAL");textLines(model.notice,8,{color:muted,lineHeight:11.5,after:11});
   ensure(60);textLines("Local: ______________________________     Data: ____ / ____ / ________ ",9,{after:22});
