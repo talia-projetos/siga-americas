@@ -14,11 +14,11 @@ import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=8";
 import {mountCoverageMap} from "./coverage-map.js?v=7";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=8";
-import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=15";
+import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=16";
 import {mountWeatherAdvisory} from "./climate-planner.js?v=8";
 import {mountQuickVehicle} from "./quick-vehicle.js?v=1";
 import {mountCategoryQuantities} from "./category-quantities.js?v=1";
-import {generateListPDF,downloadDocument} from "./document-output.js?v=10";
+import {generateListPDF,downloadDocument} from "./document-output.js?v=11";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
