@@ -47,7 +47,7 @@ export async function mountWeatherAdvisory(root,db){
     'Nenhum dado simulado foi exibido.</p>'+(e?.detail||"");
   }finally{
    busy=false;button.disabled=false;
-   checked.textContent='Consulta realizada: '+new Date().toLocaleString("pt-BR");
+   checked.textContent='Tentativa de atualização: '+new Date().toLocaleString("pt-BR");
   }
  };
  button.onclick=loadForecast;
