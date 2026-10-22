@@ -58,7 +58,7 @@ Deno.serve(async req=>{
    return respond({source:"CPTEC/INPE",city:"Foz do Iguaçu, PR",source_url:"https://servicos.cptec.inpe.br/XML/",retrieved_at:new Date().toISOString(),horizon:"curto_prazo",days});
   }catch(e){errors.push("CPTEC "+protocol+" indisponível: "+String(e).slice(0,100));}
  }
- // Contingência documentada pelo CPTEC: buscar o código da localidade e consultar 7 dias.
+ // Contingência documentada pelo CPTEC: buscar o código da localidade e consultar 7 ou 4 dias.
  for(const protocol of ["https","http"]){
   try{
    const lookup=await (await get(protocol+"://servicos.cptec.inpe.br/XML/listaCidades?city=foz%20do%20iguacu")).text();
@@ -66,9 +66,13 @@ Deno.serve(async req=>{
    const item=candidates.find(xml=>normalize(getTag(xml,"nome")).includes("foz do iguacu")&&getTag(xml,"uf").toUpperCase()==="PR");
    const id=item?getTag(item,"id"):"";
    if(!/^\d{1,7}$/.test(id))throw Error("Localidade não encontrada");
-   const xml=await (await get(protocol+"://servicos.cptec.inpe.br/XML/cidade/7dias/"+id+"/previsao.xml")).text();
-   const days=cptecDays(xml);
-   return respond({source:"CPTEC/INPE",city:"Foz do Iguaçu, PR",source_url:"https://servicos.cptec.inpe.br/XML/",retrieved_at:new Date().toISOString(),horizon:"curto_prazo",days});
+   for(const segment of ["7dias/",""]){
+    try{
+     const xml=await (await get(protocol+"://servicos.cptec.inpe.br/XML/cidade/"+segment+id+"/previsao.xml")).text();
+     const days=cptecDays(xml);
+     return respond({source:"CPTEC/INPE",city:"Foz do Iguaçu, PR",source_url:"https://servicos.cptec.inpe.br/XML/",retrieved_at:new Date().toISOString(),horizon:"curto_prazo",days});
+    }catch(forecastError){errors.push("CPTEC "+(segment||"4dias")+" "+protocol+": "+String(forecastError).slice(0,80));}
+   }
   }catch(e){errors.push("CPTEC busca de município "+protocol+": "+String(e).slice(0,95));}
  }
  return respond({unavailable:true,days:[],city:"Foz do Iguaçu, PR",sources_checked:["INMET","CPTEC/INPE"],message:"Fontes oficiais não responderam com previsão utilizável neste momento.",last_checked:new Date().toISOString(),diagnostics:errors.slice(0,5)},503);
