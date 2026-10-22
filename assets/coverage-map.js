@@ -198,10 +198,10 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  const installPointPanes=()=>{
   const matrixPane=map.getPane("siga-matrix-points")||map.createPane("siga-matrix-points");
   const otherPane=map.getPane("siga-other-points")||map.createPane("siga-other-points");
-  matrixPane.style.zIndex="660";otherPane.style.zIndex="650";
+  matrixPane.style.zIndex="680";otherPane.style.zIndex="670";
  };
  const radiusAtZoom=(zoom,matrix=true)=>matrix?
-  (zoom<13?3.9:zoom<15?4.6:5.4):(zoom<13?3.7:zoom<15?4.4:5);
+  (zoom<13?2.8:zoom<15?3.3:3.9):(zoom<13?3.7:zoom<15?4.4:5);
  const updatePointSizes=()=>{
   if(engine!=="leaflet"||!map)return;
   const zoom=map.getZoom();
@@ -290,9 +290,12 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   const layer=maps.geoJSON(l.geometry,{
    style:feature=>{
     const c=colorForFeature(feature,l),kind=symbolType(feature,l);
-    return kind==="area"?
-     {color:c,weight:1.6,opacity:.94,fill:true,fillColor:c,fillOpacity:.08,className:"siga-area-hatched"}:
-     {color:kind==="rota"?"#F4B39C":c,weight:3.1,opacity:.95,dashArray:"9 6",lineCap:"round",fill:false,className:"siga-route-dashed"};
+    if(kind==="area")return {color:c,weight:1.6,opacity:.94,fill:true,fillColor:c,fillOpacity:.08,className:"siga-area-hatched"};
+    if(kind==="rota")return {color:"#F4B39C",weight:3.1,opacity:.95,dashArray:"9 6",lineCap:"round",fill:false,className:"siga-route-dashed"};
+    // O GeoJSON reaplica o estilo mesmo após pointToLayer: pontos não podem herdar o tracejado.
+    return {color:"#FFFFFF",weight:kind==="matriz"?.8:1.05,opacity:1,fill:true,
+     fillColor:kind==="matriz"?"#23CBA0":c,fillOpacity:1,
+     dashArray:null,dashOffset:null,lineCap:"round",lineJoin:"round"};
    },
    pointToLayer:(feature,latlng)=>{
     const kind=symbolType(feature,l),isMatrix=kind==="matriz",
@@ -300,7 +303,8 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
     return maps.circleMarker(latlng,{
      pane:isMatrix?"siga-matrix-points":"siga-other-points",
      radius:radiusAtZoom(map.getZoom(),isMatrix),
-     color:"#FFFFFF",weight:1.15,opacity:1,fill:true,fillColor:c,fillOpacity:1,
+     color:"#FFFFFF",weight:isMatrix?.8:1.05,opacity:1,fill:true,fillColor:c,fillOpacity:1,
+     dashArray:null,dashOffset:null,lineCap:"round",lineJoin:"round",
      interactive:true,bubblingMouseEvents:false,
      className:"siga-point-solid "+(isMatrix?"siga-matrix-point":"siga-other-point")
     });
@@ -310,15 +314,14 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
     const name=featureName(feature,l);
     if(kind==="matriz"||kind==="ponto"){
      item.bindTooltip(esc(name),{direction:"top",offset:[0,-9],sticky:false,opacity:.98,className:"siga-point-tooltip"});
-     item.on("mouseover",()=>{if(map)item.setRadius(radiusAtZoom(map.getZoom(),kind==="matriz")+1.2);});
+     item.on("mouseover",()=>{if(map)item.setRadius(radiusAtZoom(map.getZoom(),kind==="matriz")+(kind==="matriz"?.7:1.2));});
      item.on("mouseout",()=>{if(map)item.setRadius(radiusAtZoom(map.getZoom(),kind==="matriz"));});
     }
     item.bindPopup('<div class="siga-map-popup"><strong>'+esc(name)+'</strong>'+
       '<span>'+esc(kind==="matriz"?"Matriz georreferenciada · identificação a conferir":
         kind==="area"?"Área cartográfica":kind==="rota"?"Traçado georreferenciado":"Ponto")+'</span>'+
       (coords?'<small>WGS84: '+esc(coords[1].toFixed(6))+'; '+esc(coords[0].toFixed(6))+'</small>':'')+
-      '<small>Fonte: '+esc(l.source_name||l.source_filename||"KML fornecido")+'</small>'+
-      '<small>Não constitui execução ou medição contratual.</small></div>');
+      '<small>Fonte: '+esc(l.source_name||l.source_filename||"KML fornecido")+'</small></div>');
    }
   }).addTo(map);
   layer.eachLayer(part=>{
@@ -345,11 +348,16 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   mapData.setStyle(feature=>{
    const type=feature.getGeometry()?.getType()||"";
    const color=strokeFor(feature);
-   if(/Point/.test(type))return {icon:{
-    path:google.maps.SymbolPath.CIRCLE,scale:Math.max(4,Math.min(5.5,(gMap?.getZoom()||12)*.35)),
-    fillColor:l.reference_scope==="matrizes"||/matriz|arvore/i.test(areaKey(l.name))?"#23CBA0":color,
-    fillOpacity:1,strokeColor:"#FFFFFF",strokeWeight:1.15,strokeOpacity:1
-   },zIndex:9};
+   if(/Point/.test(type)){
+    const isMatrix=l.reference_scope==="matrizes"||/matriz|arvore/i.test(areaKey(l.name));
+    return {icon:{
+     path:google.maps.SymbolPath.CIRCLE,
+     scale:isMatrix?Math.max(2.8,Math.min(3.9,(gMap?.getZoom()||12)*.25)):
+      Math.max(4,Math.min(5.5,(gMap?.getZoom()||12)*.35)),
+     fillColor:isMatrix?"#23CBA0":color,fillOpacity:1,
+     strokeColor:"#FFFFFF",strokeWeight:isMatrix?.8:1.15,strokeOpacity:1
+    },zIndex:isMatrix?10:9};
+   }
    if(/Polygon/.test(type))return {strokeColor:color,strokeWeight:1.6,strokeOpacity:.94,
     fillColor:color,fillOpacity:.09,zIndex:3};
    return {strokeColor:"#F4B39C",strokeWeight:2.7,strokeOpacity:.45,zIndex:5};
