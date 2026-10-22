@@ -870,7 +870,7 @@ function fieldInput(f,row){
  if(f.type==="multi_ref"){
   const stored=Array.isArray(value)?value:[];
   const selected=stored.length?stored:(row?.team_id?[row.team_id]:[]);
-  const options=(app.refs[f.table]||[]).filter(o=>o.active!==false||selected.includes(o.id));
+  const options=(app.refs[f.table]||[]).filter(o=>(o.active!==false||selected.includes(o.id))&&(app.page!=="ppe_deliveries"||f.table!=="ppe_items"||/^EPI \/|^Conjunto de proteção/.test(o.category||"")||selected.includes(o.id)));
   const all=options.length>0&&options.every(o=>selected.includes(o.id));
   const checklist=options.map(o=>'<label class="purchase-sector-option"><input type="checkbox" name="'+escapeHTML(f.key)+'" data-purchase-sector value="'+escapeHTML(o.id)+'"'+(selected.includes(o.id)?' checked':'')+'><span>'+escapeHTML([o.code,o.name].filter(Boolean).join(" · "))+'</span></label>').join("");
   return '<fieldset class="field wide purchase-sector-field"><legend>'+escapeHTML(f.label)+'</legend>'+
