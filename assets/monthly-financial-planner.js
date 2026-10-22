@@ -1,8 +1,8 @@
-import {mountWeatherAdvisory} from "./climate-planner.js?v=7";
+import {mountWeatherAdvisory} from "./climate-planner.js?v=8";
 import {mountDailyCoverage} from "./daily-coverage.js?v=12";
 import {mountLowMobilizationBalance} from "./low-resource-panel.js?v=2";
-import {mountTargetFeasibility} from "./financial-target-analysis.js?v=2";
 import {mountContractCoverage} from "./contract-coverage.js?v=3";
+const FIXED_MONTHLY=new Set(["3.7","3.9","3.10","3.40"]);
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const currency=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const qty=n=>Number(n||0).toLocaleString("pt-BR",{maximumFractionDigits:3});
@@ -30,18 +30,21 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
    activityCatalogue=activitiesResult.data||[],fieldPlanItems=fieldItemsResult.data||[],
    workingDates=[...new Set((datesResult.data||[]).map(x=>x.work_date))];
   const months=[["2026-11-01","Novembro de 2026"],["2026-12-01","Dezembro de 2026"],["2027-01-01","Janeiro de 2027"]];
-  const average=prices.reduce((sum,p)=>sum+Number(p.estimated_total||Number(p.unit_price)*Number(p.estimated_quantity)),0)/4;
+  const theoreticalReference=prices.reduce((sum,p)=>sum+Number(p.estimated_total||Number(p.unit_price)*Number(p.estimated_quantity)),0)/4;
+  const fixedReference=prices.filter(p=>FIXED_MONTHLY.has(p.code)).reduce((sum,p)=>sum+Number(p.unit_price||0),0);
+  const daysByMonth=new Map(months.map(([month])=>[month,workingDates.filter(d=>d.startsWith(month.slice(0,7))).length]));
+  const proposalValue=p=>Math.max(0,Number(p.proposed_quantity||0))*Number(byId.get(p.contract_item_id)?.unit_price||0);
   let selected=months[0][0];
   const panel=()=>{
    const target=Number(goals.get(selected)?.target_amount||919000);
    const monthActual=actual.filter(a=>a.performed_on?.startsWith(selected.slice(0,7))&&a.validation_status==="validada").reduce((s,v)=>s+Number(v.estimated_amount||0),0);
    const monthTasks=proposed.filter(v=>v.period_month===selected);
-   const monthDays=workingDates.filter(d=>d.startsWith(selected.slice(0,7))).length;
-   const expected=monthTasks.reduce((s,v)=>s+(Number(v.proposed_quantity||0)*Number(byId.get(v.contract_item_id)?.unit_price||0)),0);
+   const monthDays=daysByMonth.get(selected)||0;
+   const expected=monthTasks.reduce((s,v)=>s+proposalValue(v),0);
     const quantified=monthTasks.filter(v=>Number(v.proposed_quantity)>0).length;
     const withOs=monthTasks.filter(v=>v.work_order_id).length;
     const located=monthTasks.filter(v=>v.area_id&&v.location_description&&!/a confirmar|a definir|local exato/i.test(v.location_description)).length;
-   const referenced=prices.reduce((sum,i)=>sum+Number(i.estimated_total||0)/4,0);
+   const referenced=theoreticalReference;
    const body=monthTasks.map(t=>{
     const item=byId.get(t.contract_item_id)||{},released=Boolean(t.work_order_id);
     const code=[item.code,item.name].filter(Boolean).join(" · ");
@@ -53,17 +56,49 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
     '<td><details><summary>Condições</summary><p>'+esc(t.justification)+'</p><p>'+esc(t.climate_alternative||"")+'</p></details></td>'+
     '<td>'+(canWrite?(released?'<span class="muted">Gerada</span>':'<button type="button" class="table-action" data-save-proposal="'+esc(t.id)+'">Salvar</button><button type="button" class="table-action" data-issue-proposal="'+esc(t.id)+'">Aprovar e gerar OS</button>'):'<span class="muted">Consulta</span>')+'</td></tr>';
    }).join("");
-   const quote=prices.slice().sort((a,b)=>Number(b.estimated_total)-Number(a.estimated_total)).map(i=>'<tr><td>'+esc(i.code)+'</td><td>'+esc(i.name)+'</td><td>'+esc(qty(Number(i.estimated_quantity)/4))+' '+esc(i.unit||"")+'</td><td>'+esc(currency(Number(i.estimated_total)/4))+'</td></tr>').join("");
+   const quantifiedByItem=new Map();
+   for(const task of monthTasks)if(Number(task.proposed_quantity)>0)
+    quantifiedByItem.set(task.contract_item_id,(quantifiedByItem.get(task.contract_item_id)||0)+Number(task.proposed_quantity));
+   const quote=prices.slice().sort((a,b)=>Number(b.estimated_total)-Number(a.estimated_total)).map(i=>
+    '<tr><td>'+esc(i.code)+'</td><td>'+esc(i.name)+'</td><td>'+
+    esc(FIXED_MONTHLY.has(i.code)?'1 mês':qty(Number(i.estimated_quantity)/4)+' '+(i.unit||''))+
+    '</td><td>'+esc(currency(Number(i.estimated_total)/4))+'</td><td>'+
+    (quantifiedByItem.has(i.id)?esc(qty(quantifiedByItem.get(i.id))+' '+(i.unit||'')):'A definir')+'</td></tr>').join("");
+   const quarterly=months.map(([month,label])=>{
+    const tasks=proposed.filter(p=>p.period_month===month),
+     target=Number(goals.get(month)?.target_amount||919000),
+     count=tasks.filter(p=>Number(p.proposed_quantity)>0).length,
+     quantified=tasks.reduce((total,p)=>total+proposalValue(p),0),
+     days=daysByMonth.get(month)||0,
+     needed=days?Math.max(0,target-fixedReference)/days:null;
+    return '<tr'+(month===selected?' class="finance-current-month"':'')+'><td><strong>'+esc(label)+
+      '</strong><small>'+days+' dias na escala</small></td><td>'+esc(currency(target))+
+      '</td><td>'+esc(currency(theoreticalReference))+'</td><td>'+esc(currency(quantified))+
+      '<small>'+count+' de '+tasks.length+' propostas quantificadas</small></td><td>'+
+      (needed===null?'A definir':esc(currency(needed))+'/dia')+'</td></tr>';
+   }).join("");
    root.querySelector("#finance-plan-current").innerHTML=
     '<div class="finance-planning-kpis"><div><span>Meta gerencial</span><strong>'+currency(target)+'</strong></div><div><span>Referência aritmética (1/4)</span><strong>'+currency(referenced)+'</strong></div><div><span>Propostas quantificadas</span><strong>'+currency(expected)+'</strong></div><div><span>Produção com validação registrada</span><strong>'+currency(monthActual)+'</strong></div></div>'+
     '<p class="finance-scenario-alert"><strong>Prontidão do mês:</strong> '+quantified+' de '+monthTasks.length+' propostas com quantidade numérica; '+located+' com frente vinculada e local descritivo; '+withOs+' OS emitidas. Quantidade, local, disponibilidade, autorização, clima e medição devem ser validados antes da execução.</p>'+ 
     '<p class="finance-scenario-alert"><strong>Não é previsão de faturamento:</strong> dividir o custeio por quatro produz um limite matemático de comparação, não um calendário executável. Os trabalhos sem área delimitada, autorização, disponibilidade e medição permanecem sem quantidade. Saldo contratual e execução de outubro precisam ser reconciliados antes de aprovação.</p>'+
+    '<section class="finance-three-months" aria-label="Panorama financeiro novembro a janeiro">'+
+    '<div class="finance-panel-heading"><div><h3>Novembro a janeiro · panorama por competência</h3>'+
+    '<p>Referência matemática, não previsão de faturamento.</p></div></div>'+
+    '<div class="table-scroll"><table class="finance-planning-table"><thead><tr><th>Competência</th><th>Meta gerencial</th>'+
+    '<th>Referência (1/4)</th><th>Propostas quantificadas</th><th>Necessário por dia*</th></tr></thead><tbody>'+
+    quarterly+'</tbody></table></div>'+
+    '<p class="finance-three-months-note">* Meta variável após considerar '+esc(currency(fixedReference))+
+    ' de rubricas mensais, <strong>somente se efetivamente devidas e aceitas</strong>, dividida pelos dias cadastrados na escala. '+
+    'A disponibilidade, a produtividade, os saldos e as autorizações ainda exigem conferência; não representa receita assegurada.</p></section>'+
     '<div class="finance-panel-heading"><h3>Propostas operacionais com datas indicativas</h3><span>'+monthTasks.length+' ações candidatas</span></div>'+
     '<div class="table-scroll"><table class="finance-planning-table"><thead><tr><th>Data</th><th>Serviço e local</th><th>Unidade / preço</th><th>Quantidade</th><th>Situação</th><th>Critérios</th><th>Ação</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
-    '<div id="target-financial-feasibility"></div><div id="low-resource-balance"></div>'+
-    '<details class="finance-reference-table"><summary>Conferir todas as '+prices.length+' rubricas da tabela de custeio · distribuição teórica em quatro meses</summary><div class="table-scroll"><table class="finance-planning-table"><thead><tr><th>Código</th><th>Rubrica vigente</th><th>Referência mensal teórica</th><th>Parcela do custeio</th></tr></thead><tbody>'+quote+'</tbody></table></div></details>';
+    '<div id="low-resource-balance"></div>'+
+    '<details class="finance-reference-table"><summary>Referências quantitativas das '+prices.length+' rubricas · não são metas de produtividade validadas</summary>'+
+    '<p class="finance-three-months-note">Distribuição teórica das quantidades contratuais em quatro competências. '+
+    'A meta operacional por serviço depende de demanda, área ou volume mensurável, equipe, equipamento, dias de trabalho, segurança, saldo e validação. '+
+    'Os postos mensais não podem ser cobrados adicionalmente por turno.</p>'+
+    '<div class="table-scroll"><table class="finance-planning-table"><thead><tr><th>Código</th><th>Rubrica</th><th>Quantidade/mês de referência</th><th>Valor/mês teórico</th><th>Proposto neste mês</th></tr></thead><tbody>'+quote+'</tbody></table></div></details>';
    mountContractCoverage(root.querySelector("#finance-contract-coverage"),prices,monthTasks,proposed,activityCatalogue,fieldPlanItems,{month:selected.slice(0,7),workingDays:monthDays,goal:target});
-   mountTargetFeasibility(root.querySelector("#target-financial-feasibility"),prices,monthTasks,target,{octoberValidated:octValidated});
     mountLowMobilizationBalance(root.querySelector("#low-resource-balance"),prices,monthTasks,target,expected);
    if(canWrite){
     const getTask=id=>monthTasks.find(v=>v.id===id);
@@ -101,7 +136,7 @@ export async function mountMonthlyFinancialPlanner(root,db,{role,notify}){
   root.innerHTML='<section class="finance-planning-shell planning-workspace"><div class="finance-panel-heading planning-page-head"><div><span class="eyebrow">CUSTEIO DO CONTRATO ATUAL · OPERAÇÃO</span><h2>Planejamento de equipes e postos</h2><p>Manhã e tarde, cobertura contratual e proposta para validação do gestor · novembro/2026 a janeiro/2027.</p></div><div class="planning-page-status"><span class="planning-status-dot"></span> Planejamento para revisão</div></div>'+
    '<nav class="finance-month-tabs planning-month-switch" id="finance-month-tabs" aria-label="Competência de planejamento">'+months.map(([v,label])=>'<button type="button" data-fin-month="'+v+'"'+(v===selected?' aria-current="true"':'')+'>'+label+'</button>').join("")+'</nav>'+
    '<div class="planning-main-content"><div id="finance-contract-coverage"></div><div id="finance-daily-coverage"></div></div>'+
-   '<details class="planning-observations" id="finance-planning-observations"><summary><span class="planning-observations-title">Observações e análises complementares</span><small>Meta financeira, propostas, simulações e clima · abrir quando necessário</small></summary><div class="planning-observations-body"><div id="finance-plan-current"></div><div id="finance-climate-advisory"></div></div></details>'+
+   '<details class="planning-observations" id="finance-planning-observations"><summary><span class="planning-observations-title">Observações e análises complementares</span><small>Meta por competência, propostas, rubricas e clima · abrir quando necessário</small></summary><div class="planning-observations-body"><div id="finance-plan-current"></div><div id="finance-climate-advisory"></div></div></details>'+
    '</section>';
   root.querySelectorAll("[data-fin-month]").forEach(btn=>btn.onclick=()=>{
    selected=btn.dataset.finMonth;root.querySelectorAll("[data-fin-month]").forEach(b=>b.setAttribute("aria-current",String(b===btn)));
