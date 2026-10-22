@@ -318,7 +318,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    const type=feature.getGeometry()?.getType()||"";
    const color=strokeFor(feature);
    if(/Point/.test(type))return {icon:{
-    path:google.maps.SymbolPath.CIRCLE,scale:5,fillColor:l.reference_scope==="matrizes"?"#25C9A2":color,
+    path:google.maps.SymbolPath.CIRCLE,scale:5,fillColor:l.reference_scope==="matrizes"||/matriz|arvore/i.test(areaKey(l.name))?"#25C9A2":color,
     fillOpacity:.96,strokeColor:"#FFFFFF",strokeWeight:1.35,strokeOpacity:.98
    },zIndex:8};
    if(/Polygon/.test(type))return {strokeColor:color,strokeWeight:1.6,strokeOpacity:.94,
@@ -356,7 +356,14 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   paintLegend();
   const polygons=geo.reduce((total,l)=>total+(l.geometry.features||[]).reduce((count,f)=>
    count+(f.geometry?.type==="Polygon"?1:f.geometry?.type==="MultiPolygon"?f.geometry.coordinates.length:0),0),0);
-  q("[data-count]").textContent=polygons?polygons+" áreas georreferenciadas":geo.length+" camada(s) com geometria";
+  const points=geo.reduce((total,l)=>total+(l.geometry.features||[]).reduce((count,f)=>
+   count+(symbolType(f,l)==="matriz"?(f.geometry?.type==="Point"?1:f.geometry?.type==="MultiPoint"?f.geometry.coordinates.length:0):0),0),0);
+  const routes=geo.reduce((total,l)=>total+(l.geometry.features||[]).filter(f=>symbolType(f,l)==="rota").length,0);
+  q("[data-count]").textContent=[
+   ...(points?[points+" matrizes mapeadas"]:[]),
+   ...(polygons?[polygons+" áreas"]:[]),
+   ...(routes?[routes+" traçados"]:[])
+  ].join(" · ")||"Sem camadas georreferenciadas";
   if(engine==="leaflet"){
    for(const item of drawn)map.removeLayer(item.layer);
    drawn=[];geo.forEach(addGeoToLeaflet);
