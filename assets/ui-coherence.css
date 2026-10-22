@@ -132,3 +132,17 @@
 #modal-fields .responsibility-vehicle-quick-form .responsibility-vehicle-validation{color:#7a7b65;margin:12px 0 10px}
 #modal-fields [data-qv-save]{font-size:11px;min-height:38px}
 @media(max-width:650px){#modal-fields .responsibility-vehicle-quick-grid{grid-template-columns:1fr}#modal-fields .responsibility-vehicle-helper{padding:11px}}
+
+
+/* Referência do contrato vigente sem confundir catálogo com estoque ou entregas. */
+#main .ppe-contract-overview{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;padding:16px 20px;margin:0 0 15px;border:1px solid #dfe9e1;border-radius:12px;background:#fff}
+#main .ppe-contract-overview>div:first-child{min-width:240px;flex:1 1 300px}
+#main .ppe-contract-overview h2{margin:3px 0 4px;font-size:16px;color:#315840}
+#main .ppe-contract-overview p{margin:0;line-height:1.55;font-size:11px;color:#738678}
+#main .ppe-contract-overview p strong{color:#506756}
+#main .ppe-contract-metrics{display:grid;grid-template-columns:repeat(4,minmax(84px,1fr));gap:9px;flex:1 1 430px}
+#main .ppe-contract-metrics>div{border:1px solid #e4ebe4;border-radius:9px;background:#f6f9f6;padding:9px}
+#main .ppe-contract-metrics strong{display:block;font-size:18px;color:#365e43;font-variant-numeric:tabular-nums}
+#main .ppe-contract-metrics span{font-size:10px;color:#728779;line-height:1.4}
+#main .ppe-contract-overview .ppe-contract-note{flex:1 1 100%;font-size:10.5px;border-top:1px solid #edf1ec;padding-top:10px}
+@media(max-width:680px){#main .ppe-contract-overview{padding:13px}#main .ppe-contract-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}}
