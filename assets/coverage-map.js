@@ -303,25 +303,55 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  let gMap=null;
  async function setGoogle(){
   const gm=await loadGoogle(GOOGLE_MAPS_BROWSER_KEY);
+  const lastCenter=map.getCenter(),lastZoom=map.getZoom();
   engine="google";map.remove();map=null;mapDiv.replaceChildren();drawn=[];
-  gMap=new gm.Map(mapDiv,{center:{lat:VIEW[0],lng:VIEW[1]},zoom:12,mapTypeId:gm.MapTypeId.HYBRID,mapTypeControl:false,streetViewControl:false});
+  gMap=new gm.Map(mapDiv,{center:{lat:lastCenter.lat,lng:lastCenter.lng},zoom:lastZoom,mapTypeId:gm.MapTypeId.HYBRID,mapTypeControl:false,streetViewControl:false});
   for(const l of layers.filter(x=>x.geometry))addGoogleData(l);
  }
  function addGoogleData(l){
   const mapData=new google.maps.Data({map:gMap});
   mapData.addGeoJson(l.geometry);
-  mapData.setStyle(feature=>({
-   strokeColor:validColor(feature.getProperty("_siga_import_color"))||areaColor(feature.getProperty("name")||feature.getProperty("Name")||
-    feature.getProperty("trecho")||l.name),
-   strokeWeight:3,strokeOpacity:1,fillOpacity:0
-  }));
+  const strokeFor=feature=>validColor(feature.getProperty("_siga_import_color"))||
+    (l.reference_scope==="matrizes"?"#25C9A2":areaColor(feature.getProperty("name")||feature.getProperty("Name")||
+    feature.getProperty("trecho")||l.name));
+  mapData.setStyle(feature=>{
+   const type=feature.getGeometry()?.getType()||"";
+   const color=strokeFor(feature);
+   if(/Point/.test(type))return {icon:{
+    path:google.maps.SymbolPath.CIRCLE,scale:5,fillColor:l.reference_scope==="matrizes"?"#25C9A2":color,
+    fillOpacity:.96,strokeColor:"#FFFFFF",strokeWeight:1.35,strokeOpacity:.98
+   },zIndex:8};
+   if(/Polygon/.test(type))return {strokeColor:color,strokeWeight:1.6,strokeOpacity:.94,
+    fillColor:color,fillOpacity:.09,zIndex:3};
+   return {strokeColor:"#F4B39C",strokeWeight:2.7,strokeOpacity:.45,zIndex:5};
+  });
+  // Google Data não suporta hachura nativa; conserva a área sutil e o tracejado de rotas.
+  const decorations=[];
+  const linePart=(coords,name)=>{
+   const path=coords.map(c=>({lat:c[1],lng:c[0]}));
+   const line=new google.maps.Polyline({map:gMap,path,strokeOpacity:0,geodesic:false,
+    icons:[{icon:{path:"M 0,-1 0,1",strokeColor:"#F4B39C",strokeOpacity:.96,strokeWeight:2.5,scale:2},
+      offset:"0",repeat:"15px"}],zIndex:6});
+   line.addListener("click",event=>new google.maps.InfoWindow({
+    content:'<strong>'+esc(name)+'</strong><br>Rota georreferenciada · traçado indicativo',
+    position:event.latLng
+   }).open({map:gMap}));
+   decorations.push(line);
+  };
+  for(const feature of l.geometry.features||[]){
+   const geom=feature.geometry,kind=geom?.type;
+   if(kind==="LineString")linePart(geom.coordinates,featureName(feature,l));
+   if(kind==="MultiLineString")geom.coordinates.forEach(coords=>linePart(coords,featureName(feature,l)));
+  }
   mapData.addListener("click",event=>{
    const name=event.feature.getProperty("name")||event.feature.getProperty("Name")||l.name;
-   new google.maps.InfoWindow({content:'<strong>'+esc(name)+'</strong>',position:event.latLng}).open({map:gMap});
+   new google.maps.InfoWindow({content:'<strong>'+esc(name)+'</strong><br>'+
+    esc(l.source_name||"Arquivo georreferenciado")+'<br>Verificação contratual pendente.',
+    position:event.latLng}).open({map:gMap});
   });
-  googleData.push({id:l.id,layer:mapData});
+  googleData.push({id:l.id,layer:mapData,decorations});
  }
- function draw(){
+ function draw({fit=true}={}){
   const geo=layers.filter(l=>l.geometry);
   paintLegend();
   const polygons=geo.reduce((total,l)=>total+(l.geometry.features||[]).reduce((count,f)=>
@@ -330,12 +360,12 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   if(engine==="leaflet"){
    for(const item of drawn)map.removeLayer(item.layer);
    drawn=[];geo.forEach(addGeoToLeaflet);
-   if(drawn.length){
+   if(fit&&drawn.length){
     const all=maps.featureGroup(drawn.map(x=>x.layer));const bounds=all.getBounds();
     if(bounds.isValid())map.fitBounds(bounds.pad(.13),{maxZoom:16});
    }
   }else{
-   for(const x of googleData)x.layer.setMap(null);googleData=[];
+   for(const x of googleData){x.layer.setMap(null);x.decorations?.forEach(d=>d.setMap(null));}googleData=[];
    geo.forEach(addGoogleData);
   }
  }
@@ -461,10 +491,12 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   try{
    if(mode==="google"){await setGoogle();}
    else if(engine==="google"){
+    const lastCenter=gMap?.getCenter(),lastZoom=gMap?.getZoom()||12;
+    for(const x of googleData){x.layer.setMap(null);x.decorations?.forEach(d=>d.setMap(null));}
     engine="leaflet";gMap=null;googleData=[];mapDiv.replaceChildren();
-    map=maps.map(mapDiv,{scrollWheelZoom:false,zoomControl:true}).setView(VIEW,12);
+    map=maps.map(mapDiv,{scrollWheelZoom:false,zoomControl:true}).setView(lastCenter?[lastCenter.lat(),lastCenter.lng()]:VIEW,lastZoom);
     maps.control.scale({metric:true,imperial:false}).addTo(map);
-    applyBase(mode);draw();
+    applyBase(mode);draw({fit:false});
    }else applyBase(mode);
   }catch(error){q("[data-basemap]").value="satellite";notify("Google Satélite não pôde iniciar: "+error.message,true);}
  });
@@ -474,5 +506,5 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  if(destroyed)return ()=>{};
  draw();
  syncMapSize();
- return ()=>{destroyed=true;resizeObserver?.disconnect();if(resizeFrame)cancelAnimationFrame(resizeFrame);if(map){map.remove();map=null;}for(const g of googleData)g.layer.setMap(null);};
+ return ()=>{destroyed=true;resizeObserver?.disconnect();if(resizeFrame)cancelAnimationFrame(resizeFrame);if(map){map.remove();map=null;}for(const g of googleData){g.layer.setMap(null);g.decorations?.forEach(d=>d.setMap(null));}};
 }
