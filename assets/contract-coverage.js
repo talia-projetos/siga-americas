@@ -41,6 +41,8 @@ export function mountContractCoverage(root,prices,monthProposals,allProposals,ac
  if(!root)return;
  const metrics=calculateContractCoverage(prices,monthProposals,allProposals,actionCatalogue,fieldItems);
  const totalReference=metrics.items.reduce((s,p)=>s+itemValue(p),0)/4;
+ const fixedReference=metrics.items.filter(p=>fixedUnit(p.unit)).reduce((s,p)=>s+Number(p.unit_price||0),0);
+ const variableReference=Math.max(0,totalReference-fixedReference);
  const days=Number(workingDays)||0;
  const expected=metrics.items.length;
  const bar=(n,d)=>
@@ -69,7 +71,7 @@ export function mountContractCoverage(root,prices,monthProposals,allProposals,ac
   '<p><strong>4 · Evidência.</strong> A cobertura com OS exige vínculo cadastrado; execução ou faturamento exigem medição e aceite separados. Não somar horas ou serviços de postos fixos novamente às equipes nem cobrar rotina mensal por turno.</p>'+
   '<p><strong>5 · Revisão sustentável.</strong> Conferir toda semana lacunas, repetição, frentes, horas, dias, riscos e saldo; diversificar apenas com demanda e recursos disponíveis.</p></div></details>'+
   '<details class="contract-scenario"><summary>Simulação de sensibilidade · até 150% das quantidades de referência</summary>'+
-  '<p>O multiplicador incide exclusivamente sobre quantidades teóricas de referência (total contratado dividido por quatro); os preços unitários não mudam. Mais quantidade <strong>não</strong> significa autorização nem saldo disponível.</p>'+
+  '<p>Ajuste apenas a quantidade <strong>das rubricas não mensais</strong>; as rubricas fixas mensais permanecem em 100% e não são multiplicadas. Preços contratados ficam inalterados. Nenhuma quantidade é gravada ou autorizada.</p>'+
   '<label>Quantidade hipotética sobre a referência <input type="range" min="50" max="150" step="10" value="100" data-coverage-factor> <strong data-coverage-factor-label>100%</strong></label>'+
   '<div class="contract-scenario-result" data-coverage-scenario></div>'+
   '<p class="contract-coverage-note">Para validar a hipótese: calcular a quantidade de cada item por dia útil, o tempo necessário da equipe, recursos/insumos, saldo remanescente do contrato e possibilidade de medição. A simulação não emite OS.</p>'+
@@ -104,12 +106,12 @@ export function mountContractCoverage(root,prices,monthProposals,allProposals,ac
  };
  const slider=root.querySelector("[data-coverage-factor]"),label=root.querySelector("[data-coverage-factor-label]"),output=root.querySelector("[data-coverage-scenario]");
  const update=()=>{
-  const f=Number(slider.value)/100,estimated=totalReference*f,monthsValue=totalReference*3*f,
+  const f=Number(slider.value)/100,estimated=fixedReference+variableReference*f,monthsValue=estimated*3,
    dayValue=days?estimated/days:0,over=f>1;
   label.textContent=number(f*100,0)+"%";
   output.innerHTML='<strong>'+brl(estimated)+'</strong> na competência · '+fraction(estimated,goal)+' da meta de '+brl(goal)+
    (days?' · '+brl(dayValue)+' / dia útil aritmético':'')+
-   '<p>'+brl(monthsValue)+' em três competências, mantida a mesma hipótese. '+
+   '<p>Rubricas mensais: '+brl(fixedReference)+' por mês; parcela variável simulada: '+brl(variableReference*f)+'. '+brl(monthsValue)+' em três competências, mantida a mesma hipótese. '+
    (over?'<strong>Alerta:</strong> acima da referência contratual de quantidade da competência; exige verificar saldos, prazo e autorização; pode ser inexequível.':
    'Ainda exige medição de campo, saldo, disponibilidade e aprovação.')+'</p>';
  };
