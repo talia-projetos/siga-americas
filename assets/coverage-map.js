@@ -219,35 +219,83 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  maps.control.scale({metric:true,imperial:false}).addTo(map);
  const legend=q("[data-legend]");
  if(window.matchMedia?.("(max-width: 600px)").matches)legend.open=false;
+
  function paintLegend(){
   const items=new Map();
   for(const layer of layers.filter(entry=>entry.geometry)){
    for(const feature of layer.geometry.features||[]){
     if(!feature.geometry)continue;
-    const name=featureName(feature,layer),key=areaKey(name);
-    const color=colorForFeature(feature,layer),identifier=key+"|"+color;
-     if(!items.has(identifier))items.set(identifier,{name,color});
+    const kind=symbolType(feature,layer),name=kind==="matriz"?"Árvores matrizes":
+      kind==="rota"?(layer.name||"Rota"):kind==="area"?featureName(feature,layer):layer.name||"Pontos";
+    const color=colorForFeature(feature,layer),key=kind+"|"+areaKey(name)+"|"+color;
+    if(!items.has(key))items.set(key,{name,color,kind});
    }
   }
   legend.hidden=!items.size;
-  q("[data-legend-count]").textContent=items.size?"("+items.size+")":"";
+  q("[data-legend-count]").textContent="("+items.size+")";
   q("[data-legend-list]").innerHTML=[...items.values()].map(entry=>
-   '<div class="coverage-map-legend-entry"><span class="coverage-map-legend-line" style="--legend-color:'+
-   entry.color+'" aria-hidden="true"></span><span>'+esc(entry.name)+'</span></div>'
+   '<div class="coverage-map-legend-entry"><span class="coverage-map-legend-line" data-symbol="'+entry.kind+
+   '" style="--legend-color:'+entry.color+'" aria-hidden="true"></span><span>'+esc(entry.name)+'</span></div>'
   ).join("");
+ }
+ // SVG com hachuras diagonais de opacidade 20%, sem rasterizar os polígonos.
+ // O padrão fica no renderer SVG do Leaflet e acompanha zoom e deslocamento.
+ function hatchPolygon(featureLayer,color){
+  const path=featureLayer._path,svg=path?.ownerSVGElement;
+  if(!path||!svg)return;
+  const ns="http://www.w3.org/2000/svg",token=color.replace("#","").toLowerCase();
+  const id="siga-hatch-"+token;
+  let defs=svg.querySelector("defs[data-siga-hatches]");
+  if(!defs){defs=document.createElementNS(ns,"defs");defs.setAttribute("data-siga-hatches","");svg.insertBefore(defs,svg.firstChild);}
+  if(!Array.from(defs.children).some(x=>x.id===id)){
+   const pattern=document.createElementNS(ns,"pattern");
+   pattern.id=id;pattern.setAttribute("width","9");pattern.setAttribute("height","9");
+   pattern.setAttribute("patternUnits","userSpaceOnUse");pattern.setAttribute("patternTransform","rotate(45)");
+   const under=document.createElementNS(ns,"rect");
+   under.setAttribute("width","9");under.setAttribute("height","9");
+   under.setAttribute("fill",color);under.setAttribute("fill-opacity",".055");
+   const dash=document.createElementNS(ns,"path");
+   dash.setAttribute("d","M0 0V9");
+   dash.setAttribute("stroke",color);dash.setAttribute("stroke-width","1.7");
+   dash.setAttribute("stroke-opacity",".20");
+   pattern.append(under,dash);defs.appendChild(pattern);
+  }
+  path.setAttribute("fill","url(#"+id+")");
+  path.setAttribute("fill-opacity","1");
+  path.setAttribute("fill-rule","evenodd");
  }
  function addGeoToLeaflet(l){
   if(!l.geometry)return;
   const layer=maps.geoJSON(l.geometry,{
-   style:feature=>({color:colorForFeature(feature,l),weight:3,opacity:1,fill:false,fillOpacity:0}),
-   pointToLayer:(feature,latlng)=>maps.circleMarker(latlng,{
-    radius:7,color:colorForFeature(feature,l),weight:3,opacity:1,fill:false,fillOpacity:0
-   }),
+   style:feature=>{
+    const c=colorForFeature(feature,l),kind=symbolType(feature,l);
+    return kind==="area"?
+     {color:c,weight:1.6,opacity:.94,fill:true,fillColor:c,fillOpacity:.08,className:"siga-area-hatched"}:
+     {color:kind==="rota"?"#F4B39C":c,weight:3.1,opacity:.95,dashArray:"9 6",lineCap:"round",fill:false,className:"siga-route-dashed"};
+   },
+   pointToLayer:(feature,latlng)=>{
+    const kind=symbolType(feature,l),c=kind==="matriz"?"#25C9A2":colorForFeature(feature,l);
+    return maps.circleMarker(latlng,{
+     radius:kind==="matriz"?5.1:4.7,
+     color:"#FFFFFF",weight:1.35,opacity:.98,fill:true,fillColor:c,fillOpacity:.96,
+     className:"siga-point-solid "+(kind==="matriz"?"siga-matrix-point":"")
+    });
+   },
    onEachFeature:(feature,item)=>{
-    item.bindPopup('<strong>'+esc(feature.properties?.name||l.name)+'</strong><br>'+
-      esc(l.source_name||"KML fornecido")+'<br>Geometria ainda não validada pelo contrato.');
+    const kind=symbolType(feature,l),coords=feature.geometry?.type==="Point"?feature.geometry.coordinates:null;
+    const name=featureName(feature,l);
+    item.bindPopup('<div class="siga-map-popup"><strong>'+esc(name)+'</strong>'+
+      '<span>'+esc(kind==="matriz"?"Matriz georreferenciada · identificação a conferir":
+        kind==="area"?"Área cartográfica":kind==="rota"?"Traçado georreferenciado":"Ponto")+'</span>'+
+      (coords?'<small>WGS84: '+esc(coords[1].toFixed(6))+'; '+esc(coords[0].toFixed(6))+'</small>':'')+
+      '<small>Fonte: '+esc(l.source_name||l.source_filename||"KML fornecido")+'</small>'+
+      '<small>Não constitui execução ou medição contratual.</small></div>');
    }
   }).addTo(map);
+  layer.eachLayer(part=>{
+   const kind=symbolType(part.feature,l);
+   if(kind==="area")hatchPolygon(part,colorForFeature(part.feature,l));
+  });
   drawn.push({id:l.id,layer});
  }
  let gMap=null;
