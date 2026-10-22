@@ -5,6 +5,10 @@ const d=v=>v?new Date(String(v).slice(0,10)+"T12:00:00").toLocaleDateString("pt-
 const pretty=x=>String(x??"").trim()||"A definir";
 const shortService=x=>String(x??"").replace(/\s*·\s*programação diária.*$/i,"").trim();
 const shiftList=[["manha","MANHÃ"],["tarde","TARDE"]];
+const routineText=r=>{
+ const frequency={diaria:"Diária",semanal:"Semanal",mensal:"Mensal"}[r.frequency]||r.frequency;
+ return frequency+" · "+r.title+" ("+r.routine_code+")";
+};
 const planFor=(plans,kind,id,date,shift)=>plans?.get(kind+":"+id+":"+date+":"+shift);
 const shiftText=(plans,kind,id,date,shift)=>{
  const p=planFor(plans,kind,id,date,shift);
@@ -33,7 +37,7 @@ export function buildDailyScheduleDocument(entry,team,area,price,catalog=[],plan
    ["04  ANÁLISE DO GESTOR","Decisão: (  ) Aprovar  (  ) Devolver para ajustes\nObservações: ______________________________________________\nReferência da aprovação: __________________________________"]]);
 }
 export function buildFixedPostDocument(post,date,plans,routines=[]){
- const daily=routines.filter(r=>r.service_post_id===post.id&&r.frequency==="diaria");
+ const postRoutines=routines.filter(r=>r.service_post_id===post.id);
  return basic("PROGRAMAÇÃO DIÁRIA · POSTO FIXO","POSTO-"+date+"-"+post.code,
   [["Data operacional",d(date)],["Posto fixo",post.code+" · "+post.name],
    ["Referência contratual",post.contractual_reference||"3.40"]],
@@ -42,7 +46,7 @@ export function buildFixedPostDocument(post,date,plans,routines=[]){
    ["Periodicidade de referência","Posto mensal, sem medição diária adicional"]],
   [["01  MANHÃ",shiftText(plans,"posto",post.id,date,"manha")],
    ["02  TARDE",shiftText(plans,"posto",post.id,date,"tarde")],
-   ["03  ROTINAS CONTRATUAIS","Referência: "+(daily.map(r=>r.routine_code+" · "+r.title).join("; ")||"Rotinas a conferir")],
+   ["03  ROTINAS CONTRATUAIS","Referência (não comprova execução): "+(postRoutines.map(routineText).join("; ")||"Rotinas a conferir")+". Frequências não são datas automaticamente agendadas."],
    ["04  ANÁLISE DO GESTOR","Decisão: (  ) Aprovar  (  ) Devolver para ajustes\nObservações: ______________________________________________\nReferência da aprovação: __________________________________"]]);
 }
 export async function downloadDailySchedules(entries,teams,areas,prices,posts=[],plans=new Map(),routines=[],approval=null){
@@ -97,13 +101,13 @@ export function buildMonthlyScheduleDocuments(entries,teams,areas,prices,month,p
  }
  for(const post of posts.slice().sort((a,b)=>a.code.localeCompare(b.code,"pt-BR",{numeric:true}))){
   const missing=dates.filter(date=>shiftList.some(([shift])=>!planFor(plans,"posto",post.id,date,shift)));
-  const daily=routines.filter(r=>r.service_post_id===post.id&&r.frequency==="diaria");
+  const postRoutines=routines.filter(r=>r.service_post_id===post.id);
   models.push(basic("PROGRAMAÇÃO MENSAL · POSTO FIXO","POSTO-"+month+"-"+post.code,
    [["Competência",label],["Posto",post.code+" · "+post.name],["Referência","Item 3.40 · postos de jardinagem"]],
    [["Posições contratuais",String(post.fixed_positions||1)],["Dias previstos",String(dates.length)],
     ["Turnos pendentes",String(missing.length)+" dia(s)"],["Unidade de custeio","mês · sem cobrança extra por turno"]],
    [["01  MANHÃ E TARDE POR DIA",dates.map(date=>compactLine(plans,"posto",post.id,date)).join("\n\n")],
-    ["02  ROTINAS DE REFERÊNCIA",daily.map(r=>r.routine_code+" · "+r.title).join("; ")||"Consultar rotinas cadastradas"],
+    ["02  ROTINAS DE REFERÊNCIA",postRoutines.map(routineText).join("; ")||"Consultar rotinas cadastradas"],
     ["04  DECISÃO DO GESTOR","(  ) Aprovar a programação    (  ) Solicitar ajustes\nReferência documental: __________________________"]]));
  }
  return models;
