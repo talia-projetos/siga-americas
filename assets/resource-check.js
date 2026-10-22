@@ -80,8 +80,8 @@ export async function mountInventoryCheck(root,db,{notify}){
    const changed=Number(item.observed_quantity)!==Number(value);
    const payload={observed_quantity:Number(value),inventory_note:note||null,
     quantity_checked_at:verify?new Date().toISOString():changed?null:item.quantity_checked_at,
-    review_status:verify?"validado":"a_conferir",
-    validation_status:verify?(Number(value)<Number(item.required_quantity)?"faltante":"conforme"):"a_conferir"};
+    review_status:verify?"validado":changed?"a_conferir":item.review_status,
+    validation_status:verify?(Number(value)<Number(item.required_quantity)?"faltante":"conforme"):changed?"a_conferir":item.validation_status};
    const result=await db.from("contract_resource_requirements").update(payload).eq("id",item.id).select("id,observed_quantity,inventory_note,quantity_checked_at,review_status,validation_status").single();
    if(result.error){notify(result.error.message,true);btn.disabled=false;btn.textContent="Salvar";return;}
    Object.assign(item,result.data);notify("Quantidade de "+item.item_name+" salva. "+(verify?"Conferência física documentada.":"Sem nova confirmação física."));redrawKeepingPosition();
