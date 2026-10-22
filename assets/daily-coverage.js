@@ -1,7 +1,7 @@
 // SIGA Américas · planejamento diário por manhã/tarde e postos fixos.
 // O registro diário é referência; somente turnos gravados são considerados detalhados.
 // Não atribuir automaticamente atividades, trabalhadores, validação ou execução.
-import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=7";
+import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=8";
 import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
 import {mountDailyApproval} from "./daily-approval.js?v=2";
 import {mountMaintenanceActionPanel} from "./maintenance-action-panel.js?v=1";
