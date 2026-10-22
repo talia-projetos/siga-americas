@@ -176,3 +176,23 @@ A antiga aba **Itens contratuais sugeridos** passa a ser **Prioridades da semana
 - Consultas semanais usam filtros de data no banco; os resultados são atualizados quando a aba abre, o usuário troca a semana ou usa **Atualizar dados**.
 
 Esses critérios integram o ciclo CAPE sem alterar a lógica de OS, aprovações e relatórios de campo.
+
+## Relatório semanal: postos fixos, OS e recepção pela gestão (22/10/2026)
+
+### Seleção e pré-preenchimento
+- Em `Registro semanal de campo`, a equipe **EQ06 – Jardinagem** apresenta **seis postos fixos contratuais individualizados**: Centro Executivo, Parque Gramadão, Ecomuseu, CRV, Mirante Central e Coordenação, e Refúgio Biológico Bela Vista. Os postos não são equipes adicionais.
+- Foi registrada a frente operacional do Mirante no cadastro, antes ausente, e o relatório mantém separadamente o identificador do posto principal e o posto de cada atividade. Alterar um posto atualiza a frente vinculada e evita associação indevida a outra unidade.
+- O formulário consulta as OS existentes da equipe e as OS vinculadas aos postos por `daily_plan_order_links`. A busca é limitada à semana escolhida e, quando há dia de execução, a esse dia; não são oferecidas OS de outro posto ou canceladas.
+- Somente uma correspondência inequívoca é sugerida automaticamente. OS, atividade, local e unidade podem ser pré-selecionados com base nos dados disponíveis; o técnico pode corrigir o preenchimento. A quantidade prevista na OS **nunca** deve virar automaticamente quantidade realizada.
+- O técnico informa dia real de execução (opcional dentro da semana), quantidade efetivamente realizada, unidade, situação, observações, evidências e participantes. A seleção do resultado é obrigatória para **enviar**; rascunhos podem permanecer como "A definir", sem registrar execução fictícia.
+- A data de uma OS diária não pode divergir do dia efetivo escolhido para o item. Quantificação de rotina fixa não representa cobrança adicional do posto mensal.
+- O relatório e as linhas individuais gravam os campos `service_post_id` e `performed_on` para rastrear posto/data sem transformar automaticamente atividades em novas OS.
+
+### Recepção e controle
+- `field_daily_reports` guarda o relatório da equipe por semana; `field_daily_report_items` guarda as atividades individualizadas. A submissão muda o status para `enviado`, para análise da supervisão.
+- A tela **Acompanhamento das equipes** passa a consultar corretamente a semana do relatório, iniciada na segunda-feira, e dispõe de atualização de dados. A supervisão revisa atividades, trabalhadores, quantidades e evidências antes de marcar como `validado`.
+- A aba **Prioridades da semana** (CAPE) consulta os mesmos relatórios enviados e suas atividades, separando execução informada, parcial/impedida e validada. Relatórios em rascunho não contam como enviados.
+- **Execuções registradas** apresenta também uma caixa de entrada de relatórios dos técnicos, filtrável por competência e atualizável. Os itens recebidos incluem posto, data, unidade, quantidade e situação. Essa consulta **não cria registros financeiros** em `field_execution_entries`; a conciliação e a medição continuam dependentes de conferência para evitar dupla contabilização.
+- O bloco legado de conferência das anotações antigas foi retirado da tela e seu código desativado, preservando os registros históricos para tratamento específico em outra ocasião.
+
+Os mecanismos de autorização e os relacionamentos de OS continuam governados pelas políticas RLS existentes, ampliadas de forma restrita para permitir à equipe EQ06 ler apenas OS de seus postos efetivamente vinculadas.
