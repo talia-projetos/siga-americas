@@ -1,5 +1,5 @@
 import {mountWeatherAdvisory} from "./climate-planner.js?v=7";
-import {mountDailyCoverage} from "./daily-coverage.js?v=11";
+import {mountDailyCoverage} from "./daily-coverage.js?v=12";
 import {mountLowMobilizationBalance} from "./low-resource-panel.js?v=2";
 import {mountTargetFeasibility} from "./financial-target-analysis.js?v=2";
 import {mountContractCoverage} from "./contract-coverage.js?v=3";
