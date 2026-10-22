@@ -3,7 +3,7 @@
 // Não atribuir automaticamente atividades, trabalhadores, validação ou execução.
 import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=6";
 import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
-import {mountDailyApproval} from "./daily-approval.js?v=1";
+import {mountDailyApproval} from "./daily-approval.js?v=2";
 import {mountMaintenanceActionPanel} from "./maintenance-action-panel.js?v=1";
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
