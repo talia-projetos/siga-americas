@@ -763,11 +763,7 @@ async function modulePage(key){
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>'+afterTable;
   if(quantityScope)await mountCategoryQuantities(el("category-quantity-slot"),app.db,{categories:quantityScope,canWrite:privileged(),notify,individuals:app.rows.length});
   if(key==="field_programs")mountWeatherAdvisory(el("planning-climate-live"),app.db);
-  if(key==="vehicles")el("main").querySelectorAll("[data-fleet-add]").forEach(button=>button.addEventListener("click",async()=>{
-    await openForm();
-    const field=el("modal-fields").querySelector("#fld-contract_resource_requirement_id");
-    if(field)field.value=button.dataset.fleetAdd;
-  }));
+  // Identificação de veículo usa delegação global para funcionar após salvar a conferência.
   // Repõe os controles visuais antes de instalar eventos; não apenas o predicado da lista.
   if(key==="field_execution_entries"){
    const term=el("execution-location-search"),day=el("execution-location-date"),amount=el("execution-location-quantity");
@@ -1092,6 +1088,12 @@ document.addEventListener("click",async e=>{
  const menu=el("profile-menu");
  if(menu?.open&&!e.target.closest("#profile-menu"))menu.open=false;
  const navButton=e.target.closest("[data-nav]");if(navButton){await navigate(navButton.dataset.nav);return;}
+ const fleetButton=e.target.closest("[data-fleet-add]");if(fleetButton&&app.page==="vehicles"){
+  await openForm();
+  const field=el("modal-fields").querySelector("#fld-contract_resource_requirement_id");
+  if(field)field.value=fleetButton.dataset.fleetAdd;
+  return;
+ }
  const edit=e.target.closest("[data-edit]");if(edit){await openForm(edit.dataset.edit);return;}
  const action=e.target.closest("[data-action]")?.dataset.action;
  if(action==="create")await openForm();
