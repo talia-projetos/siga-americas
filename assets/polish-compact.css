@@ -1,6 +1,4 @@
 /* SIGA Américas · polimento premium: menus compactos, gráficos legíveis e cartões com respiro.
-.coverage-map-toolbar .coverage-import-color{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:#3e6450}
-.coverage-map-toolbar .coverage-import-color input[type=color]{width:42px;height:35px;padding:3px;border:1px solid #cbdcd1;border-radius:8px;cursor:pointer;background:#fff}
  * CSS de apresentação somente; não altera IDs, dados, API, regras de acesso nem SVGs originais.
  */
 :root{
@@ -1724,3 +1722,37 @@
  #main .execution-source-split-item{grid-template-columns:1fr;gap:2px}
  #main .execution-source-split-item small{grid-column:auto}
 }
+
+/* Escala por turno e aprovação documental */
+.coverage-map-toolbar .coverage-import-color{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:#3e6450}
+.coverage-map-toolbar .coverage-import-color input[type=color]{width:42px;height:35px;padding:3px;border:1px solid #cbdcd1;border-radius:8px;cursor:pointer;background:#fff}
+#main .daily-cover-shifts .daily-cover-selects{grid-template-columns:repeat(4,minmax(0,1fr))}
+#main .daily-cover-shifts .daily-cover-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+#main .daily-plan-block-title{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:13px 18px 12px}
+#main .daily-plan-block-title h3{font-size:14px;color:#294f35;margin:0}
+#main .daily-plan-block-title span{font-size:10px;color:#6e8172}
+#main .daily-shift-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:13px}
+#main .daily-shift{padding:11px;border:1px solid #e1e9e1;border-radius:9px;background:#fff;display:grid;align-content:start;gap:9px;min-width:0}
+#main .daily-shift-head{display:flex;justify-content:space-between;align-items:center;gap:7px}
+#main .daily-shift-head strong{font-size:11px;letter-spacing:.06em;color:#275d3d}
+#main .daily-shift-state{font-size:9px;color:#95723b;font-weight:650}
+#main .daily-shift-state.is-saved{color:#2b704b}
+#main .daily-shift label{display:grid;gap:4px;font-size:10px;font-weight:650;color:#526e5a}
+#main .daily-shift textarea,#main .daily-shift input,#main .daily-shift select{box-sizing:border-box;width:100%;min-width:0;padding:8px;border:1px solid #dae6dc;border-radius:7px;background:#fff;color:#2c4c39;font-size:11px}
+#main .daily-shift textarea{resize:vertical;min-height:60px}
+#main .daily-shift p{font-size:11px;line-height:1.5;margin:0;overflow-wrap:anywhere}
+#main .daily-shift button{justify-self:start;font-size:10px}
+#main .daily-fixed-post{background:#f9fcf9}
+#main .daily-approval-panel{border:1px solid #d9e6dc;background:#fcfefc;border-radius:11px;padding:15px;margin:3px 18px 18px}
+#main .daily-approval-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
+#main .daily-approval-head h3{font-size:15px;margin:4px 0 6px;color:#295b3d}
+#main .daily-approval-panel p{font-size:11px;color:#627668;line-height:1.6;margin:7px 0}
+#main .daily-approval-panel small{font-size:10px;display:block;color:#7d897e;margin-top:10px}
+#main .daily-approval-status{font-size:10px;padding:6px 10px;background:#fff6e7;color:#926b28;border:1px solid #ecdcb9;border-radius:8px;font-weight:700}
+#main .daily-approval-status.approved{background:#e8f4ec;color:#2a6741;border-color:#c7e4d0}
+#main .daily-approval-fields{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.5fr) minmax(130px,.8fr);gap:10px;margin:12px 0}
+#main .daily-approval-fields label{display:grid;gap:5px;font-size:10px;font-weight:700;color:#466451}
+#main .daily-approval-fields input{width:100%;min-width:0;box-sizing:border-box;border:1px solid #d9e5da;border-radius:8px;min-height:39px;padding:8px 10px;font-size:11px;background:#fff}
+#main .daily-approval-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+@media(max-width:960px){#main .daily-cover-shifts .daily-cover-selects{grid-template-columns:repeat(2,minmax(0,1fr))}#main .daily-approval-fields{grid-template-columns:1fr}}
+@media(max-width:600px){#main .daily-shift-grid,#main .daily-cover-shifts .daily-cover-selects{grid-template-columns:1fr}#main .daily-cover-shifts .daily-cover-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
