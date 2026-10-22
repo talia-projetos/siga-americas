@@ -1,5 +1,5 @@
 // Programação diária por equipe: disponibilidade planejada não significa execução.
-import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=3";
+import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=4";
 import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
