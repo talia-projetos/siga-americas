@@ -1,118 +1,191 @@
-// Programação diária por equipe: disponibilidade planejada não significa execução.
-import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=4";
+// SIGA Américas · planejamento diário por manhã/tarde e postos fixos.
+// O registro diário é referência; somente turnos gravados são considerados detalhados.
+// Não atribuir automaticamente atividades, trabalhadores, validação ou execução.
+import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=5";
 import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
-const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
 const stateLabels={programada:"Programada",remanejada:"Remanejada",impedida:"Impedida",informada:"Execução informada",validada:"Validada"};
+const shifts=[["manha","MANHÃ"],["tarde","TARDE"]];
+const sorted=(a,b)=>String(a.code).localeCompare(String(b.code),"pt-BR",{numeric:true});
+const trimDaily=s=>String(s||"").replace(/\s*·\s*programação diária.*$/i,"").trim();
+
 export async function mountDailyCoverage(root,db,{role,notify}){
  const canManage=["supervisao","gestao","admin"].includes(role);
- root.innerHTML='<p class="document-muted">Carregando a programação diária das equipes...</p>';
- const [daily,teamRes,areaRes,priceRes]=await Promise.all([
+ root.innerHTML='<p class="document-muted">Carregando equipes, postos fixos e turnos...</p>';
+ const [dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes]=await Promise.all([
   db.from("daily_team_assignments").select("id,work_date,team_id,area_id,contract_item_id,planned_service,planned_location,climate_alternative,block_status,blocker_reason,verified_quantity,work_order_id").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").limit(900),
   db.from("teams").select("id,code,name,active").eq("active",true),
   db.from("operational_areas").select("id,code,name"),
-  db.from("contract_items").select("id,code,name,unit,unit_price,source_type").eq("source_type","precos")
+  db.from("contract_items").select("id,code,name,unit,unit_price,source_type").eq("source_type","precos"),
+  db.from("service_posts").select("id,code,name,contractual_reference,fixed_positions,verification_status").order("code"),
+  db.from("field_routine_templates").select("id,service_post_id,routine_code,title,frequency,execution_guidance,active,validation_status").eq("active",true).limit(150),
+  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").gte("work_date","2026-11-01").lte("work_date","2027-01-31").limit(2200)
  ]);
- const error=[daily,teamRes,areaRes,priceRes].find(x=>x.error)?.error;
- if(error){root.innerHTML='<div class="notice warning">Não foi possível carregar a escala diária: '+safe(error.message)+'</div>';return}
- const entries=daily.data||[],teams=new Map((teamRes.data||[]).map(x=>[x.id,x])),areas=new Map((areaRes.data||[]).map(x=>[x.id,x])),prices=new Map((priceRes.data||[]).map(x=>[x.id,x]));
- let month="2026-11",day=null,teamFilter="",generatingPDF=false;
- const grouped=()=>entries.filter(x=>x.work_date.startsWith(month));
- const dates=()=>[...new Set(grouped().map(x=>x.work_date))].sort();
+ const error=[dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes].find(x=>x.error)?.error;
+ if(error){root.innerHTML='<div class="notice warning">Não foi possível carregar a escala por turnos: '+safe(error.message)+'</div>';return}
+ const entries=dailyRes.data||[],teams=new Map((teamRes.data||[]).map(x=>[x.id,x])),
+  areas=new Map((areaRes.data||[]).map(x=>[x.id,x])),prices=new Map((priceRes.data||[]).map(x=>[x.id,x])),
+  posts=(postRes.data||[]).slice().sort(sorted),routines=routineRes.data||[],plans=shiftRes.data||[];
+ const planKey=(kind,id,date,shift)=>kind+":"+id+":"+date+":"+shift;
+ const planIndex=new Map(plans.map(p=>[planKey(p.service_post_id?"posto":"equipe",p.service_post_id||p.team_assignment_id,p.work_date,p.shift),p]));
+ const getPlan=(kind,id,date,shift)=>planIndex.get(planKey(kind,id,date,shift));
+ let month="2026-11",day=null,teamFilter="",postFilter="",generatingPDF=false,busy=false;
+ const grouped=()=>entries.filter(e=>e.work_date.startsWith(month));
+ const dates=()=>[...new Set(grouped().map(e=>e.work_date))].sort();
+ const postRoutines=id=>routines.filter(r=>r.service_post_id===id).sort((a,b)=>a.routine_code.localeCompare(b.routine_code,"pt-BR"));
+ const dailyValid=(kind,id,date)=>shifts.every(([shift])=>Boolean(getPlan(kind,id,date,shift)?.planned_activity?.trim()));
+ const shiftRows=(kind,id,date)=>{
+  return '<div class="daily-shift-grid">'+shifts.map(([shift,label])=>{
+   const p=getPlan(kind,id,date,shift),ref=kind==="posto"?postRoutines(id):[];
+   return '<div class="daily-shift" data-shift-kind="'+kind+'" data-shift-id="'+safe(id)+'" data-shift-date="'+safe(date)+'" data-shift="'+shift+'">'+
+    '<div class="daily-shift-head"><strong>'+label+'</strong><span class="daily-shift-state '+(p?"is-saved":"is-pending")+'">'+(p?"Detalhamento salvo":"A definir / conferir")+'</span></div>'+
+    (canManage?'<label>Atividade prevista<textarea class="daily-shift-activity" maxlength="600" rows="2" placeholder="Definir atividade deste turno">'+safe(p?.planned_activity||"")+'</textarea></label>'+
+     '<label>Local / trecho<input class="daily-shift-location" maxlength="300" value="'+safe(p?.planned_location||"")+'" placeholder="Local a confirmar"></label>'+
+     '<label>Orientação / observação<input class="daily-shift-note" maxlength="1000" value="'+safe(p?.supervisor_note||"")+'" placeholder="Opcional"></label>'+
+     (kind==="posto"&&ref.length?'<label>Rotinas contratuais como referência<select class="daily-routine-choice"><option value="">Escolher rotina para preencher a atividade…</option>'+
+       ref.map(r=>'<option value="'+safe(r.id)+'">'+safe(r.routine_code+' · '+r.title+' ('+r.frequency+')')+'</option>').join("")+'</select></label>':"")+
+     '<button class="btn btn-secondary" type="button" data-save-shift>Salvar '+label.toLowerCase()+'</button>':
+     '<p><strong>Atividade:</strong> '+safe(p?.planned_activity||"A definir pela supervisão")+'</p>'+
+     '<p><strong>Local:</strong> '+safe(p?.planned_location||"A confirmar")+'</p>'+
+     (p?.supervisor_note?'<p>'+safe(p.supervisor_note)+'</p>':""))+
+   '</div>';
+  }).join("")+'</div>';
+ };
  const draw=()=>{
   const all=grouped(),days=dates();
   if(!days.includes(day))day=days[0]||null;
-  const blocked=all.filter(e=>e.block_status==="impedida").length, reassigned=all.filter(e=>e.block_status==="remanejada").length;
-  const daysComplete=days.filter(d=>new Set(all.filter(e=>e.work_date===d).map(e=>e.team_id)).size===6).length;
-  let selected=all.filter(e=>e.work_date===day);
-  if(teamFilter)selected=selected.filter(e=>teams.get(e.team_id)?.code===teamFilter);
-  root.innerHTML='<section class="daily-coverage-shell">'+
-   '<div class="finance-panel-heading daily-cover-top"><div><span class="eyebrow">PROGRAMAÇÃO DE CAMPO</span><h2>Escala diária das equipes</h2>'+
-   '<p>Atividade principal, alternativa segura e bloqueio quando necessário.</p></div>'+
-   '<div class="daily-pdf-actions"><button type="button" class="btn btn-primary" id="daily-pdf-month">PDF do mês</button><button type="button" class="btn btn-secondary" id="daily-pdf-all">PDF do dia · 6 equipes</button>'+
+  const todayTeams=all.filter(e=>e.work_date===day);
+  const shownTeams=todayTeams.filter(e=>!teamFilter||teams.get(e.team_id)?.code===teamFilter);
+  const shownPosts=posts.filter(p=>!postFilter||p.code===postFilter);
+  const dayShifts=todayTeams.filter(e=>dailyValid("equipe",e.id,day)).length+
+   posts.filter(p=>dailyValid("posto",p.id,day)).length;
+  const totalBlocks=todayTeams.length+posts.length;
+  const monthDates=days.length;
+  root.innerHTML='<section class="daily-coverage-shell daily-cover-shifts">'+
+   '<div class="finance-panel-heading daily-cover-top"><div><span class="eyebrow">PROPOSTA PARA VALIDAÇÃO · GESTÃO CONTRATUAL</span><h2>Planejamento diário · manhã e tarde</h2>'+
+   '<p>Seis equipes operacionais e seis postos fixos do item 3.40. Cada turno possui atividade própria; campos em branco exigem definição da supervisão.</p></div>'+
+   '<div class="daily-pdf-actions"><button type="button" class="btn btn-primary" id="daily-pdf-month">PDF mensal · equipes e postos</button>'+
+   '<button type="button" class="btn btn-secondary" id="daily-pdf-all">PDF do dia · completo</button>'+
    (teamFilter?'<button type="button" class="btn btn-secondary" id="daily-pdf-selected">PDF da equipe</button>':"")+
    '</div></div>'+
    '<div class="daily-cover-kpis daily-cover-overview">'+
-   '<div><strong>'+daysComplete+' de '+days.length+'</strong><span>dias com equipes programadas</span></div>'+
-   '<div><strong>'+selected.length+'</strong><span>equipes exibidas no dia</span></div>'+
-   '<div><strong>'+blocked+' imp. · '+reassigned+' rem.</strong><span>ocorrências neste mês</span></div></div>'+
+    '<div><strong>'+todayTeams.length+'</strong><span>equipes na data</span></div>'+
+    '<div><strong>'+posts.length+'</strong><span>postos fixos contratuais</span></div>'+
+    '<div><strong>'+dayShifts+' de '+totalBlocks+'</strong><span>unidades com ambos os turnos definidos</span></div>'+
+   '</div>'+
+   '<p class="finance-scenario-alert"><strong>Para análise do gestor:</strong> os horários exatos e a distribuição nominal de trabalhadores devem ser confirmados. Os postos são posições contratuais permanentes nos dias úteis, <strong>não equivalem a equipes extras</strong>. Rotinas cadastradas são referência, não execução comprovada. Documentos exportados não constituem aceite ou OS autorizada.</p>'+
    '<div class="daily-cover-selects"><label>Competência<select id="daily-month">'+
-    [['2026-11','Novembro/2026'],['2026-12','Dezembro/2026'],['2027-01','Janeiro/2027']].map(([v,l])=>'<option value="'+v+'"'+(v===month?' selected':'')+'>'+l+'</option>').join("")+'</select></label>'+
-    '<label>Dia operacional<select id="daily-date">'+days.map(d=>'<option value="'+d+'"'+(d===day?' selected':'')+'>'+safe(dateBR(d))+'</option>').join("")+'</select></label>'+
-    '<label>Equipe<select id="daily-team"><option value="">Todas as seis</option>'+
-     [...teams.values()].sort((a,b)=>a.code.localeCompare(b.code)).map(t=>'<option value="'+safe(t.code)+'"'+(t.code===teamFilter?' selected':'')+'>'+safe(t.code)+' · '+safe(t.name)+'</option>').join("")+'</select></label></div>'+
-   '<div class="daily-cover-list">'+selected.map(e=>{
-    const t=teams.get(e.team_id)||{},a=areas.get(e.area_id)||{},c=prices.get(e.contract_item_id)||{},locked=e.block_status==="validada";
-    const secondary=secondaryCandidates([...prices.values()],e,a);
-    return '<article class="daily-cover-card" data-daily-id="'+safe(e.id)+'"><div class="daily-cover-card-head"><div><strong>'+safe(t.code||"—")+' · '+safe(t.name||"Equipe")+'</strong>'+
-     '<small>'+safe(a.name||"A conferir")+' · Rubrica '+safe(c.code||"—")+' · '+safe(c.unit||"—")+'</small></div>'+
-     '<span class="status-chip" data-status="'+safe(e.block_status)+'">'+safe(stateLabels[e.block_status]||e.block_status)+'</span></div>'+
-     '<p class="daily-activity-title">'+safe(String(e.planned_service||"").replace(/\s*·\s*programação diária.*$/i,""))+'</p>'+
-     '<p class="daily-place"><strong>Local previsto</strong><span>'+safe(e.planned_location)+'</span></p>'+
-     '<details class="daily-plan-details"><summary>Alternativa e orientações</summary><p><strong>Alternativa operacional:</strong> '+safe(e.climate_alternative)+'</p>'+
-      '<p><strong>Opções contratuais de menor mobilização, condicionadas à necessidade real:</strong></p>'+
-      (secondary.length?'<ul class="daily-secondary-prices">'+secondary.map(p=>'<li><strong>'+safe(priceLabel(p))+'</strong><small>'+safe(p.requirements)+'</small></li>').join("")+'</ul>':'<p>Sem correspondência contratual sugerida para esta frente.</p>')+
-      '<small>Valores por unidade contratual. Não representam medição, receita garantida ou margem; chuva severa e bloqueios de segurança impedem a atividade.</small></details>'+
-     (canManage&&!locked?'<div class="daily-cover-actions"><label>Situação<select class="daily-new-status" aria-label="Situação da equipe">'+
-     ['programada','remanejada','impedida'].map(v=>'<option value="'+v+'"'+(e.block_status===v?' selected':'')+'>'+safe(stateLabels[v])+'</option>').join("")+'</select></label>'+
-     '<label class="daily-reason-wrap" '+(e.block_status==="programada"?"hidden":"")+' >Motivo / providência<textarea class="daily-reason" rows="2" placeholder="Descreva o bloqueador e a alternativa adotada">'+safe(e.blocker_reason||"")+'</textarea></label>'+
-     '<button type="button" class="btn btn-secondary" data-daily-save="'+safe(e.id)+'">Salvar</button></div>':
-     (e.blocker_reason?'<p><strong>Justificativa registrada:</strong> '+safe(e.blocker_reason)+'</p>':''))+
-     '</article>';
+    [["2026-11","Novembro/2026"],["2026-12","Dezembro/2026"],["2027-01","Janeiro/2027"]].map(([m,n])=>'<option value="'+m+'"'+(m===month?' selected':'')+'>'+n+'</option>').join("")+'</select></label>'+
+   '<label>Dia útil previsto<select id="daily-date">'+days.map(d=>'<option value="'+d+'"'+(d===day?' selected':'')+'>'+safe(dateBR(d))+'</option>').join("")+'</select></label>'+
+   '<label>Equipe<select id="daily-team"><option value="">Todas as seis</option>'+[...teams.values()].sort(sorted).map(t=>'<option value="'+safe(t.code)+'"'+(t.code===teamFilter?' selected':'')+'>'+safe(t.code+' · '+t.name)+'</option>').join("")+'</select></label>'+
+   '<label>Posto fixo<select id="daily-post"><option value="">Todos os seis</option>'+posts.map(p=>'<option value="'+safe(p.code)+'"'+(p.code===postFilter?' selected':'')+'>'+safe(p.code+' · '+p.name)+'</option>').join("")+'</select></label></div>'+
+   '<div class="daily-plan-block-title"><h3>Equipes operacionais</h3><span>Atividade diária original é referência, não distribuição por turno</span></div>'+
+   '<div class="daily-cover-list">'+shownTeams.map(e=>{
+    const t=teams.get(e.team_id)||{},a=areas.get(e.area_id)||{},c=prices.get(e.contract_item_id)||{};
+    const locked=e.block_status==="validada",secondary=secondaryCandidates([...prices.values()],e,a);
+    return '<article class="daily-cover-card" data-daily-id="'+safe(e.id)+'">'+
+     '<div class="daily-cover-card-head"><div><strong>'+safe(t.code||"—")+' · '+safe(t.name||"Equipe")+'</strong>'+
+      '<small>'+safe(a.name||"Frente a confirmar")+' · Rubrica '+safe(c.code||"—")+'</small></div>'+
+      '<span class="status-chip" data-status="'+safe(e.block_status)+'">'+safe(stateLabels[e.block_status]||e.block_status)+'</span></div>'+
+     '<p class="daily-activity-title"><small>Atividade diária de referência:</small> '+safe(trimDaily(e.planned_service))+'</p>'+
+     '<p class="daily-place"><strong>Local original:</strong><span>'+safe(e.planned_location)+'</span></p>'+
+     shiftRows("equipe",e.id,day)+
+     '<details class="daily-plan-details"><summary>Alternativa e segurança</summary><p>'+safe(e.climate_alternative)+'</p>'+
+     (secondary.length?'<ul class="daily-secondary-prices">'+secondary.map(p=>'<li><strong>'+safe(priceLabel(p))+'</strong><small>'+safe(p.requirements)+'</small></li>').join("")+'</ul>':"")+
+     '<small>Os itens alternativos são possibilidades condicionadas à avaliação técnica e à medição contratual.</small></details>'+
+     (canManage&&!locked?'<div class="daily-cover-actions"><label>Situação<select class="daily-new-status">'+
+       ["programada","remanejada","impedida"].map(v=>'<option value="'+v+'"'+(e.block_status===v?' selected':'')+'>'+safe(stateLabels[v])+'</option>').join("")+'</select></label>'+
+       '<label class="daily-reason-wrap" '+(e.block_status==="programada"?"hidden":"")+'>Motivo / providência<textarea class="daily-reason" rows="2">'+safe(e.blocker_reason||"")+'</textarea></label>'+
+       '<button type="button" class="btn btn-secondary" data-daily-save="'+safe(e.id)+'">Salvar situação</button></div>':
+       e.blocker_reason?'<p>'+safe(e.blocker_reason)+'</p>':"")+
+    '</article>';
    }).join("")+'</div>'+
-   '<p class="finance-scenario-alert">Calendário-base de segunda a sexta-feira, exceto feriados nacionais de 02/11, 20/11, 25/12 e 01/01. Finais de semana, pontos facultativos e escalas especiais exigem confirmação da empresa. Uma equipe programada não está automaticamente mobilizada. Serviços mensais (mês) não são remunerados por dia, mesmo quando a rotina ocorre diariamente.</p>'+
+   '<div class="daily-plan-block-title"><h3>Postos fixos · item 3.40</h3><span>Jardineiro por posto nos dias úteis · alocação nominal a conferir</span></div>'+
+   '<div class="daily-cover-list">'+shownPosts.map(p=>{
+     const rt=postRoutines(p.id),daily=rt.filter(r=>r.frequency==="diaria");
+     return '<article class="daily-cover-card daily-fixed-post"><div class="daily-cover-card-head"><div><strong>Posto '+safe(p.code)+' · '+safe(p.name)+'</strong>'+
+       '<small>'+safe(p.contractual_reference)+' · '+safe(p.fixed_positions)+' posição(ões) contratual(is) · '+safe(p.verification_status)+'</small></div>'+
+       '<span class="status-chip" data-status="'+safe(p.verification_status)+'">'+(dailyValid("posto",p.id,day)?"Turnos definidos":"A detalhar")+'</span></div>'+
+       '<p class="daily-activity-title"><small>Rotinas diárias de referência:</small> '+safe(daily.map(r=>r.title).join(" · ")||"Consultar modelo contratual")+'</p>'+
+       shiftRows("posto",p.id,day)+
+       '<details class="daily-plan-details"><summary>Rotinas e orientações do posto ('+rt.length+')</summary><ul>'+
+       rt.map(r=>'<li><strong>'+safe(r.routine_code+' · '+r.title)+'</strong> <small>'+safe(r.frequency)+' · '+safe(r.execution_guidance||"")+'</small></li>').join("")+
+       '</ul></details></article>';
+   }).join("")+'</div>'+
+   '<p class="finance-scenario-alert">Calendário-base de segunda a sexta-feira, exceto feriados nacionais de 02/11, 20/11, 25/12 e 01/01. Confirmar feriados locais, escalas especiais e efetiva disponibilidade. Postos fixos não geram medição diária adicional por constarem nesta proposta.</p>'+
    '</section>';
   root.querySelector("#daily-month").onchange=e=>{month=e.target.value;day=null;draw()};
   root.querySelector("#daily-date").onchange=e=>{day=e.target.value;draw()};
   root.querySelector("#daily-team").onchange=e=>{teamFilter=e.target.value;draw()};
-  const printSelected=async single=>{
-   if(generatingPDF)return;
-   const onDay=entries.filter(x=>x.work_date===day);
-   const chosen=single?onDay.filter(x=>teams.get(x.team_id)?.code===teamFilter):onDay;
-   if(!chosen.length){notify("Não há programação para a seleção.",true);return;}
-   generatingPDF=true;
-   root.querySelectorAll("#daily-pdf-month,#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=true;b.setAttribute("aria-busy","true")});
+  root.querySelector("#daily-post").onchange=e=>{postFilter=e.target.value;draw()};
+  root.querySelectorAll(".daily-routine-choice").forEach(select=>select.onchange=()=>{
+   const r=routines.find(v=>v.id===select.value);if(!r)return;
+   const box=select.closest(".daily-shift");
+   if(box)box.querySelector(".daily-shift-activity").value=r.title+(r.execution_guidance?" · "+r.execution_guidance:"");
+  });
+  if(canManage)root.querySelectorAll("[data-save-shift]").forEach(button=>button.onclick=async()=>{
+   if(busy)return;
+   const row=button.closest(".daily-shift"),kind=row.dataset.shiftKind,id=row.dataset.shiftId,
+    shift=row.dataset.shift,date=row.dataset.shiftDate,
+    activity=row.querySelector(".daily-shift-activity").value.trim(),
+    location=row.querySelector(".daily-shift-location").value.trim(),
+    note=row.querySelector(".daily-shift-note").value.trim(),
+    existing=getPlan(kind,id,date,shift);
+   if(activity.length<3||location.length<3){notify("Preencha atividade e local do turno antes de salvar.",true);return;}
+   if(kind==="equipe"&&!entries.some(e=>e.id===id&&e.work_date===date)){notify("Equipe não corresponde à data selecionada.",true);return;}
+   busy=true;button.disabled=true;
+   const payload={work_date:date,shift,planned_activity:activity,planned_location:location,supervisor_note:note||null,
+    team_assignment_id:kind==="equipe"?id:null,service_post_id:kind==="posto"?id:null,updated_at:new Date().toISOString()};
    try{
-    await downloadDailySchedules(chosen,teams,areas,prices);
-    notify("PDF da programação gerado. Confira o conteúdo antes de distribuir às equipes.");
-   }catch(error){notify("Não foi possível gerar o PDF: "+(error.message||String(error)),true);}
-   finally{
-    generatingPDF=false;
-    root.querySelectorAll("#daily-pdf-month,#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=false;b.removeAttribute("aria-busy")});
-   }
+    const query=existing?db.from("daily_shift_plans").update(payload).eq("id",existing.id):
+      db.from("daily_shift_plans").insert(payload);
+    const {data,error}=await query.select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").single();
+    if(error)throw error;
+    planIndex.set(planKey(kind,id,date,shift),data);
+    notify("Turno salvo como proposta para avaliação do gestor. Não constitui aprovação.");draw();
+   }catch(e){notify("Erro ao salvar turno: "+(e.message||e),true);button.disabled=false}
+   finally{busy=false}
+  });
+  const setBusy=flag=>{generatingPDF=flag;root.querySelectorAll("#daily-pdf-month,#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=flag;b.setAttribute("aria-busy",String(flag))});};
+  const printDay=async single=>{
+   if(generatingPDF||!day)return;
+   const onDay=entries.filter(e=>e.work_date===day),chosen=single?onDay.filter(e=>teams.get(e.team_id)?.code===teamFilter):onDay;
+   if(!chosen.length){notify("Não há equipe programada na data selecionada.",true);return;}
+   setBusy(true);
+   try{
+    await downloadDailySchedules(chosen,teams,areas,prices,single?[]:posts,planIndex,single?[]:routines);
+    notify("PDF de proposta por manhã/tarde gerado para revisão do gestor do contrato.");
+   }catch(e){notify("Erro ao gerar PDF: "+(e.message||e),true)}finally{setBusy(false)}
   };
-  root.querySelector("#daily-pdf-all").onclick=()=>printSelected(false);
+  root.querySelector("#daily-pdf-all").onclick=()=>printDay(false);
+  if(teamFilter)root.querySelector("#daily-pdf-selected").onclick=()=>printDay(true);
   root.querySelector("#daily-pdf-month").onclick=async()=>{
    if(generatingPDF)return;
    const monthly=entries.filter(e=>e.work_date.startsWith(month));
-   if(!monthly.length){notify("Não há escala mensal nesta competência.",true);return;}
-   generatingPDF=true;
-   root.querySelectorAll("#daily-pdf-month,#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=true;b.setAttribute("aria-busy","true")});
+   if(!monthly.length){notify("Nenhuma programação nesta competência.",true);return;}
+   setBusy(true);
    try{
-    await downloadMonthlySchedules(monthly,teams,areas,prices,month);
-    notify("PDF mensal consolidado, com uma programação por equipe. Confira antes de distribuir.");
-   }catch(error){notify("Não foi possível gerar o PDF mensal: "+(error.message||String(error)),true);}
-   finally{
-    generatingPDF=false;
-    root.querySelectorAll("#daily-pdf-month,#daily-pdf-all,#daily-pdf-selected").forEach(b=>{b.disabled=false;b.removeAttribute("aria-busy")});
-   }
+    await downloadMonthlySchedules(monthly,teams,areas,prices,month,posts,planIndex,routines);
+    notify("PDF mensal com equipes e postos fixos gerado para validação contratual.");
+   }catch(e){notify("Erro ao gerar PDF mensal: "+(e.message||e),true)}finally{setBusy(false)}
   };
-  if(teamFilter)root.querySelector("#daily-pdf-selected").onclick=()=>printSelected(true);
   root.querySelectorAll(".daily-new-status").forEach(select=>select.onchange=()=>{
    const wrap=select.closest(".daily-cover-actions")?.querySelector(".daily-reason-wrap");
    if(wrap)wrap.hidden=select.value==="programada";
   });
   if(canManage)root.querySelectorAll("[data-daily-save]").forEach(button=>button.onclick=async()=>{
+   if(busy)return;
    const item=entries.find(x=>x.id===button.dataset.dailySave),card=button.closest(".daily-cover-card");
    const status=card.querySelector(".daily-new-status").value,reason=card.querySelector(".daily-reason").value.trim();
-   if((status==="impedida"||status==="remanejada")&&reason.length<6){notify("Descreva o bloqueio ou remanejamento antes de salvar.",true);return}
-   button.disabled=true;
+   if(["impedida","remanejada"].includes(status)&&reason.length<6){notify("Descreva o impedimento antes de salvar.",true);return;}
+   busy=true;button.disabled=true;
    try{
     const {error}=await db.from("daily_team_assignments").update({block_status:status,blocker_reason:status==="programada"?null:reason||null,updated_at:new Date().toISOString()}).eq("id",item.id);
     if(error)throw error;
     item.block_status=status;item.blocker_reason=status==="programada"?null:reason||null;
-    notify("Situação da equipe registrada, sem confirmar execução.");draw();
-   }catch(e){notify(e.message||"Erro ao salvar situação.",true);button.disabled=false}
+    notify("Situação diária atualizada, sem confirmar execução.");draw();
+   }catch(e){notify(e.message||"Erro ao salvar situação.",true);button.disabled=false}finally{busy=false}
   });
  };
  draw();
