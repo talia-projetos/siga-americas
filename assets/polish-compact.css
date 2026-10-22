@@ -1756,3 +1756,33 @@
 #main .daily-approval-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 @media(max-width:960px){#main .daily-cover-shifts .daily-cover-selects{grid-template-columns:repeat(2,minmax(0,1fr))}#main .daily-approval-fields{grid-template-columns:1fr}}
 @media(max-width:600px){#main .daily-shift-grid,#main .daily-cover-shifts .daily-cover-selects{grid-template-columns:1fr}#main .daily-cover-shifts .daily-cover-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Carteira de manutenção com registro de dependências e progresso */
+#main .maintenance-workplan{margin:0 18px 20px;background:#fff;border:1px solid #dce8dd;border-radius:12px;padding:14px;min-width:0}
+#main .maintenance-workplan .finance-panel-heading{display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap}
+#main .maintenance-workplan h3{font-size:15px;color:#28533b;margin:4px 0}
+#main .maintenance-workplan .finance-panel-heading p{font-size:11px;color:#667a69;line-height:1.5}
+#main .maintenance-stats{display:grid;grid-template-columns:max-content minmax(0,120px);align-items:center;gap:3px 7px}
+#main .maintenance-stats strong{font-size:15px;color:#2b603f}
+#main .maintenance-stats small{font-size:10px;color:#748574}
+#main .maintenance-workplan-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#main .maintenance-workplan-row{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;border:1px solid #e3eee5;border-radius:9px;padding:12px;background:#fafcfa}
+#main .maintenance-workplan-row strong{display:block;font-size:12px;color:#315844;line-height:1.5;margin:4px 0}
+#main .maintenance-workplan-row small{color:#748579;font-size:10px}
+#main .maintenance-workplan-row p{font-size:10.5px;line-height:1.55;color:#596f5f;margin:6px 0}
+#main .maintenance-controls{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
+#main .maintenance-controls label{display:grid;gap:4px;font-size:10px;font-weight:650;color:#496451}
+#main .maintenance-controls select,#main .maintenance-controls input{width:100%;min-width:0;box-sizing:border-box;border:1px solid #d6e5d9;padding:8px;border-radius:7px;font-size:11px;background:#fff;color:#2c4f37}
+#main .maintenance-controls button{justify-self:start}
+#main .target-feasibility-panel{margin:15px 0;background:#f9fcf9;border:1px solid #dae8df;border-radius:11px;padding:15px;min-width:0}
+#main .target-feasibility-panel h3{font-size:16px;margin:6px 0;color:#2c563c}
+#main .target-feasibility-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}
+#main .target-feasibility-kpis>div{padding:11px;border:1px solid #e0ebdf;background:#fff;border-radius:8px;display:grid;gap:5px}
+#main .target-feasibility-kpis strong{font-size:16px;color:#30573b;overflow-wrap:anywhere}
+#main .target-feasibility-kpis small{font-size:10px;color:#698075}
+#main .target-feasibility-panel details{margin-top:12px;border-top:1px solid #e0eae0;padding-top:12px}
+#main .target-feasibility-panel details summary{font-size:11px;font-weight:700;color:#2c6046;cursor:pointer}
+#main .target-feasibility-panel input[type=range]{display:block;margin:12px 0;width:min(420px,100%);max-width:100%}
+#main .target-simulation-result{font-size:12px;line-height:1.5;color:#345d44;font-weight:650;padding:10px;background:#fff;border-radius:7px}
+@media(max-width:950px){#main .target-feasibility-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){#main .maintenance-workplan-list{grid-template-columns:1fr}#main .target-feasibility-kpis{grid-template-columns:1fr}}
