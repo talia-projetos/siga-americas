@@ -412,7 +412,8 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
    const selected=read.geometry.features||[];
    const near=matrizes?selected.filter(f=>nearExisting(f,layers)).length:0;
    preview={file,matrizes,read,near};
-   const names=selected.filter(isPoint).map(f=>featureName(f,{name:"Matriz sem identificação"}));
+   const names=selected.filter(isPoint).map(f=>({name:featureName(f,{name:"Matriz sem identificação"}),
+    coords:f.geometry?.type==="Point"?f.geometry.coordinates:null}));
    const summary=read.summary;
    target.innerHTML='<strong>'+esc(selected.length+' feições selecionadas')+
     (matrizes?' · '+(summary?.matched||0)+' com identificação temática no nome':'')+'</strong>'+
@@ -420,7 +421,8 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
     (matrizes?'<br>'+esc(near)+' ponto(s) a até 3 m de matrizes já cadastradas. Conferir duplicações antes de salvar.':'')+
     (read.otherKmlCount?'<br>Outros '+esc(read.otherKmlCount)+' arquivos KML no KMZ não foram processados.':'')+'</p>'+
     (names.length?'<details><summary>Conferir nomes dos pontos ('+names.length+')</summary><ol>'+
-      names.slice(0,90).map(name=>'<li>'+esc(name)+'</li>').join("")+
+      names.slice(0,90).map(p=>'<li><strong>'+esc(p.name)+'</strong>'+
+      (p.coords?'<small> · '+esc(p.coords[1].toFixed(6))+', '+esc(p.coords[0].toFixed(6))+'</small>':'')+'</li>').join("")+
       (names.length>90?'<li>… e outros '+(names.length-90)+' pontos</li>':'')+'</ol></details>':'');
    return preview;
   }catch(error){target.textContent="Importação não concluída: "+error.message;throw error;}
