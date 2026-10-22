@@ -3,6 +3,7 @@
 // Não atribuir automaticamente atividades, trabalhadores, validação ou execução.
 import {downloadDailySchedules,downloadMonthlySchedules} from "./daily-schedule-pdf.js?v=5";
 import {secondaryCandidates,priceLabel} from "./low-resource-options.js?v=1";
+import {buildOperationalDocument,generatePDF,downloadDocument} from "./document-output.js?v=9";
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dateBR=x=>new Date(x+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
 const stateLabels={programada:"Programada",remanejada:"Remanejada",impedida:"Impedida",informada:"Execução informada",validada:"Validada"};
@@ -13,22 +14,26 @@ const trimDaily=s=>String(s||"").replace(/\s*·\s*programação diária.*$/i,"")
 export async function mountDailyCoverage(root,db,{role,notify}){
  const canManage=["supervisao","gestao","admin"].includes(role);
  root.innerHTML='<p class="document-muted">Carregando equipes, postos fixos e turnos...</p>';
- const [dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes]=await Promise.all([
+ const [dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes,approvalRes,orderLinksRes]=await Promise.all([
   db.from("daily_team_assignments").select("id,work_date,team_id,area_id,contract_item_id,planned_service,planned_location,climate_alternative,block_status,blocker_reason,verified_quantity,work_order_id").gte("work_date","2026-11-01").lte("work_date","2027-01-31").order("work_date").limit(900),
   db.from("teams").select("id,code,name,active").eq("active",true),
   db.from("operational_areas").select("id,code,name"),
   db.from("contract_items").select("id,code,name,unit,unit_price,source_type").eq("source_type","precos"),
   db.from("service_posts").select("id,code,name,contractual_reference,fixed_positions,verification_status").order("code"),
   db.from("field_routine_templates").select("id,service_post_id,routine_code,title,frequency,execution_guidance,active,validation_status").eq("active",true).limit(150),
-  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").gte("work_date","2026-11-01").lte("work_date","2027-01-31").limit(2200)
+  db.from("daily_shift_plans").select("id,work_date,shift,team_assignment_id,service_post_id,planned_activity,planned_location,supervisor_note").gte("work_date","2026-11-01").lte("work_date","2027-01-31").limit(2200),
+  db.from("daily_plan_approvals").select("id,work_date,manager_name,approval_reference,approved_on,recorded_by").gte("work_date","2026-11-01").lte("work_date","2027-01-31"),
+  db.from("daily_plan_order_links").select("id,work_date,work_order_id,team_assignment_id,service_post_id").gte("work_date","2026-11-01").lte("work_date","2027-01-31").limit(1600)
  ]);
- const error=[dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes].find(x=>x.error)?.error;
+ const error=[dailyRes,teamRes,areaRes,priceRes,postRes,routineRes,shiftRes,approvalRes,orderLinksRes].find(x=>x.error)?.error;
  if(error){root.innerHTML='<div class="notice warning">Não foi possível carregar a escala por turnos: '+safe(error.message)+'</div>';return}
  const entries=dailyRes.data||[],teams=new Map((teamRes.data||[]).map(x=>[x.id,x])),
   areas=new Map((areaRes.data||[]).map(x=>[x.id,x])),prices=new Map((priceRes.data||[]).map(x=>[x.id,x])),
   posts=(postRes.data||[]).slice().sort(sorted),routines=routineRes.data||[],plans=shiftRes.data||[];
  const planKey=(kind,id,date,shift)=>kind+":"+id+":"+date+":"+shift;
  const planIndex=new Map(plans.map(p=>[planKey(p.service_post_id?"posto":"equipe",p.service_post_id||p.team_assignment_id,p.work_date,p.shift),p]));
+ const approvals=new Map((approvalRes.data||[]).map(p=>[p.work_date,p]));
+ let orderLinks=orderLinksRes.data||[];
  const getPlan=(kind,id,date,shift)=>planIndex.get(planKey(kind,id,date,shift));
  let month="2026-11",day=null,teamFilter="",postFilter="",generatingPDF=false,busy=false;
  const grouped=()=>entries.filter(e=>e.work_date.startsWith(month));
@@ -40,7 +45,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
    const p=getPlan(kind,id,date,shift),ref=kind==="posto"?postRoutines(id):[];
    return '<div class="daily-shift" data-shift-kind="'+kind+'" data-shift-id="'+safe(id)+'" data-shift-date="'+safe(date)+'" data-shift="'+shift+'">'+
     '<div class="daily-shift-head"><strong>'+label+'</strong><span class="daily-shift-state '+(p?"is-saved":"is-pending")+'">'+(p?"Detalhamento salvo":"A definir / conferir")+'</span></div>'+
-    (canManage?'<label>Atividade prevista<textarea class="daily-shift-activity" maxlength="600" rows="2" placeholder="Definir atividade deste turno">'+safe(p?.planned_activity||"")+'</textarea></label>'+
+    (canManage&&!approvals.has(date)?'<label>Atividade prevista<textarea class="daily-shift-activity" maxlength="600" rows="2" placeholder="Definir atividade deste turno">'+safe(p?.planned_activity||"")+'</textarea></label>'+
      '<label>Local / trecho<input class="daily-shift-location" maxlength="300" value="'+safe(p?.planned_location||"")+'" placeholder="Local a confirmar"></label>'+
      '<label>Orientação / observação<input class="daily-shift-note" maxlength="1000" value="'+safe(p?.supervisor_note||"")+'" placeholder="Opcional"></label>'+
      (kind==="posto"&&ref.length?'<label>Rotinas contratuais como referência<select class="daily-routine-choice"><option value="">Escolher rotina para preencher a atividade…</option>'+
@@ -61,6 +66,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
   const dayShifts=todayTeams.filter(e=>dailyValid("equipe",e.id,day)).length+
    posts.filter(p=>dailyValid("posto",p.id,day)).length;
   const totalBlocks=todayTeams.length+posts.length;
+  const approval=approvals.get(day),issued=orderLinks.filter(link=>link.work_date===day);
   const monthDates=days.length;
   root.innerHTML='<section class="daily-coverage-shell daily-cover-shifts">'+
    '<div class="finance-panel-heading daily-cover-top"><div><span class="eyebrow">PROPOSTA PARA VALIDAÇÃO · GESTÃO CONTRATUAL</span><h2>Planejamento diário · manhã e tarde</h2>'+
@@ -94,7 +100,7 @@ export async function mountDailyCoverage(root,db,{role,notify}){
      '<details class="daily-plan-details"><summary>Alternativa e segurança</summary><p>'+safe(e.climate_alternative)+'</p>'+
      (secondary.length?'<ul class="daily-secondary-prices">'+secondary.map(p=>'<li><strong>'+safe(priceLabel(p))+'</strong><small>'+safe(p.requirements)+'</small></li>').join("")+'</ul>':"")+
      '<small>Os itens alternativos são possibilidades condicionadas à avaliação técnica e à medição contratual.</small></details>'+
-     (canManage&&!locked?'<div class="daily-cover-actions"><label>Situação<select class="daily-new-status">'+
+     (canManage&&!locked&&!approval?'<div class="daily-cover-actions"><label>Situação<select class="daily-new-status">'+
        ["programada","remanejada","impedida"].map(v=>'<option value="'+v+'"'+(e.block_status===v?' selected':'')+'>'+safe(stateLabels[v])+'</option>').join("")+'</select></label>'+
        '<label class="daily-reason-wrap" '+(e.block_status==="programada"?"hidden":"")+'>Motivo / providência<textarea class="daily-reason" rows="2">'+safe(e.blocker_reason||"")+'</textarea></label>'+
        '<button type="button" class="btn btn-secondary" data-daily-save="'+safe(e.id)+'">Salvar situação</button></div>':
