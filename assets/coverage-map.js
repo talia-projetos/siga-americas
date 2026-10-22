@@ -1,7 +1,8 @@
 // SIGA Américas · mapa contratual de cobertura de campo.
 // GeoJSON/KML WGS84. Nenhuma geometria ou métrica espacial é inferida de nomes.
 import {GOOGLE_MAPS_BROWSER_KEY} from "./config.js";
-import {iconMarkup} from "./icons.js?v=4";
+import {iconMarkup} from "./icons.js?v=6";
+import {readKmlFromKmz} from "./kmz-geometry-reader.js?v=1";
 const VIEW=[-25.51,-54.56]; // enquadramento urbano aproximado; NÃO É PIN DE SERVIÇO
 const R=6371008.8;
 const METER=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2});
@@ -34,7 +35,30 @@ const areaColor=name=>{
  return fallbackPalette[hash%fallbackPalette.length];
 };
 const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||""))?String(value).toUpperCase():null;
-const colorForFeature=(feature,layer)=>validColor(feature?.properties?._siga_import_color)||areaColor(featureName(feature,layer));
+const colorForFeature=(feature,layer)=>validColor(feature?.properties?._siga_import_color)||
+ (layer?.reference_scope==="matrizes"?"#28CDA7":areaColor(featureName(feature,layer)));
+const symbolType=(feature,layer)=>{
+ const geom=feature?.geometry?.type||"";
+ if(/Polygon/.test(geom))return "area";
+ if(/LineString/.test(geom))return "rota";
+ return layer?.reference_scope==="matrizes"||/matriz|arvor.?s.*matriz/i.test(layer?.name||"")?"matriz":"ponto";
+};
+const matrixName=str=>/matriz|matrizes|arvore|árvore|seed.?tree|semente/i.test(String(str||""));
+const isPoint=f=>["Point","MultiPoint"].includes(f?.geometry?.type);
+function matrizCandidateCollection(geo){
+ const pts=(geo.features||[]).filter(isPoint);
+ const tagged=pts.filter(f=>matrixName(f.properties?.name)||matrixName(f.properties?.description));
+ return {allPoints:pts.length,matched:tagged.length,
+  selected:{type:"FeatureCollection",features:tagged.length?tagged:pts}};
+}
+function nearExisting(feature,layers,tolerance=3){
+ const p=feature.geometry?.type==="Point"?feature.geometry.coordinates:null;
+ if(!p)return false;
+ for(const l of layers)if(l.geometry&&(l.reference_scope==="matrizes"||/matriz|matrizes/i.test(l.name||"")))
+  for(const current of l.geometry.features||[])if(current.geometry?.type==="Point"&&
+    haversine(current.geometry.coordinates,p)<=tolerance)return true;
+ return false;
+}
 const countryBounds=p=>Array.isArray(p)&&p.length>=2&&Number.isFinite(p[0])&&Number.isFinite(p[1])&&
  p[0]>-55.2&&p[0]<-54.05&&p[1]>-26.0&&p[1]<-24.9;
 function haversine(a,b){
@@ -96,24 +120,25 @@ const fmtMetric=m=>[
  ...(m.squareMeters>0?[n(m.squareMeters/10000)+" ha de polígonos"]:[]),
  ...(m.points>0?[m.points+" ponto(s)"]:[])
 ].join(" · ")||"Sem dimensão espacial calculável";
-async function readGeoFile(file){
- if(file.size>8*1024*1024)throw Error("Arquivo acima de 8 MB. Simplifique antes de importar.");
- if(!/\.(?:kml|kmz|geojson|json)$/i.test(file.name))throw Error("Escolha um arquivo KML, KMZ ou GeoJSON.");
- let content;
- if(/\.kmz$/i.test(file.name)){
-  const module=await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm");
-  const zip=await (module.default||module).loadAsync(await file.arrayBuffer());
-  const entry=Object.values(zip.files).find(f=>!f.dir&&/\.kml$/i.test(f.name));
-  if(!entry)throw Error("KMZ sem arquivo KML interno.");
-  content=await entry.async("string");
-  if(content.length>8*1024*1024)throw Error("KML interno muito grande.");
- }else content=await file.text();
- if(/\.geojson$|\.json$/i.test(file.name))return validateCoverageGeoJSON(JSON.parse(content));
- const doc=new DOMParser().parseFromString(content,"application/xml");
- if(doc.querySelector("parsererror"))throw Error("KML com XML inválido.");
- const converter=await import("https://cdn.jsdelivr.net/npm/@tmcw/togeojson@7.1.2/+esm");
- const geo=converter.kml(doc);
- return validateCoverageGeoJSON(geo);
+async function readGeoFile(file,{matrizes=false}={}){
+ if(!/\.(?:kml|kmz|geojson|json)$/i.test(file.name))throw Error("Escolha KML, KMZ ou GeoJSON.");
+ if(!/\.kmz$/i.test(file.name)&&file.size>24*1024*1024)
+  throw Error("Arquivo muito grande. Exporte apenas as geometrias para KML/GeoJSON.");
+ let geo,entry="",otherKmlCount=0;
+ if(/\.(?:geojson|json)$/i.test(file.name))geo=JSON.parse(await file.text());
+ else{
+  let content;
+  if(/\.kmz$/i.test(file.name)){
+   const unpack=await readKmlFromKmz(file);content=unpack.content;
+   entry=unpack.entry;otherKmlCount=unpack.otherKmlCount;
+  }else content=await file.text();
+  const doc=new DOMParser().parseFromString(content,"application/xml");
+  if(doc.querySelector("parsererror"))throw Error("KML inválido.");
+  const converter=await import("https://cdn.jsdelivr.net/npm/@tmcw/togeojson@7.1.2/+esm");
+  geo=converter.kml(doc);
+ }
+ const summary=matrizes?matrizCandidateCollection(geo):null;
+ return {geometry:validateCoverageGeoJSON(summary?summary.selected:geo),summary,entry,otherKmlCount};
 }
 let googleInit=null;
 function loadGoogle(key){
