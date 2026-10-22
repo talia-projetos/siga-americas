@@ -1,6 +1,6 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from "./config.js";
-import {groups,modules} from "./modules.js?v=21";
+import {groups,modules} from "./modules.js?v=22";
 import {iconMarkup} from "./icons.js?v=5";
 import {renderDashboardAnalytics} from "./analytics.js?v=6";
 import {catalogOverview,catalogFilters,catalogTableTitle,isCatalogPage,partyLabels,domainLabels,categoryLabels} from "./catalog-ui.js?v=2";
@@ -13,9 +13,11 @@ import {initRoutinePhotoField} from "./routine-photos.js?v=2";
 import {mountDocumentCenter} from "./document-center.js?v=8";
 import {mountCoverageMap} from "./coverage-map.js?v=6";
 import {mountContractSuggestions} from "./contract-suggestions.js?v=4";
-import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=5";
+import {mountMonthlyFinancialPlanner} from "./monthly-financial-planner.js?v=6";
 import {mountWeatherAdvisory} from "./climate-planner.js?v=3";
 import {mountQuickVehicle} from "./quick-vehicle.js?v=1";
+import {mountCategoryQuantities} from "./category-quantities.js?v=1";
+import {generateListPDF,downloadDocument} from "./document-output.js?v=9";
 
 const el=id=>document.getElementById(id);
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -454,13 +456,16 @@ function renderRows(){
     new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(Number(req.required_quantity))+' '+String(req.unit||"un");
    return '<td><span class="ppe-contract-unit">'+escapeHTML(text)+'</span></td>';
   }
+  if(app.page==="stock_items"&&key==="ledger_balance")return '<td>'+(row.ledger_balance==null?'<span class="muted">Sem movimentações</span>':escapeHTML(new Intl.NumberFormat("pt-BR",{maximumFractionDigits:3}).format(row.ledger_balance)))+'</td>';
+  if(app.page==="stock_items"&&key==="counted_quantity")return '<td><div class="stock-count-cell"><input type="number" min="0" step="any" inputmode="decimal" data-stock-count="'+escapeHTML(row.id)+'" aria-label="Quantidade física de '+escapeHTML(row.name)+'" placeholder="A conferir" value="'+escapeHTML(row.counted_quantity??"")+'" '+(!privileged()?"disabled":"")+'><input type="text" maxlength="250" data-stock-evidence="'+escapeHTML(row.id)+'" aria-label="Local e evidência de '+escapeHTML(row.name)+'" placeholder="Local e evidência" value="'+escapeHTML(row.count_evidence||"")+'" '+(!privileged()?"disabled":"")+'></div></td>';
+  if(app.page==="stock_items"&&key==="counted_at")return '<td>'+escapeHTML(row.counted_at?new Date(row.counted_at).toLocaleDateString("pt-BR"):"Não conferido")+'</td>';
   if(app.page==="field_execution_entries"&&key==="activity_id"&&row.activity_id==null)return '<td><span class="tag gray">Modalidade de poda a definir</span><small>Quantidade anotada, ainda sem rubrica</small></td>';
   if(financial&&key==="code")return '<td data-label="Código"><span class="catalog-code">'+escapeHTML(row.code)+'</span></td>';
   if(financial&&key==="name")return '<td data-label="Atividade / serviço"><span class="catalog-name" title="'+escapeHTML(row.name)+'">'+escapeHTML(row.name)+'</span></td>';
   const klass=financial&&["estimated_quantity","unit_price","estimated_total"].includes(key)?' class="numeric-cell"':"";
   const mobileLabel=financial?({unit:"Unidade contratual",estimated_quantity:"Quantidade estimada",unit_price:"Valor unitário",estimated_total:"Total estimado"}[key]||key):null;
   return '<td'+(mobileLabel?' data-label="'+escapeHTML(mobileLabel)+'"':'')+klass+'>'+fieldValue(key,row[key])+'</td>';
- }).join("")+'<td'+(financial?' data-label="Ações"':'')+'>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">'+iconMarkup('file')+' Editar</button>':'<span class="muted">Consulta</span>')+'</td></tr>').join("");
+ }).join("")+'<td'+(financial?' data-label="Ações"':'')+'>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">'+iconMarkup('file')+' Editar</button>'+(app.page==="stock_items"?'<button class="table-action" data-save-stock="'+escapeHTML(row.id)+'">Salvar contagem</button>':""):'<span class="muted">Consulta</span>')+'</td></tr>').join("");
 }
 async function coveragePage(){
  app.page="coverage";app.search="";nav();header("coverage");
@@ -685,35 +690,6 @@ async function ppeContractOverview(rows){
   '</div><p class="ppe-contract-note">As quantidades, os tamanhos, o CA quando exigível e a adequação ao risco dependem de levantamento pelo SST. As três exigências de fardamento estão na categoria contratual própria e não foram duplicadas aqui.</p>'+
   '</section>';
 }
-async function fleetContractPanel(vehicles){
- const {data,error}=await app.db.from("contract_resource_requirements")
-  .select("id,item_name,source_ref,required_quantity,observed_quantity,inventory_note")
-  .eq("category","veiculo").order("item_name").limit(100);
- if(error)return '<div class="notice warning">Não foi possível consultar a relação contratual de frota: '+escapeHTML(friendlyError(error))+'</div>';
- const rows=data||[];
- const quant=n=>new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0}).format(Number(n||0));
- const projected=rows.reduce((sum,r)=>sum+Number(r.required_quantity||0),0);
- const informed=rows.filter(r=>r.observed_quantity!==null&&r.observed_quantity!==undefined);
- const declared=informed.reduce((sum,r)=>sum+Number(r.observed_quantity||0),0);
- const linked=vehicles.filter(v=>v.contract_resource_requirement_id);
- const absent=rows.length===0;
- return '<section class="fleet-contract-panel" aria-labelledby="fleet-contract-heading">'+
-  '<div class="fleet-contract-header"><div><span class="eyebrow">FROTA · REFERÊNCIA CONTRATUAL 6.1</span><h2 id="fleet-contract-heading">Lista de veículos por tipo</h2><p>O contrato indica os tipos e quantidades. Para criar um cadastro individual com placa, chassi ou patrimônio, selecione <strong>Identificar veículo</strong> na linha correspondente.</p></div></div>'+
-  '<div class="fleet-contract-kpis">'+
-   '<div><span>Unidades previstas</span><strong>'+quant(projected)+'</strong><small>Em '+rows.length+' categorias contratuais</small></div>'+
-   '<div><span>Quantidades informadas</span><strong>'+quant(declared)+'</strong><small>Soma parcial de '+informed.length+' categorias, sem identificação individual</small></div>'+
-   '<div><span>Cadastros individuais</span><strong>'+quant(vehicles.length)+'</strong><small>'+quant(linked.length)+' vinculados às categorias contratuais</small></div></div>'+
-  '<div class="table-scroll fleet-contract-scroll"><table class="fleet-contract-table"><thead><tr><th>Veículo / tipo contratual</th><th>Previsto</th><th>Informado</th><th>Anotações</th><th>Cadastro</th></tr></thead><tbody>'+
-   rows.map(r=>{
-    const reported=r.observed_quantity===null||r.observed_quantity===undefined?'A conferir':quant(r.observed_quantity);
-    return '<tr><td><strong>'+escapeHTML(r.item_name)+'</strong><small>'+escapeHTML(r.source_ref||"")+'</small></td>'+
-     '<td class="fleet-number">'+quant(r.required_quantity)+'</td><td class="fleet-number">'+reported+'</td>'+
-     '<td class="fleet-note">'+(r.inventory_note?escapeHTML(r.inventory_note)+'<small>Referência informada, não validada</small>':'<span class="muted">—</span>')+'</td>'+
-     '<td>'+(privileged()?'<button type="button" class="table-action fleet-add" data-fleet-add="'+escapeHTML(r.id)+'">Identificar veículo</button>':'<span class="muted">Consulta</span>')+'</td></tr>';
-   }).join("")+
-  '</tbody></table></div>'+
-  '<p class="fleet-contract-foot">15 unidades informadas não significam 15 veículos conferidos. Placas, chassis e patrimônio dependem dos cadastros individuais.</p></section>';
-}
 async function modulePage(key){
  const saved=listViews.get(key);
  app.page=key;
@@ -736,6 +712,16 @@ async function modulePage(key){
   const {data,error}=await query.limit(500);
   if(error)throw error;
   app.rows=data||[];
+  if(key==="stock_items"){
+   const movements=await app.db.from("stock_movements").select("stock_item_id,movement_type,quantity").limit(3000);
+   if(movements.error)throw movements.error;
+   const balance=new Map(),have=new Set();
+   for(const r of movements.data||[]){
+    have.add(r.stock_item_id);
+    balance.set(r.stock_item_id,(balance.get(r.stock_item_id)||0)+(r.movement_type==="entrada"?1:-1)*Number(r.quantity||0));
+   }
+   app.rows=app.rows.map(r=>({...r,ledger_balance:have.has(r.id)?balance.get(r.id):null}));
+  }
   // As rubricas não operacionais permanecem no banco e na matriz completa, mas não nesta tela nem no CSV.
   if(key==="field_plan_items"){
    const allowed=new Set((app.refs.activity_catalog||[]).map(item=>item.id));
@@ -749,15 +735,20 @@ async function modulePage(key){
         '<button class="btn btn-secondary" data-action="create">'+iconMarkup("plus")+' Entrega individual</button>'
       :'<button class="btn btn-primary" data-action="create">'+iconMarkup("plus")+' Novo registro</button>'
     :"")+
-   '<button class="btn btn-ghost" data-action="export">'+iconMarkup("download")+' Baixar CSV</button>';
+   '<div class="export-dropdown"><button type="button" class="btn btn-ghost" data-action="exportToggle" aria-expanded="false" aria-haspopup="true">'+iconMarkup("download")+' Exportar ▾</button>'+
+   '<div class="export-options" hidden><button type="button" data-action="exportCSV">Baixar CSV</button><button type="button" data-action="exportPDF">Baixar PDF em lote</button></div></div>';
   const special=isCatalogPage(key);
   const assetOverview=key==="equipment"?
    '<div class="asset-data-summary"><strong>'+app.rows.length+' registros de máquinas</strong><span>'+app.rows.filter(r=>r.seal_number&&r.serial_number).length+' com lacre e número de máquina · '+app.rows.filter(r=>r.verification_status==="a_conferir").length+' aguardam verificação física</span><small>Importação baseada em termos históricos; não comprova disponibilidade atual.</small></div>':"";
-  const fleetOverview=key==="vehicles"?await fleetContractPanel(app.rows):"";
-  const ppeOverview=key==="ppe_items"?await ppeContractOverview(app.rows):"";
+  const fleetOverview="";
+  const ppeOverview="";
+  if(key==="ppe_items")await ppeContractOverview(app.rows); // Carrega mapa de quantitativos sem painel duplicado.
   const notesOverview=key==="field_execution_entries"?await executionSourceNotesPanel():"";
   const climateOverview=key==="field_programs"?'<div id="planning-climate-live"></div>':"";
-  const overview=(special?catalogOverview(key,app.rows):"")+assetOverview+fleetOverview+ppeOverview+climateOverview;
+  const quantityScope=({vehicles:["veiculo"],equipment:["ferramenta","equipamento"],ppe_items:["epi"],uniform_deliveries:["uniforme"]})[key];
+  const quantityOverview=quantityScope?'<div id="category-quantity-slot"></div>':"";
+  const stockOverview=key==="stock_items"?'<p class="notice stock-stocknote"><strong>Conferência de estoque:</strong> informe a quantidade física e a evidência nesta aba. O saldo por movimentações só usa entradas e saídas documentadas; sem registros, permanece indisponível. A contagem não cria movimentação.</p>':"";
+  const overview=(special?catalogOverview(key,app.rows):"")+quantityOverview+stockOverview+assetOverview+fleetOverview+ppeOverview+climateOverview;
  const afterTable=key==="field_execution_entries"?notesOverview:"";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
@@ -767,16 +758,13 @@ async function modulePage(key){
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
   '<div class="table-scroll"><table class="data-table">'+(key==="contract_items"?'<colgroup><col class="price-col-code"><col class="price-col-name"><col class="price-col-unit"><col class="price-col-quantity"><col class="price-col-price"><col class="price-col-total"><col class="price-col-actions"></colgroup>':'')+'<thead><tr>'+m.columns.map(col=>{
     const numeric=["unit_price","estimated_quantity","estimated_total","required_quantity","observed_quantity"].includes(col);
-    const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)",contract_required:"Quantidade contratual"}[col]||col;
+    const label=m.fields.find(f=>f.key===col)?.label||{unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)",contract_required:"Quantidade contratual",ledger_balance:"Saldo movimentado",counted_quantity:"Contagem física",counted_at:"Data da contagem"}[col]||col;
     return '<th class="'+(numeric?"numeric-cell":"")+'" aria-sort="none"><button type="button" class="table-sort" data-sort-col="'+escapeHTML(col)+'" title="Ordenar por '+escapeHTML(label)+'"><span class="sort-label">'+escapeHTML(label)+'</span><span class="sort-arrow" aria-hidden="true">'+iconMarkup("sort")+'</span></button></th>';
   }).join("")+'<th>Ações</th></tr></thead><tbody id="table-body"></tbody></table></div>'+
   '<div class="filter-note">Você pode pesquisar, filtrar ou clicar nos títulos das colunas para ordenar. O CSV contém somente os registros exibidos.</div></section>'+afterTable;
+  if(quantityScope)await mountCategoryQuantities(el("category-quantity-slot"),app.db,{categories:quantityScope,canWrite:privileged(),notify,individuals:app.rows.length});
   if(key==="field_programs")mountWeatherAdvisory(el("planning-climate-live"),app.db);
-  if(key==="vehicles")el("main").querySelectorAll("[data-fleet-add]").forEach(button=>button.addEventListener("click",async()=>{
-    await openForm();
-    const field=el("modal-fields").querySelector("#fld-contract_resource_requirement_id");
-    if(field)field.value=button.dataset.fleetAdd;
-  }));
+  // Identificação de veículo usa delegação global para funcionar após salvar a conferência.
   // Repõe os controles visuais antes de instalar eventos; não apenas o predicado da lista.
   if(key==="field_execution_entries"){
    const term=el("execution-location-search"),day=el("execution-location-date"),amount=el("execution-location-quantity");
@@ -906,7 +894,7 @@ function fieldInput(f,row){
   inp='<select'+attr+'><option value="">Selecione...</option>'+f.options.map(o=>'<option value="'+escapeHTML(o.value)+'"'+(String(o.value)===String(value)?' selected':'')+'>'+escapeHTML(o.label)+'</option>').join("")+'</select>';
  }else if(f.type==="ref"){
   const options=sortedReferenceOptions((app.refs[f.table]||[]).filter(o=>
-   (f.key!=="contract_resource_requirement_id"||o.category===(app.page==="vehicles"?"veiculo":"equipamento"))&&
+   (f.key!=="contract_resource_requirement_id"||(app.page==="vehicles"?o.category==="veiculo":app.page==="equipment"?["ferramenta","equipamento"].includes(o.category):true))&&
    (app.page!=="ppe_deliveries"||f.table!=="ppe_items"||/^EPI \/|^Conjunto de proteção/.test(o.category||"")||o.id===value)
   ));
   const noVehicle=f.table==="vehicles"&&!options.length;
@@ -1089,20 +1077,88 @@ async function saveRecord(e){
 }
 function exportCSV(){
  const m=modules[app.page];if(!m?.table)return;
- const cols=m.fields.map(f=>f.key);
+ const cols=[...new Set([...m.fields.map(f=>f.key),...m.columns,...(app.page==="stock_items"?["count_evidence"]:[])])];
+ const header=key=>m.fields.find(f=>f.key===key)?.label||({contract_required:"Quantidade contratual",ledger_balance:"Saldo por movimentações",counted_quantity:"Contagem física",counted_at:"Data da contagem",count_evidence:"Evidência da contagem"})[key]||key;
+ const cell=(row,key)=>key==="contract_required"?(app.ppeRequirementMap?.get(row.contract_resource_requirement_id)?.required_quantity??"A dimensionar"):
+ app.page==="purchases"&&key==="sector_team_ids"&&Array.isArray(row[key])?row[key].map(id=>optionLabel("teams",id,"name")).join(", "):row[key];
  const protect=value=>{let str=String(value??"");if(/^[=+@-]/.test(str))str="'"+str;return '"'+str.replaceAll('"','""')+'"'};
- const output=[m.fields.map(f=>protect(f.label)).join(";"),...filteredRows().map(r=>cols.map(k=>protect(app.page==="purchases"&&k==="sector_team_ids"&&Array.isArray(r[k])?r[k].map(id=>optionLabel("teams",id,"name")).join(", "):r[k])).join(";"))].join("\r\n");
+ const output=[cols.map(k=>protect(header(k))).join(";"),...filteredRows().map(r=>cols.map(k=>protect(cell(r,k))).join(";"))].join("\r\n");
  const link=document.createElement("a"),url=URL.createObjectURL(new Blob(["\ufeff"+output],{type:"text/csv;charset=utf-8"}));link.href=url;link.download=m.table+"_"+new Date().toISOString().slice(0,10)+".csv";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 document.addEventListener("click",async e=>{
+ document.querySelectorAll(".export-dropdown .export-options").forEach(list=>{
+  if(!e.target.closest(".export-dropdown")){list.hidden=true;list.previousElementSibling?.setAttribute("aria-expanded","false")}
+ });
  const menu=el("profile-menu");
  if(menu?.open&&!e.target.closest("#profile-menu"))menu.open=false;
  const navButton=e.target.closest("[data-nav]");if(navButton){await navigate(navButton.dataset.nav);return;}
+ const fleetButton=e.target.closest("[data-fleet-add]");if(fleetButton&&app.page==="vehicles"){
+  await openForm();
+  const field=el("modal-fields").querySelector("#fld-contract_resource_requirement_id");
+  if(field)field.value=fleetButton.dataset.fleetAdd;
+  return;
+ }
  const edit=e.target.closest("[data-edit]");if(edit){await openForm(edit.dataset.edit);return;}
  const action=e.target.closest("[data-action]")?.dataset.action;
  if(action==="create")await openForm();
  if(action==="uniformBatch"&&app.page==="uniform_deliveries"&&privileged())await uniformPage();
- if(action==="export")exportCSV();
+ if(action==="exportToggle"){
+  const group=e.target.closest(".export-dropdown"),list=group?.querySelector(".export-options"),button=group?.querySelector('[data-action="exportToggle"]');
+  if(list){list.hidden=!list.hidden;button?.setAttribute("aria-expanded",String(!list.hidden))}
+ }
+ if(action==="exportCSV"){
+  exportCSV();const menu=e.target.closest(".export-options");if(menu)menu.hidden=true;
+ }
+ if(action==="exportPDF"){
+  const btn=e.target.closest('[data-action="exportPDF"]');
+  if(btn&&!btn.disabled){
+   const page=app.page,m=modules[page],rows=filteredRows();
+   const cols=m.columns.map(key=>({
+    key,label:m.fields.find(f=>f.key===key)?.label||
+      ({unit:"Unidade",unit_price:"Preço unitário (R$)",estimated_amount:"Valor estimado (R$)",contract_required:"Quantidade contratual",ledger_balance:"Saldo movimentado",counted_quantity:"Contagem física",counted_at:"Data da contagem"})[key]||key
+   }));
+   const values=rows.map(r=>cols.map(c=>{
+    if(c.key==="contract_required"){
+     const req=app.ppeRequirementMap?.get(r.contract_resource_requirement_id);
+     return req?.required_quantity==null?"A dimensionar":String(req.required_quantity)+" "+(req.unit||"un");
+    }
+    const def=m.fields.find(f=>f.key===c.key);
+    if(def?.type==="ref")return optionLabel(def.table,r[c.key],def.display);
+    const v=r[c.key];
+    if(v==null||v==="")return "—";
+    if(def?.type==="date"||c.key==="counted_at")return dateBR(v);
+    if(["unit_price","estimated_amount","estimated_total","cost","total_cost"].includes(c.key))return currency(v);
+    if(typeof v==="boolean")return v?"Sim":"Não";
+    return Array.isArray(v)?v.join(", "):typeof v==="object"?JSON.stringify(v):String(v);
+   }));
+   btn.disabled=true;btn.textContent="Gerando PDF…";
+   try{
+    const pdf=await generateListPDF({title:m.title,subtitle:rows.length+" registro(s) conforme pesquisa e filtros · gerado em "+new Date().toLocaleString("pt-BR"),columns:cols,rows:values});
+    downloadDocument(pdf,m.table+"_"+new Date().toISOString().slice(0,10)+".pdf");
+    notify("PDF em lote gerado com os registros exibidos.");
+   }catch(err){notify("Falha no PDF: "+friendlyError(err),true);}
+   finally{btn.disabled=false;btn.textContent="Baixar PDF em lote";const menu=btn.closest(".export-options");if(menu)menu.hidden=true}
+  }
+ }
+ const saveStock=e.target.closest("[data-save-stock]");
+ if(saveStock&&app.page==="stock_items"){
+  const row=app.rows.find(r=>r.id===saveStock.dataset.saveStock);
+  if(!row||!privileged())return;
+  const raw=el("main").querySelector('[data-stock-count="'+row.id+'"]')?.value.trim()||"";
+  const evidence=el("main").querySelector('[data-stock-evidence="'+row.id+'"]')?.value.trim()||"";
+  const amount=Number(raw.replace(",","."));
+  if(!raw||!Number.isFinite(amount)||amount<0){notify("Informe uma quantidade válida.",true);return}
+  if(evidence.length<5){notify("Informe local e evidência da contagem.",true);return}
+  saveStock.disabled=true;
+  try{
+   const counted_at=new Date().toISOString();
+   const {error}=await app.db.from("stock_items").update({counted_quantity:amount,counted_at,count_evidence:evidence}).eq("id",row.id);
+   if(error)throw error;
+   Object.assign(row,{counted_quantity:amount,counted_at,count_evidence:evidence});
+   renderRows();notify("Contagem física salva sem alterar as movimentações.");
+  }catch(err){notify(friendlyError(err),true)}
+  finally{saveStock.disabled=false}
+ }
  if(action==="planActivity"){const id=e.target.closest("[data-activity-id]")?.dataset.activityId;if(id){app.prefillActivity=id;await navigate("field_plan_items");await openForm();}}
  if(action==="editExecution"){const id=e.target.closest("[data-execution-id]")?.dataset.executionId;if(id&&privileged()){await navigate("field_execution_entries");await openForm(id);}}
  if(action==="logout")await logout();

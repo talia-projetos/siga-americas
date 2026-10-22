@@ -159,3 +159,67 @@
 
 #main .ppe-contract-unit{display:inline-block;color:#4e705a;font-size:11px;font-weight:650;white-space:normal}
 #main .catalog-table:has(.ppe-contract-unit) td,#main .catalog-table:has(.ppe-contract-unit) th{vertical-align:middle}
+
+
+/* Ações consistentes: exportação seletiva CSV / PDF na mesma posição de todas as tabelas. */
+#main .export-dropdown{position:relative;display:inline-flex;align-items:center;z-index:8}
+#main .export-dropdown .export-options{position:absolute;top:calc(100% + 6px);right:0;z-index:90;min-width:185px;padding:5px;border:1px solid #dae7dc;border-radius:10px;background:#fff;box-shadow:0 10px 25px rgba(28,63,41,.15)}
+#main .export-dropdown .export-options[hidden]{display:none!important}
+#main .export-options button{display:block;width:100%;border:0;border-radius:7px;background:transparent;color:#365a42;text-align:left;font-size:11.5px;padding:10px;cursor:pointer}
+#main .export-options button:hover,#main .export-options button:focus-visible{background:#eef5ef}
+#main .export-options button:disabled{opacity:.55;cursor:wait}
+/* Conferência na aba de cada grupo, vinculada à exigência contratual original. */
+#main .category-quantity-overview{border:1px solid #dfe8df;background:#fff;border-radius:12px;margin:0 0 16px;overflow:hidden}
+#main .category-quantity-summary{padding:16px 18px;display:flex;justify-content:space-between;gap:12px 20px;align-items:center;flex-wrap:wrap}
+#main .category-quantity-summary>div:first-child{flex:1 1 320px}
+#main .category-quantity-summary h2{font-size:17px;line-height:1.25;margin:4px 0;color:#315a40}
+#main .category-quantity-summary p{font-size:11px;line-height:1.55;color:#748778;margin:0}
+#main .category-quantity-kpis{display:grid;grid-template-columns:repeat(4,minmax(85px,1fr));gap:8px;flex:1 1 420px}
+#main .category-quantity-kpis>div{background:#f7f9f7;border:1px solid #e9eeea;padding:10px;border-radius:9px}
+#main .category-quantity-kpis strong{font-variant-numeric:tabular-nums;display:block;color:#31543f;font-size:18px}
+#main .category-quantity-kpis small{color:#718474;font-size:10px}
+#main .category-quantity-context{margin:0 18px 12px;font-size:11px;color:#5d7667}
+#main .category-quantity-details{border-top:1px solid #edf1ec;padding:9px 17px}
+#main .category-quantity-details>summary{padding:7px 0 10px;font-size:12px;font-weight:690;color:#315c41;cursor:pointer}
+#main .category-quantity-controls{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+#main .category-quantity-controls input{max-width:320px;min-width:140px}
+#main .category-quantity-controls span{font-size:10px;color:#76887b}
+#main .category-quantity-table{width:100%;border-collapse:collapse;font-size:11px}
+#main .category-quantity-table th{padding:11px 9px;text-align:left;color:#497359;background:#f0f4f0;border-bottom:1px solid #e0e9e1}
+#main .category-quantity-table td{padding:9px;border-bottom:1px solid #edf1ed;vertical-align:middle;color:#47634d}
+#main .category-quantity-table td:first-child{min-width:195px}
+#main .category-quantity-table td small{display:block;color:#87978b;font-size:9.6px;margin-top:4px}
+#main .category-quantity-table input:not([type=checkbox]){width:100%;min-width:88px;max-width:215px;box-sizing:border-box;font-size:11px;padding:8px;border:1px solid #dce5dc;border-radius:7px;background:#fff}
+#main .category-quantity-table input[data-quantity-note]{min-width:165px}
+#main .category-quantity-table button{min-height:32px;padding:6px 10px;margin-right:5px;white-space:nowrap;font-size:10.5px}
+#main .quantity-confirm-label{display:flex;align-items:center;gap:7px;white-space:nowrap;font-size:10px;color:#506b58}
+#main .quantity-confirm-label input{width:auto}
+#main .category-quantity-foot{font-size:10px;line-height:1.5;color:#7c897c;margin:10px 0 3px}
+/* Itens de estoque: saldo documental e contagem nunca são a mesma informação. */
+#main .stock-stocknote{margin:0 0 14px}
+#main .stock-count-cell{display:grid;gap:5px;min-width:140px}
+#main .stock-count-cell input{border:1px solid #dce5dd;background:#fff;border-radius:7px;max-width:190px;box-sizing:border-box;min-height:33px;padding:6px 8px;font-size:11px}
+#main .stock-count-cell input[data-stock-evidence]{font-size:10px}
+/* Alternativa econômica = preço por unidade; sem custo fictício nem OS automática. */
+#main .daily-secondary-prices{display:grid;gap:7px;padding:0 0 0 18px;margin:8px 0}
+#main .daily-secondary-prices li{font-size:11px;line-height:1.45;color:#416649}
+#main .daily-secondary-prices small{display:block;color:#7b8b7b;font-size:10px}
+#main .low-resource-panel{margin:18px 0 12px;border:1px solid #dfe8df;border-radius:12px;background:#fff;overflow:hidden}
+#main .low-resource-heading{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between;padding:17px 18px}
+#main .low-resource-heading>div:first-child{flex:1 1 300px}
+#main .low-resource-heading h3{font-size:16px;color:#305a3c;margin:4px 0}
+#main .low-resource-heading p{font-size:11px;color:#6c8172;line-height:1.6;margin:0;max-width:760px}
+#main .low-resource-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex:1 1 440px}
+#main .low-resource-kpis>div{padding:10px;background:#f6f8f5;border:1px solid #e6ede4;border-radius:9px}
+#main .low-resource-kpis small{display:block;font-size:9.8px;color:#768b7a}
+#main .low-resource-kpis strong{display:block;font-size:15px;color:#325741;white-space:nowrap}
+#main .low-resource-panel details{border-top:1px solid #edf0e9;padding:9px 18px}
+#main .low-resource-panel details>summary{color:#3b6549;font-size:12px;font-weight:690;padding:5px 0;cursor:pointer}
+#main .low-resource-warning{font-size:10.5px;color:#7f755c;line-height:1.6;margin:10px 0}
+#main .low-resource-table{width:100%;border-collapse:collapse;font-size:11px}
+#main .low-resource-table th{text-align:left;background:#f1f6f1;color:#4f735a;padding:10px}
+#main .low-resource-table td{padding:10px;border-bottom:1px solid #eef2ed;line-height:1.45}
+#main .low-resource-table input{min-width:100px;max-width:150px;width:100%;padding:7px;border:1px solid #dce6dd;border-radius:7px}
+#main .low-resource-total{display:flex;justify-content:space-between;gap:12px;padding:13px 4px;color:#335b3d;font-size:12px}
+#main .low-resource-total strong{font-variant-numeric:tabular-nums;font-size:16px}
+@media(max-width:760px){#main .category-quantity-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#main .low-resource-kpis{grid-template-columns:1fr}#main .low-resource-total{flex-direction:column}}
