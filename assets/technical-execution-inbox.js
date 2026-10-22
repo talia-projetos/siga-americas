@@ -5,19 +5,25 @@ const dateBR=x=>x?new Date(String(x).slice(0,10)+"T12:00:00").toLocaleDateString
 const stateName={rascunho:"Rascunho",enviado:"Aguardando supervisão",validado:"Validado",devolvido:"Devolvido"};
 const resultName={nao_informado:"Não informado",executada:"Realizado (relatado)",parcial:"Parcial",impedida:"Impedida",nao_aplicavel:"Não aplicável"};
 export async function mountTechnicalExecutionInbox(root,db){
+ const startDate=new Intl.DateTimeFormat("sv-SE",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+ let selectedMonth=startDate.slice(0,7);
  if(!root)return;
  root.innerHTML='<section class="technical-inbox"><div class="technical-inbox-head"><div><span class="eyebrow">ORIGEM · RELATÓRIOS DAS EQUIPES</span><h3>Registros semanais recebidos</h3>'+
   '<p>Relatos dos técnicos disponíveis para conferência. Não são medições financeiras nem OS concluídas.</p></div>'+
-  '<button type="button" class="btn btn-secondary" data-tech-refresh>Atualizar recebimentos</button></div>'+
+  '<div class="technical-inbox-actions"><label>Competência <input type="month" data-tech-month></label><button type="button" class="btn btn-secondary" data-tech-refresh>Atualizar recebimentos</button></div></div>'+
   '<div data-tech-content aria-live="polite"><p>Consultando relatórios…</p></div></section>';
- const content=root.querySelector("[data-tech-content]"),button=root.querySelector("[data-tech-refresh]");
+ const content=root.querySelector("[data-tech-content]"),button=root.querySelector("[data-tech-refresh]"),monthInput=root.querySelector("[data-tech-month]");
+ monthInput.value=selectedMonth;
  let seq=0;
  async function refresh(){
   const current=++seq;button.disabled=true;content.innerHTML='<p class="technical-inbox-loading">Consultando dados dos técnicos…</p>';
   try{
+   const [year,month]=selectedMonth.split("-").map(Number);
+   const start=selectedMonth+"-01",end=new Date(Date.UTC(year,month,0)).toISOString().slice(0,10);
    const reports=await db.from("field_daily_reports")
     .select("id,team_id,area_id,service_post_id,period_start,period_end,status,report_period,submitted_at")
-    .eq("report_period","semanal").order("period_start",{ascending:false}).limit(120);
+    .eq("report_period","semanal").lte("period_start",end).gte("period_end",start)
+    .order("period_start",{ascending:false}).limit(500);
    if(reports.error)throw reports.error;
    const all=reports.data||[],ids=all.map(r=>r.id),[teams,activities,posts]=await Promise.all([
     db.from("teams").select("id,code,name").limit(30),
@@ -60,5 +66,6 @@ export async function mountTechnicalExecutionInbox(root,db){
   }catch(error){if(current===seq&&root.isConnected)content.textContent="Não foi possível consultar relatórios: "+(error.message||error);}
   finally{if(current===seq&&root.isConnected)button.disabled=false}
  }
+ monthInput.addEventListener("change",e=>{if(/^\d{4}-\d{2}$/.test(e.target.value)){selectedMonth=e.target.value;void refresh()}});
  button.addEventListener("click",()=>void refresh());await refresh();
 }
