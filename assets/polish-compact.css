@@ -1974,3 +1974,18 @@
 #main .weekly-method{background:#eff6f0;padding:12px 14px;border-radius:8px;margin-top:16px}
 @media(max-width:1080px){#main .weekly-filters{grid-template-columns:repeat(2,minmax(0,1fr))}#main .weekly-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){#main .weekly-head{padding:18px 14px 12px}#main .weekly-source-pill{display:none}#main .weekly-filters{grid-template-columns:1fr;padding:13px 14px}#main .weekly-period-label{padding:12px 14px 0}#main .weekly-stats{padding:12px 14px;grid-template-columns:repeat(2,minmax(0,1fr))}#main .weekly-worklist{padding:6px 14px 16px}#main .weekly-activity-grid,#main .weekly-reference-rows{grid-template-columns:1fr}#main .weekly-reference>summary{padding:14px}#main #weekly-reference-list{padding:12px 14px}#main .weekly-worklist>header{flex-wrap:wrap}}
+
+/* Situação dos envios por equipe, no mesmo intervalo semanal */
+#main .weekly-team-strip{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:-6px 24px 18px}
+#main .weekly-team-pill{appearance:none;background:#fafcfa;border:1px solid #e0e9e1;color:#5b7562;border-radius:8px;display:flex;align-items:center;gap:7px;padding:7px 11px;cursor:pointer;min-height:35px;font-size:10px;transition:background .15s ease,border-color .15s ease}
+#main .weekly-team-pill strong{font-size:10px;color:#355d43}
+#main .weekly-team-pill span{color:#859588}
+#main .weekly-team-pill.validado{background:#edf7ef;border-color:#cfe6d4}
+#main .weekly-team-pill.validado span{color:#3b7850}
+#main .weekly-team-pill.enviado{background:#f2f7fd;border-color:#d6e4ed}
+#main .weekly-team-pill.enviado span{color:#4d758b}
+#main .weekly-team-pill.devolvido{background:#fff8ee;border-color:#eee1cc}
+#main .weekly-team-pill.devolvido span{color:#977344}
+#main .weekly-team-pill:hover{border-color:#a0c8a9;background:#edf7ee}
+#main .weekly-team-pill:focus-visible{outline:2px solid #438563;outline-offset:2px}
+@media(max-width:700px){#main .weekly-team-strip{margin:-2px 14px 16px}#main .weekly-team-pill{flex:1 1 110px;justify-content:center}}
