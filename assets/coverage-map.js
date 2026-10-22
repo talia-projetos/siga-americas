@@ -157,7 +157,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  root.innerHTML='<section class="coverage-map-shell">'+
  '<div class="coverage-map-header"><div><span class="eyebrow">COBERTURA OPERACIONAL · PROERG EM ITAIPU</span><h2>Mapa das áreas de cobertura</h2>'+
  '<p>Camadas georreferenciadas de trechos, áreas e pontos de atendimento. Medições espaciais calculadas a partir do KML/KMZ/GeoJSON, sem presumir execução ou aprovação.</p></div>'+
- '<span class="coverage-map-count" data-count>— camadas</span></div>'+
+ '</div>'+
  '<div class="coverage-map-toolbar"><label>Imagem de fundo<select data-basemap>'+
   '<option value="satellite">Satélite · Esri World Imagery</option><option value="street">Mapa viário · OpenStreetMap</option>'+
   (GOOGLE_MAPS_BROWSER_KEY?'<option value="google">Google Satélite (API autorizada)</option>':"")+
@@ -354,16 +354,6 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
  function draw({fit=true}={}){
   const geo=layers.filter(l=>l.geometry);
   paintLegend();
-  const polygons=geo.reduce((total,l)=>total+(l.geometry.features||[]).reduce((count,f)=>
-   count+(f.geometry?.type==="Polygon"?1:f.geometry?.type==="MultiPolygon"?f.geometry.coordinates.length:0),0),0);
-  const points=geo.reduce((total,l)=>total+(l.geometry.features||[]).reduce((count,f)=>
-   count+(symbolType(f,l)==="matriz"?(f.geometry?.type==="Point"?1:f.geometry?.type==="MultiPoint"?f.geometry.coordinates.length:0):0),0),0);
-  const routes=geo.reduce((total,l)=>total+(l.geometry.features||[]).filter(f=>symbolType(f,l)==="rota").length,0);
-  q("[data-count]").textContent=[
-   ...(points?[points+" matrizes mapeadas"]:[]),
-   ...(polygons?[polygons+" áreas"]:[]),
-   ...(routes?[routes+" traçados"]:[])
-  ].join(" · ")||"Sem camadas georreferenciadas";
   if(engine==="leaflet"){
    for(const item of drawn)map.removeLayer(item.layer);
    drawn=[];geo.forEach(addGeoToLeaflet);
