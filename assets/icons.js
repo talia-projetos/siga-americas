@@ -1,5 +1,25 @@
 // Ícones lineares consistentes. SVG local, sem biblioteca ou requisição externa.
 const paths={
+  // Ícones semânticos em grade 24×24, desenho linear único (estilo Lucide).
+  chart:'<path d="M3 3v18h18M7 16v-3M12 16V9M17 16V6"/>',
+  checklist:'<path d="m3 5 1 1 2-2M10 5h11M3 12l1 1 2-2M10 12h11M3 19l1 1 2-2M10 19h11"/>',
+  calendarclock:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><circle cx="13" cy="15" r="3"/><path d="M13 13.5V15l1 1"/>',
+  calendarcheck:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m5 5-3 3-2-2"/>',
+  filecheck:'<path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z M14 2v6h5m-11 8 2 2 4-4"/>',
+  files:'<path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-3"/><path d="M4 3h9l4 4v9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z M13 3v4h4"/>',
+  sign:'<path d="M7 4h9l4 4v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z M16 4v4h4M9 13h7m-7 4h3"/><path d="m16 16 3-3 2 2-3 3-3 1 1-3"/>',
+  receipt:'<path d="M4 2h16v20l-4-2-4 2-4-2-4 2V2ZM8 7h8M8 11h8M8 15h5"/>',
+  map2:'<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6ZM9 3v15M15 6v15"/>',
+  maproute:'<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6a4 4 0 0 0 0-8h-4a4 4 0 0 1 0-8h6"/>',
+  calendarrepeat:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m5 5 2-2 2 2m-2-2v5m7-3-2 2-2-2m2 2v-5"/>',
+  activity:'<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+  fileclock:'<path d="M6 2h8l5 5v5M14 2v5h5M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6"/><circle cx="17" cy="17" r="5"/><path d="M17 14v3l2 1"/>',
+  bag:'<path d="M4 8h16l-1 13H5L4 8ZM9 9V6a3 3 0 0 1 6 0v3"/>',
+  boxcheck:'<path d="m12 2 9 5-9 5-9-5 9-5ZM3 7v10l9 5 9-5V7M12 12v10m-3 5 2 2 4-4"/>',
+  shieldplus:'<path d="m12 22 7-4V6l-7-4-7 4v12l7 4ZM12 9v6m-3-3h6"/>',
+  hardhat2:'<path d="M3 17h18M5 17v-2a7 7 0 0 1 14 0v2M12 8v9m-9 3h18"/>',
+  focus:'<path d="M3 9V6a3 3 0 0 1 3-3h3M15 3h3a3 3 0 0 1 3 3v3M21 15v3a3 3 0 0 1-3 3h-3M9 21H6a3 3 0 0 1-3-3v-3"/><circle cx="12" cy="12" r="3"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/>',
   dashboard:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
   calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3m-3 4h3m5-4h1"/>',
   field:'<path d="M3 21V5l9-3 9 3v16l-9-3-9 3Z"/><path d="M12 2v16M3 11l9-3 9 3"/>',
@@ -47,15 +67,18 @@ const paths={
   lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'
 };
 export const moduleIcons={
- inicio:"dashboard",field_report:"clipboard",field_monitor:"people",resource_check:"check",coverage:"target",contract_suggestions:"target",field_execution_entries:"log",field_programs:"calendar",field_plan_items:"clipboard",
- field_routine_templates:"repeat",field_routine_records:"log",activity_catalog:"catalog",
- work_orders:"list",document_center:"file",service_posts:"pin",contracts:"contract",contract_items:"book",obligations:"check",
- contract_resource_requirements:"requirements",areas:"layers",teams:"people",employees:"user",
- ppe_items:"hardhat",ppe_deliveries:"shield",uniform_deliveries:"shirt",vehicles:"truck",
- fuel_logs:"fuel",equipment:"wrench",responsibility_terms:"file",maintenance:"repair",
- stock_items:"boxes",stock_movements:"arrows",purchases:"cart"
+ inicio:"dashboard",field_report:"clipboard",field_monitor:"chart",resource_check:"focus",
+ coverage:"chart",contract_suggestions:"checklist",field_execution_entries:"fileclock",
+ financial_planning:"calendar",field_programs:"calendarclock",field_plan_items:"calendarcheck",
+ field_routine_templates:"calendarrepeat",field_routine_records:"check",activity_catalog:"book",
+ work_orders:"filecheck",document_center:"files",service_posts:"pin",contracts:"contract",contract_items:"receipt",
+ obligations:"shield",contract_resource_requirements:"boxcheck",areas:"map2",teams:"people",employees:"user",
+ ppe_items:"hardhat2",ppe_deliveries:"shieldplus",uniform_deliveries:"shirt",vehicles:"truck",
+ fuel_logs:"fuel",equipment:"wrench",responsibility_terms:"sign",maintenance:"repair",
+ stock_items:"supplies",stock_movements:"arrows",purchases:"bag"
 };
+
 export function iconMarkup(key,cssClass="ui-icon"){
- const name=moduleIcons[key]||key, body=paths[name]||paths.dashboard;
- return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="'+cssClass+'" aria-hidden="true">'+body+'</svg>';
+ const name=moduleIcons[key]||key, body=paths[name]||paths.help;
+ return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="'+cssClass+'" role="presentation" focusable="false" aria-hidden="true">'+body+'</svg>';
 }
