@@ -466,7 +466,7 @@ function renderRows(){
   const klass=financial&&["estimated_quantity","unit_price","estimated_total"].includes(key)?' class="numeric-cell"':"";
   const mobileLabel=financial?({unit:"Unidade contratual",estimated_quantity:"Quantidade estimada",unit_price:"Valor unitário",estimated_total:"Total estimado"}[key]||key):null;
   return '<td'+(mobileLabel?' data-label="'+escapeHTML(mobileLabel)+'"':'')+klass+'>'+fieldValue(key,row[key])+'</td>';
- }).join("")+'<td'+(financial?' data-label="Ações"':'')+'>'+(privileged()?'<button class="table-action" data-edit="'+escapeHTML(row.id)+'">'+iconMarkup('file')+' Editar</button>'+(app.page==="stock_items"?'<button class="table-action" data-save-stock="'+escapeHTML(row.id)+'">Salvar contagem</button>':""):'<span class="muted">Consulta</span>')+'</td></tr>').join("");
+ }).join("")+'<td'+(financial?' data-label="Ações"':'')+'>'+(privileged()?'<div class="record-row-actions"><button type="button" class="table-action" data-edit="'+escapeHTML(row.id)+'">'+iconMarkup('file')+' Editar</button><button type="button" class="table-action record-delete" data-delete="'+escapeHTML(row.id)+'" aria-label="Excluir registro" title="Excluir este registro">&#128465; Excluir</button>'+(app.page==="stock_items"?'<button class="table-action" data-save-stock="'+escapeHTML(row.id)+'">Salvar contagem</button>':"")+'</div>':'<span class="muted">Consulta</span>')+'</td></tr>').join("");
 }
 async function coveragePage(){
  app.page="coverage";app.search="";nav();header("coverage");
@@ -795,7 +795,7 @@ async function openForm(id=null){
  try{await ensureRefs(app.page)}catch(e){notify(friendlyError(e),true);return;}
  const row=id?app.rows.find(x=>x.id===id):null;
  app.editing=row?.id??null;
- el("modal-title").textContent=(row?"Editar":"Novo registro · ")+m.title;
+ el("modal-title").textContent=(row?"Editar registro · ":"Novo registro · ")+m.title;
  if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}
  el("modal-fields").innerHTML=(app.page==="field_execution_entries"?'<div class="execution-form-section-heading"><strong>Identificação e quantidade</strong><small>Informe a execução; a rubrica determina a referência de valor.</small></div>'+m.fields.slice(0,7).map(f=>fieldInput(f,row)).join("")+'<div class="execution-form-section-heading"><strong>Situação e conferência</strong><small>Resultado informado e conferência são informações distintas.</small></div>'+m.fields.slice(7,9).map(f=>fieldInput(f,row)).join("")+'<details class="execution-form-extras"'+(row?.id?" open":"")+'> <summary>Origem, evidências e observações <span>Complementar</span></summary><div class="execution-form-extras-fields">'+m.fields.slice(9).map(f=>fieldInput(f,row)).join("")+'</div></details>':m.fields.map(f=>fieldInput(f,row)).join(""))+
   (app.page==="field_execution_entries"?'<div class="field wide execution-valuation-preview" id="execution-valuation-preview" role="status"></div>':"")+
@@ -874,6 +874,26 @@ async function openForm(id=null){
  el("modal-fields").querySelector("input,select,textarea")?.focus();
 }
 function closeForm(force=false){if(app.busy&&force!==true)return;if(routineEvidence){routineEvidence.destroy();routineEvidence=null;}el("modal-root").hidden=true;app.editing=null}
+async function deleteRegisteredRecord(id){
+ if(!privileged()||app.busy)return;
+ const page=app.page,mod=modules[page],record=app.rows.find(row=>String(row.id)===String(id));
+ if(!mod?.table||!record)return;
+ const label=String(record.activity_label||record.name||record.description||record.reference||record.code||record.plate||record.asset_tag||record.id).slice(0,110);
+ const ok=window.confirm("Excluir permanentemente este registro?\\n\\n"+label+"\\n\\nA operação não pode ser desfeita. Se houver documentos ou registros vinculados, a exclusão poderá ser bloqueada pelo banco de dados.");
+ if(!ok)return;
+ const button=[...document.querySelectorAll("[data-delete]")].find(node=>node.dataset.delete===String(id));
+ app.busy=true;if(button)button.disabled=true;
+ try{
+  const {data,error}=await app.db.from(mod.table).delete().eq("id",id).select("id");
+  if(error)throw error;
+  if(!data?.length)throw new Error("Nenhum registro foi excluído. Verifique as permissões de exclusão.");
+  notify("Registro excluído com sucesso.");
+  app.rows=app.rows.filter(row=>String(row.id)!==String(id));
+  app.refs={};
+  await modulePage(page);
+ }catch(error){notify("Não foi possível excluir: "+friendlyError(error),true);}
+ finally{app.busy=false;if(button?.isConnected)button.disabled=false;}
+}
 async function saveRecord(e){
  e.preventDefault();if(app.busy)return;
  const m=modules[app.page],fd=new FormData(e.target),payload={};
@@ -977,7 +997,7 @@ document.addEventListener("click",async e=>{
   if(field)field.value=fleetButton.dataset.fleetAdd;
   return;
  }
- const edit=e.target.closest("[data-edit]");if(edit){await openForm(edit.dataset.edit);return;}
+ const edit=e.target.closest("[data-edit]");if(edit){await openForm(edit.dataset.edit);return;}\n const deletion=e.target.closest("[data-delete]");if(deletion){await deleteRegisteredRecord(deletion.dataset.delete);return;}
  const action=e.target.closest("[data-action]")?.dataset.action;
  if(action==="create")await openForm();
  if(action==="uniformBatch"&&app.page==="uniform_deliveries"&&privileged())await uniformPage();
