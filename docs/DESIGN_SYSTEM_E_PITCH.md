@@ -54,12 +54,27 @@ Formulários exibem o essencial primeiro; dados complementares aparecem sob expa
 | Poucos indicadores integrados | Visão executiva com métricas e gráficos por área |
 | Interface de formulário relativamente extensa | Fluxo rápido no celular, campos progressivos |
 
+## Slide executivo · de prestação de contas à inteligência de gestão
+
+**Título:** SIGA Américas | Da informação operacional à decisão gerencial
+
+**Mensagem central:** O registro das execuções é o ponto de partida; a finalidade é identificar antecipadamente gargalos, riscos e decisões necessárias.
+
+| Dimensão de gestão | Pergunta que o SIGA deve responder | Ação gerencial possível |
+|---|---|---|
+| Planejamento e capacidade | O trabalho programado cabe nas equipes, turnos, veículos e equipamentos disponíveis? | Redistribuir frentes e ajustar prioridades |
+| Produtividade e impedimentos | Onde há atividades parciais, impedidas ou acumuladas? | Atacar causas de paralisação e reprogramar |
+| Frota, máquinas e manutenção | Que recursos estão indisponíveis ou aguardando conferência? | Priorizar manutenção e reposição |
+| Materiais, EPI e fardamento | Existe risco de desabastecimento ou pendências de entrega? | Antecipar compras e regularizações |
+| Qualidade e rastreabilidade | O que foi apenas informado, conferido ou efetivamente validado? | Corrigir evidências e reduzir glosas |
+| Execução financeira | Qual o valor potencial da produção registrada e sua distância da meta? | Reavaliar composição das frentes e ritmo de produção |
+
+**Cuidados de leitura:** As perguntas representam capacidades gerenciais e hipóteses de atenção, não diagnóstico comprovado de descumprimento. Valor potencial não é faturamento aprovado. A identificação de matrizes foi retirada das execuções registradas em 23/10/2026; permanece como atividade contratual no catálogo.
+
 ## Discurso de apresentação (aproximadamente um minuto)
-> O SIGA Américas parte de uma dificuldade prática: acompanhar um contrato grande, suas equipes, recursos e obrigações sem depender de controles dispersos. A proposta não é criar mais burocracia. É reduzir o preenchimento de campo ao essencial e transformar cada registro em informação de gestão.
+> O SIGA Américas não foi pensado apenas para demonstrar o que foi feito. Registrar a execução é só uma etapa. O sistema precisa ajudar a identificar por que o planejado não aconteceu, quais equipes estão sobrecarregadas, onde faltam recursos e quais decisões não podem esperar.
 >
-> O técnico informa o que aconteceu. A supervisão confere e valida. A gestão acompanha em um painel o que está aberto, o que foi executado, o que precisa de atenção e o que ainda depende de conferência. O contrato já está estruturado em atividades, itens de preço, exigências de ferramentas e veículos. Assim, temos um caminho para melhorar rastreabilidade, planejamento e prestação de contas.
->
-> O foco do sistema é simples: menos tempo procurando informação, mais capacidade de tomar decisões.
+> Com planejamento, relatos de campo, conferência de equipamentos, manutenção, estoque e indicadores financeiros no mesmo ambiente, podemos transformar dados dispersos em prioridades de gestão. O objetivo é antecipar problemas, corrigir gargalos e melhorar a tomada de decisão, mantendo clara a diferença entre produção informada, conferência técnica e valor aprovado.
 
 ## Evidências e limites de confiabilidade
 O frontend está publicado no GitHub Pages, utiliza HTML/CSS/JavaScript modular e autenticação com Supabase. A navegação, as verificações estáticas e as simulações locais de layout e consulta fazem parte da validação técnica. **A aprovação operacional exige testes com usuários reais em diferentes celulares, confirmação de permissões/RLS por perfil e conferência final dos cadastros, quantitativos, relatórios e fluxos de ponta a ponta.**
