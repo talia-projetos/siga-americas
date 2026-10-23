@@ -650,7 +650,7 @@ async function modulePage(key){
  const afterTable="";
   const filters=special?catalogFilters(key,app.rows):"";
   el("main").innerHTML=title(key,m.description,buttons)+overview+
-  '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(key==="vehicles"?"Veículos individualizados":catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
+  '<section class="table-panel catalog-table '+(key==="employees"?'people-table':key==="contract_items"?'price-table':key==="stock_items"?'stock-table':'')+'"><div class="table-head"><div><h2>'+escapeHTML(key==="vehicles"?"Veículos individualizados":catalogTableTitle(key))+'</h2><span id="records-shown">'+app.rows.length+' registros</span></div><div class="table-toolbar"><input class="searchbox" id="list-search" type="search" aria-label="Pesquisar registros" placeholder="'+(key==="teams"?"Buscar equipe, código ou nome do técnico":"Pesquisar...")+'" autocomplete="off">'+
    ((special||key==="field_execution_entries")?'<button type="button" class="btn btn-ghost filter-clear" id="clear-list-filters">'+iconMarkup("close")+' Limpar filtros</button>':"")+
   '</div></div>'+
   (filters?'<div class="catalog-filters">'+filters+'</div>':"")+
