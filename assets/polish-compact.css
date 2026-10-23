@@ -2004,3 +2004,14 @@
 #main .planning-workspace .finance-three-months-note{font-size:10px;color:#778676;line-height:1.65;margin:10px 0 0}
 #main .planning-workspace .finance-reference-table .finance-three-months-note{padding:8px 13px;margin:4px 0 9px;border-radius:7px;background:#f7faf7;border:1px solid #e7eee7}
 @media(max-width:700px){#main .planning-workspace .finance-three-months{padding:12px;margin:12px 0 17px}#main .planning-workspace .finance-three-months table{min-width:660px}}
+
+/* SIGA · legibilidade dos modais e ações de exclusão por registro */
+#modal-title{white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.25!important;letter-spacing:-.02em!important}
+#modal-root .modal-header,#modal-root .modal-head{min-width:0;gap:12px;align-items:flex-start}
+#modal-root .modal-header>*,#modal-root .modal-head>*{min-width:0}
+#modal-fields .field label{white-space:normal;overflow-wrap:break-word;line-height:1.45}
+.record-row-actions{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+.record-row-actions .record-delete{color:#a04444!important;border-radius:7px;white-space:nowrap}
+.record-row-actions .record-delete:hover{background:#fceeee!important;color:#842d2d!important}
+.record-row-actions .record-delete:disabled{opacity:.45;cursor:wait}
+@media(max-width:600px){#modal-title{font-size:clamp(17px,4.8vw,23px)!important}.record-row-actions{gap:7px}}
