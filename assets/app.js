@@ -997,7 +997,8 @@ document.addEventListener("click",async e=>{
   if(field)field.value=fleetButton.dataset.fleetAdd;
   return;
  }
- const edit=e.target.closest("[data-edit]");if(edit){await openForm(edit.dataset.edit);return;}\n const deletion=e.target.closest("[data-delete]");if(deletion){await deleteRegisteredRecord(deletion.dataset.delete);return;}
+ const edit=e.target.closest("[data-edit]");if(edit){await openForm(edit.dataset.edit);return;}
+ const deletion=e.target.closest("[data-delete]");if(deletion){await deleteRegisteredRecord(deletion.dataset.delete);return;}
  const action=e.target.closest("[data-action]")?.dataset.action;
  if(action==="create")await openForm();
  if(action==="uniformBatch"&&app.page==="uniform_deliveries"&&privileged())await uniformPage();
