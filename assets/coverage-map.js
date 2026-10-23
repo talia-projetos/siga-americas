@@ -8,6 +8,17 @@ const R=6371008.8;
 const METER=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2});
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const n=x=>METER.format(x);
+// Apresentação GMS derivada do WGS84, preservando geometrias e precisão de origem.
+const coordinateGMS=(value,latitude)=>{
+ const total=Math.round(Math.abs(Number(value))*360000);
+ const degrees=Math.floor(total/360000);
+ const minutes=Math.floor(total%360000/6000);
+ const seconds=total%6000/100;
+ const hemisphere=latitude?(value<0?"S":"N"):(value<0?"O":"L");
+ return degrees+"° "+String(minutes).padStart(2,"0")+"' "+
+  seconds.toFixed(2).replace(".",",").padStart(5,"0")+'" '+hemisphere;
+};
+const pointGMS=coords=>coordinateGMS(coords[1],true)+" / "+coordinateGMS(coords[0],false);
 // Paleta categórica SIGA: distinção entre as dez áreas institucionais na imagem satélite.
 // As cores escolhidas em novas importações e todas as geometrias são preservadas.
 const ROUTE_COLOR="#FFA65B";
@@ -321,7 +332,7 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
     item.bindPopup('<div class="siga-map-popup"><strong>'+esc(name)+'</strong>'+
       '<span>'+esc(kind==="matriz"?"Matriz georreferenciada · identificação a conferir":
         kind==="area"?"Área cartográfica":kind==="rota"?"Traçado georreferenciado":"Ponto")+'</span>'+
-      (coords?'<small>WGS84: '+esc(coords[1].toFixed(6))+'; '+esc(coords[0].toFixed(6))+'</small>':'')+
+      (coords?'<small>WGS84 · GMS: '+esc(pointGMS(coords))+'</small>':'')+
       '<small>Fonte: '+esc(l.source_name||l.source_filename||"KML fornecido")+'</small></div>');
    }
   }).addTo(map);
@@ -383,8 +394,11 @@ export async function mountCoverageMap(root,db,{canWrite=false,notify=()=>{}}={}
   }
   mapData.addListener("click",event=>{
    const name=event.feature.getProperty("name")||event.feature.getProperty("Name")||l.name;
+   const geometry=event.feature.getGeometry();
+   const point=geometry?.getType()==="Point"?geometry.get():null;
+   const gms=point?'<br>WGS84 · GMS: '+esc(pointGMS([point.lng(),point.lat()])):'';
    new google.maps.InfoWindow({content:'<strong>'+esc(name)+'</strong><br>'+
-    esc(l.source_name||"Arquivo georreferenciado")+'<br>Verificação contratual pendente.',
+    esc(l.source_name||"Arquivo georreferenciado")+gms+'<br>Verificação contratual pendente.',
     position:event.latLng}).open({map:gMap});
   });
   googleData.push({id:l.id,layer:mapData,decorations});
