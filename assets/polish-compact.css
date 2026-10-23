@@ -2015,3 +2015,26 @@
 .record-row-actions .record-delete:hover{background:#fceeee!important;color:#842d2d!important}
 .record-row-actions .record-delete:disabled{opacity:.45;cursor:wait}
 @media(max-width:600px){#modal-title{font-size:clamp(17px,4.8vw,23px)!important}.record-row-actions{gap:7px}}
+
+
+/* SIGA Américas · Estoque: evita sobreposição entre inputs, data e ações. */
+#main .stock-table .table-scroll{overflow-x:auto;max-width:100%}
+#main .stock-table .data-table{min-width:1150px;width:100%;table-layout:fixed}
+#main .stock-table .data-table th,
+#main .stock-table .data-table td{box-sizing:border-box;min-width:0;vertical-align:middle;padding:13px 10px;overflow-wrap:break-word;white-space:normal}
+#main .stock-table .data-table th:nth-child(1){width:10%}
+#main .stock-table .data-table th:nth-child(2){width:15%}
+#main .stock-table .data-table th:nth-child(3){width:7%}
+#main .stock-table .data-table th:nth-child(4){width:10%}
+#main .stock-table .data-table th:nth-child(5){width:11%}
+#main .stock-table .data-table th:nth-child(6){width:18%}
+#main .stock-table .data-table th:nth-child(7){width:11%}
+#main .stock-table .data-table th:nth-child(8){width:6%}
+#main .stock-table .data-table th:nth-child(9){width:12%}
+#main .stock-table .stock-count-cell{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;width:100%;min-width:0;max-width:100%}
+#main .stock-table .stock-count-cell input{display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;margin:0;position:static}
+#main .stock-table .data-table td:nth-child(7){white-space:normal;overflow-wrap:anywhere}
+#main .stock-table .record-row-actions{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;min-width:0}
+#main .stock-table .record-row-actions .table-action{display:inline-flex;align-items:center;justify-content:flex-start;white-space:normal;text-align:left;max-width:100%;line-height:1.35}
+#main .stock-table .data-table tbody tr{height:auto;min-height:0}
+@media(max-width:850px){#main .stock-table .data-table{min-width:1150px}}
